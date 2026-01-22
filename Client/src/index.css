@@ -1,1 +1,18 @@
+@import url("https://fonts.googleapis.com/css2?family=Urbanist:wght@400;600;700;800&display=swap");
 @import "tailwindcss";
+
+/* Tailwind v4 CSS-driven theme tokens */
+@theme {
+	/* Use Urbanist as the primary sans font */
+	--font-sans: "Urbanist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+		"Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+	/* Brand blue aligns to Tailwind blue-600 */
+	--color-brand: #2563eb;
+}
+
+/* Global base styles */
+@layer base {
+	html, body {
+		@apply bg-white text-gray-800 font-sans;
+	}
+}
