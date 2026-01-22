@@ -13,6 +13,8 @@
 /* Global base styles */
 @layer base {
 	html, body {
-		@apply bg-white text-gray-800 font-sans;
+		background-color: #fff;
+		color: #1f2937;
+		font-family: var(--font-sans);
 	}
 }
