@@ -1,6 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Urbanist:wght@400;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Allerta+Stencil&display=swap');
 @import "tailwindcss";
 
 body {
-  font-family: "Urbanist", ui-sans-serif;
+  font-family: "Allerta Stencil", ui-sans-serif;
 }
