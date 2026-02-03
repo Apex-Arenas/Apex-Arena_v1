@@ -9,6 +9,7 @@ import JoinTournament from "./pages/auth/player/join-tournament";
 import Landing from "./pages/public/landing";
 import Login from "./pages/public/Login";
 import Profile from "./pages/public/profile";
+import NotFound from "./pages/public/not-found";
 
 const Layout = () => (
   <div className="min-h-dvh flex flex-col bg-white text-gray-800">
@@ -25,7 +26,6 @@ const App = () => {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Landing />} />
-        <Route path="signup" element={<Register />} />
         <Route path="register" element={<Register />} />
         <Route path="login" element={<Login />} />
 
@@ -45,6 +45,8 @@ const App = () => {
             <Route path="join-tournament" element={<JoinTournament />} />
           </Route>
         </Route>
+
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );
