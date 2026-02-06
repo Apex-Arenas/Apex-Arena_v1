@@ -10,6 +10,7 @@ import Landing from "./pages/public/landing";
 import Profile from "./pages/public/profile";
 import NotFound from "./pages/public/not-found";
 import Login from "./pages/public/login";
+import ForgotPassword from "./pages/public/forgot";
 
 const Layout = () => (
   <div className="min-h-dvh flex flex-col bg-white text-gray-800">
@@ -26,8 +27,9 @@ const App = () => {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Landing />} />
-        <Route path="register" element={<Register />} />
+        <Route path="signup" element={<Register />} />
         <Route path="login" element={<Login />} />
+        <Route path="forgot" element={<ForgotPassword />} />
 
         <Route path="auth">
           <Route path="admin">
