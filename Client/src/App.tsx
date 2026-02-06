@@ -1,7 +1,6 @@
 import { Routes, Route, Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import Register from "./pages/public/register";
 import AdminDashboard from "./pages/auth/admin/dashboard";
 import AdminUsers from "./pages/auth/admin/users";
 import CreateTournament from "./pages/auth/organizer/create-tournament";
@@ -9,8 +8,9 @@ import JoinTournament from "./pages/auth/player/join-tournament";
 import Landing from "./pages/public/landing";
 import Profile from "./pages/public/profile";
 import NotFound from "./pages/public/not-found";
-import Login from "./pages/public/login";
 import ForgotPassword from "./pages/public/forgot";
+import Register from "./pages/public/register";
+import Login from "./pages/public/login";
 
 const Layout = () => (
   <div className="min-h-dvh flex flex-col bg-white text-gray-800">
