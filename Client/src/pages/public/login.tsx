@@ -4,11 +4,11 @@ import { Link } from "react-router-dom";
 
 const Login = () => {
   const [form, setForm] = useState({
-    email: "",
+    identifier: "",
     password: "",
   });
   const [errors, setErrors] = useState({
-    email: "",
+    identifier: "",
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -16,10 +16,18 @@ const Login = () => {
   const [submitted, setSubmitted] = useState(false);
 
   const validate = () => {
-    const newErrors = { email: "", password: "" };
-    if (!form.email.trim()) newErrors.email = "Email is required.";
-    else if (!/^[^\@\s]+@[^\@\s]+\.[^\@\s]+$/.test(form.email))
-      newErrors.email = "Invalid email.";
+    const newErrors = { identifier: "", password: "" };
+    const value = form.identifier.trim();
+
+    if (!value) newErrors.identifier = "Username or email is required.";
+    else if (value.includes("@")) {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value))
+        newErrors.identifier = "Invalid email.";
+    } else {
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(value))
+        newErrors.identifier = "Invalid username.";
+    }
+
     if (!form.password) newErrors.password = "Password is required.";
     else if (form.password.length < 6)
       newErrors.password = "At least 6 characters.";
@@ -27,9 +35,10 @@ const Login = () => {
     return Object.values(newErrors).every((v) => !v);
   };
 
-  const handleChange = (e: { target: { name: any; value: any } }) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: "" });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    setErrors({ ...errors, [name]: "" });
   };
 
   const handleSubmit = (e: { preventDefault: () => void }) => {
@@ -40,7 +49,7 @@ const Login = () => {
       // Simulate API call
       setTimeout(() => {
         alert("Logged in! (Demo only)");
-        setForm({ email: "", password: "" });
+        setForm({ identifier: "", password: "" });
         setIsLoading(false);
         setSubmitted(false);
       }, 1000);
@@ -48,54 +57,62 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-linear-to-b from-blue-50 to-white py-12">
+    <div className="min-h-[80vh] flex items-center justify-center bg-slate-950 text-white py-12 px-4">
+      <style>{`
+        @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+        .font-display { font-family: "Rajdhani", sans-serif; }
+        .font-body { font-family: "Space Grotesk", sans-serif; }
+      `}</style>
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 border border-gray-100"
+        className="w-full max-w-md bg-slate-900/60 rounded-3xl shadow-2xl p-8 border border-slate-800 font-body"
         autoComplete="off"
       >
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-linear-to-r from-blue-600 to-blue-400 w-10 h-10 rounded-lg flex items-center justify-center">
-              <Trophy className="w-6 h-6 text-white" />
+            <div className="bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 w-10 h-10 rounded-lg flex items-center justify-center text-slate-950">
+              <Trophy className="w-6 h-6" />
             </div>
-            <span className="font-bold text-lg text-gray-900">APEX ARENAS</span>
+            <span className="font-display font-bold text-lg text-white">
+              APEX ARENAS
+            </span>
           </Link>
         </div>
 
-        <h1 className="text-3xl font-bold text-center mb-2 text-gray-900">
+        <h1 className="font-display text-3xl font-bold text-center mb-2 text-white">
           Welcome Back
         </h1>
-        <p className="text-center text-gray-600 text-sm mb-8">
+        <p className="text-center text-slate-300 text-sm mb-8">
           Log in to your account to continue
         </p>
 
         <div className="space-y-5">
-          {/* Email */}
+          {/* Username / Email */}
           <div>
             <label
-              className="block text-sm font-medium text-gray-700 mb-1"
-              htmlFor="email"
+              className="block text-sm font-medium text-slate-200 mb-1"
+              htmlFor="identifier"
             >
-              Email Address
+              Username or Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
-                type="email"
-                name="email"
-                id="email"
-                value={form.email}
+                type="text"
+                name="identifier"
+                id="identifier"
+                value={form.identifier}
                 onChange={handleChange}
                 className={`pl-10 pr-3 py-3 w-full rounded-lg border ${
-                  errors.email ? "border-red-500" : "border-gray-300"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-gray-900`}
-                placeholder="you@email.com"
+                  errors.identifier ? "border-red-500" : "border-slate-700"
+                } bg-slate-950/60 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent`}
+                placeholder="username or you@email.com"
+                autoComplete="username"
               />
             </div>
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+            {errors.identifier && (
+              <p className="text-red-400 text-xs mt-1">{errors.identifier}</p>
             )}
           </div>
 
@@ -103,20 +120,20 @@ const Login = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-slate-200"
                 htmlFor="password"
               >
                 Password
               </label>
               <Link
                 to="/forgot"
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-cyan-300 hover:underline"
               >
                 Forgot?
               </Link>
             </div>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -124,14 +141,14 @@ const Login = () => {
                 value={form.password}
                 onChange={handleChange}
                 className={`pl-10 pr-10 py-3 w-full rounded-lg border ${
-                  errors.password ? "border-red-500" : "border-gray-300"
-                } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-gray-900`}
+                  errors.password ? "border-red-500" : "border-slate-700"
+                } bg-slate-950/60 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent`}
                 placeholder="Password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -141,7 +158,7 @@ const Login = () => {
               </button>
             </div>
             {errors.password && (
-              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+              <p className="text-red-400 text-xs mt-1">{errors.password}</p>
             )}
           </div>
         </div>
@@ -150,7 +167,7 @@ const Login = () => {
         <button
           type="submit"
           disabled={isLoading}
-          className="mt-8 w-full py-3 rounded-lg bg-linear-to-r from-blue-600 to-blue-400 text-white font-semibold text-lg shadow hover:shadow-lg hover:shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-8 w-full py-3 rounded-lg bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 text-slate-950 font-semibold text-lg shadow hover:shadow-lg hover:shadow-cyan-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (
             <span className="flex items-center justify-center">
@@ -163,23 +180,23 @@ const Login = () => {
         </button>
 
         {submitted && !Object.values(errors).every((v) => !v) && (
-          <p className="text-center text-red-500 text-sm mt-4">
+          <p className="text-center text-red-400 text-sm mt-4">
             Please fix the errors above.
           </p>
         )}
 
         {/* Divider */}
         <div className="my-6 flex items-center">
-          <div className="flex-1 border-t border-gray-300"></div>
-          <span className="px-4 text-sm text-gray-500">Or</span>
-          <div className="flex-1 border-t border-gray-300"></div>
+          <div className="flex-1 border-t border-slate-700"></div>
+          <span className="px-4 text-sm text-slate-400">Or</span>
+          <div className="flex-1 border-t border-slate-700"></div>
         </div>
 
         {/* Social Sign In */}
         <button
           type="button"
           disabled={isLoading}
-          className="w-full py-3 px-4 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-colors flex items-center justify-center font-medium text-gray-700 disabled:opacity-50"
+          className="w-full py-3 px-4 rounded-lg border border-slate-700 hover:border-slate-600 hover:bg-white/5 transition-colors flex items-center justify-center font-medium text-slate-200 disabled:opacity-50"
         >
           <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
             <path
@@ -204,12 +221,9 @@ const Login = () => {
 
         {/* Sign Up Link */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{" "}
-            <Link
-              to="/signup"
-              className="text-blue-600 font-medium hover:underline"
-            >
+          <p className="text-sm text-slate-300">
+            Don&apos;t have an account?{" "}
+            <Link to="/signup" className="text-cyan-300 font-medium hover:underline">
               Create one here
             </Link>
           </p>
