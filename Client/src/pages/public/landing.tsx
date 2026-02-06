@@ -89,9 +89,6 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-transparent text-white">
       <style>{`
-        @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
-        .font-display { font-family: "Rajdhani", sans-serif; }
-        .font-body { font-family: "Space Grotesk", sans-serif; }
         .grid-bg { background-image: radial-gradient(circle at 1px 1px, rgba(148,163,184,0.15) 1px, transparent 0); background-size: 32px 32px; }
         .glow-orb { filter: blur(40px); opacity: 0.35; }
         .float-slow { animation: float 9s ease-in-out infinite; }

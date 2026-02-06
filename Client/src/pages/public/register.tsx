@@ -124,11 +124,6 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-transparent text-white flex items-center justify-center p-4">
-      <style>{`
-        @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
-        .font-display { font-family: "Rajdhani", sans-serif; }
-        .font-body { font-family: "Space Grotesk", sans-serif; }
-      `}</style>
       <div className="w-full max-w-6xl rounded-3xl border border-slate-800 bg-slate-900/50 shadow-2xl overflow-hidden">
         <div className="md:flex">
           {/* Left side - Form */}

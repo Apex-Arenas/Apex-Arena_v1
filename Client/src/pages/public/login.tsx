@@ -58,11 +58,6 @@ const Login = () => {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center bg-transparent text-white py-12 px-4">
-      <style>{`
-        @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
-        .font-display { font-family: "Rajdhani", sans-serif; }
-        .font-body { font-family: "Space Grotesk", sans-serif; }
-      `}</style>
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md bg-slate-900/60 rounded-3xl shadow-2xl p-8 border border-slate-800 font-body"

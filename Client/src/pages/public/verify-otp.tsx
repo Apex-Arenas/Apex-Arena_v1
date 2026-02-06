@@ -118,12 +118,6 @@ const VerifyOtp = () => {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center bg-transparent py-12 px-4 text-white">
-      <style>{`
-        @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
-        .font-display { font-family: "Rajdhani", sans-serif; }
-        .font-body { font-family: "Space Grotesk", sans-serif; }
-      `}</style>
-
       <div className="w-full max-w-md rounded-3xl shadow-2xl p-8 border border-slate-800 bg-slate-900/60 font-body">
         <div className="flex items-center justify-center mb-8">
           <Link to="/" className="flex items-center space-x-2">
