@@ -70,7 +70,7 @@ const Landing = () => {
     {
       number: "03",
       title: "Compete with proof",
-      description: "Play, submit results, and let AI verify outcomes.",
+      description: "Play, submit results, and keep outcomes accountable.",
     },
     {
       number: "04",
@@ -87,7 +87,7 @@ const Landing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-transparent text-white">
       <style>{`
         @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
         .font-display { font-family: "Rajdhani", sans-serif; }
@@ -137,7 +137,7 @@ const Landing = () => {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
                 <Link
-                  to="/tournaments"
+                  to="/signup"
                   className="inline-flex items-center justify-center px-8 py-3 text-base font-semibold text-cyan-200 border border-cyan-400/40 rounded-lg hover:bg-cyan-400/10 transition-colors"
                 >
                   Browse tournaments
@@ -163,7 +163,7 @@ const Landing = () => {
       </section>
 
       {/* Signal Strip */}
-      <section className="border-y border-slate-800 bg-slate-950">
+        <section className="border-y border-slate-800 bg-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center font-body">
             {stats.map((stat) => (
@@ -183,7 +183,7 @@ const Landing = () => {
       </section>
 
       {/* Features */}
-      <section className="py-20 bg-slate-950">
+        <section className="py-20 bg-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center font-body mb-12">
             <p className="text-cyan-300 text-sm tracking-widest uppercase">
@@ -217,7 +217,7 @@ const Landing = () => {
       </section>
 
       {/* Flow */}
-      <section className="py-20 bg-linear-to-b from-slate-950 via-slate-900 to-slate-950">
+        <section className="py-20 bg-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-[0.7fr_1.3fr] gap-12 items-start">
             <div className="font-body">
@@ -266,7 +266,7 @@ const Landing = () => {
       </section>
 
       {/* Organizers */}
-      <section className="py-20 bg-slate-950">
+        <section className="py-20 bg-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-slate-800 bg-linear-to-r from-slate-900 via-slate-950 to-slate-900 p-8 lg:p-12">
             <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-10 items-center">

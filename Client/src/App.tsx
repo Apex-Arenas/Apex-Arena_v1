@@ -13,7 +13,7 @@ import Register from "./pages/public/register";
 import Login from "./pages/public/login";
 
 const Layout = () => (
-  <div className="min-h-dvh flex flex-col bg-white text-gray-800">
+  <div className="min-h-dvh flex flex-col bg-transparent text-slate-100">
     <Navbar />
     <main className="flex-1">
       <Outlet />

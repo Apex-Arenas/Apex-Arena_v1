@@ -1,6 +1,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Allerta+Stencil&display=swap');
 @import "tailwindcss";
 
+html {
+  background-color: #020617;
+}
+
 body {
   font-family: "Allerta Stencil", ui-sans-serif;
+  background-color: transparent;
+  color: #f8fafc;
+  position: relative;
+  min-height: 100vh;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  width: 520px;
+  height: 520px;
+  border-radius: 9999px;
+  filter: blur(56px);
+  opacity: 0.42;
+  z-index: 0;
+  pointer-events: none;
+}
+
+body::before {
+  top: -180px;
+  left: -140px;
+  background: #22d3ee;
+}
+
+body::after {
+  top: 60px;
+  right: -200px;
+  background: #6366f1;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
 }

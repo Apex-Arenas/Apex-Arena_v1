@@ -130,7 +130,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-transparent text-white flex items-center justify-center p-4">
       <style>{`
         @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
         .font-display { font-family: "Rajdhani", sans-serif; }
