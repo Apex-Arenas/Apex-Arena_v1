@@ -100,11 +100,8 @@ const Register = () => {
 
     if (validate()) {
       setTimeout(() => {
-        const destination = form.email.trim();
         setIsLoading(false);
-        navigate("/verify-otp", {
-          state: { destination, purpose: "signup" },
-        });
+        navigate("/auth");
       }, 1500);
     } else {
       setIsLoading(false);

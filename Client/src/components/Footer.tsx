@@ -24,7 +24,7 @@ const Footer = () => {
 
           <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-300 md:justify-end">
             <Link
-              to="/tournaments"
+              to="/dashboard"
               className="hover:text-white transition-colors"
             >
               Tournaments

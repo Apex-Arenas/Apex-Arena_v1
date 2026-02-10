@@ -9,6 +9,7 @@ import NotFound from "./pages/public/not-found";
 import ForgotPassword from "./pages/public/forgot";
 import Register from "./pages/public/register";
 import Login from "./pages/public/login";
+import Dashboard from "./pages/auth/Dashboard";
 
 const Layout = () => (
   <div className="min-h-dvh flex flex-col bg-transparent text-slate-100">
@@ -30,6 +31,7 @@ const App = () => {
         <Route path="forgot" element={<ForgotPassword />} />
 
         <Route path="auth">
+          <Route index element={<Dashboard />} />
           <Route path="organizer">
             <Route path="profile" element={<Profile />} />
             <Route path="create-tournament" element={<CreateTournament />} />
