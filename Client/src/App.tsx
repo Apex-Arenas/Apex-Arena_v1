@@ -1,5 +1,4 @@
 import { Routes, Route, Outlet, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import PageTransition from "./components/PageTransition";
@@ -21,11 +20,9 @@ const Layout = () => {
     <div className="min-h-dvh flex flex-col bg-transparent text-slate-100">
       <Navbar />
       <main className="flex-1">
-        <AnimatePresence mode="wait">
-          <PageTransition key={location.pathname}>
-            <Outlet />
-          </PageTransition>
-        </AnimatePresence>
+        <PageTransition key={location.pathname}>
+          <Outlet />
+        </PageTransition>
       </main>
       <Footer />
     </div>

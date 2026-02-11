@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { motion, useReducedMotion } from "framer-motion";
+import { cubicBezier, motion, useReducedMotion } from "framer-motion";
 import {
   Trophy,
   Shield,
@@ -19,6 +19,8 @@ import {
 
 const Landing = () => {
   const reduceMotion = useReducedMotion();
+
+  const easeOut = cubicBezier(0.22, 1, 0.36, 1);
 
   const features = [
     {
@@ -104,7 +106,13 @@ const Landing = () => {
       `}</style>
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
+      <motion.section
+        className="relative overflow-hidden"
+        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
+        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
+      >
         <div className="absolute inset-0 bg-linear-to-b from-slate-950 via-slate-900 to-slate-950" />
         <div className="absolute inset-0 grid-bg opacity-60" />
         <div className="absolute -top-20 -left-10 w-72 h-72 rounded-full bg-cyan-400 glow-orb float-slow" />
@@ -160,18 +168,37 @@ const Landing = () => {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Signal Strip */}
-      <section className="border-y border-slate-800 bg-transparent">
+      <motion.section
+        className="border-y border-slate-800 bg-transparent"
+        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
+        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center font-body">
-            {stats.map((stat) => (
+            {stats.map((stat, index) => (
               <motion.div
                 key={stat.label}
                 className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4"
-                whileHover={reduceMotion ? undefined : { y: -2 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                viewport={
+                  reduceMotion ? undefined : { once: true, amount: 0.35 }
+                }
+                transition={
+                  reduceMotion
+                    ? undefined
+                    : { duration: 0.55, ease: easeOut, delay: index * 0.06 }
+                }
+                whileHover={
+                  reduceMotion
+                    ? undefined
+                    : { y: -2, transition: { duration: 0.18, ease: "easeOut" } }
+                }
               >
                 <div className="text-3xl font-display font-bold text-cyan-200">
                   {stat.value}
@@ -182,10 +209,16 @@ const Landing = () => {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Features */}
-      <section className="py-20 bg-transparent">
+      <motion.section
+        className="py-20 bg-transparent"
+        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
+        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center font-body mb-12">
             <p className="text-cyan-300 text-sm tracking-widest uppercase">
@@ -200,12 +233,25 @@ const Landing = () => {
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 font-body">
-            {features.map((feature) => (
+            {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
                 className="group rounded-2xl border border-slate-800 bg-linear-to-br from-slate-900 to-slate-950 p-6 hover:border-cyan-400/60 transition-all"
-                whileHover={reduceMotion ? undefined : { y: -2 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                viewport={
+                  reduceMotion ? undefined : { once: true, amount: 0.25 }
+                }
+                transition={
+                  reduceMotion
+                    ? undefined
+                    : { duration: 0.6, ease: easeOut, delay: index * 0.05 }
+                }
+                whileHover={
+                  reduceMotion
+                    ? undefined
+                    : { y: -2, transition: { duration: 0.18, ease: "easeOut" } }
+                }
               >
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-400/10 text-cyan-300 mb-4 group-hover:bg-cyan-400/20">
                   {feature.icon}
@@ -218,10 +264,16 @@ const Landing = () => {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Flow */}
-      <section className="py-20 bg-transparent">
+      <motion.section
+        className="py-20 bg-transparent"
+        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
+        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-[0.7fr_1.3fr] gap-12 items-start">
             <div className="font-body">
@@ -246,12 +298,28 @@ const Landing = () => {
               </div>
             </div>
             <div className="space-y-4 font-body">
-              {steps.map((step) => (
+              {steps.map((step, index) => (
                 <motion.div
                   key={step.number}
                   className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 hover:border-indigo-400/60 transition-all"
-                  whileHover={reduceMotion ? undefined : { y: -2 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                  whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                  viewport={
+                    reduceMotion ? undefined : { once: true, amount: 0.3 }
+                  }
+                  transition={
+                    reduceMotion
+                      ? undefined
+                      : { duration: 0.6, ease: easeOut, delay: index * 0.05 }
+                  }
+                  whileHover={
+                    reduceMotion
+                      ? undefined
+                      : {
+                          y: -2,
+                          transition: { duration: 0.18, ease: "easeOut" },
+                        }
+                  }
                 >
                   <div className="flex items-start gap-4">
                     <div className="font-display text-2xl font-bold text-indigo-300">
@@ -269,10 +337,16 @@ const Landing = () => {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Organizers */}
-      <section className="py-20 bg-transparent">
+      <motion.section
+        className="py-20 bg-transparent"
+        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
+        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-slate-800 bg-linear-to-r from-slate-900 via-slate-950 to-slate-900 p-8 lg:p-12">
             <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-10 items-center">
@@ -337,10 +411,16 @@ const Landing = () => {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* CTA */}
-      <section className="py-20 bg-slate-950">
+      <motion.section
+        className="py-20 bg-slate-950"
+        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
+        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
+      >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center font-body">
           <div className="rounded-3xl border border-slate-800 bg-linear-to-r from-slate-900 via-slate-950 to-slate-900 p-10 lg:p-14">
             <div className="inline-flex items-center gap-2 rounded-full bg-cyan-400/10 px-4 py-2 text-cyan-200 text-sm">
@@ -371,7 +451,7 @@ const Landing = () => {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 };
