@@ -10,6 +10,7 @@ import ForgotPassword from "./pages/public/forgot";
 import Register from "./pages/public/register";
 import Login from "./pages/public/login";
 import Dashboard from "./pages/auth/Dashboard";
+import VerifyOtp from "./pages/public/verify-otp";
 
 const Layout = () => (
   <div className="min-h-dvh flex flex-col bg-transparent text-slate-100">
@@ -29,6 +30,7 @@ const App = () => {
         <Route path="signup" element={<Register />} />
         <Route path="login" element={<Login />} />
         <Route path="forgot" element={<ForgotPassword />} />
+        <Route path="verify-otp" element={<VerifyOtp />} />
 
         <Route path="auth">
           <Route index element={<Dashboard />} />
