@@ -12,6 +12,7 @@ import Register from "./pages/public/register";
 import Login from "./pages/public/login";
 import Dashboard from "./pages/auth/Dashboard";
 import VerifyOtp from "./pages/public/verify-otp";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const Layout = () => {
   const location = useLocation();
@@ -39,7 +40,7 @@ const App = () => {
         <Route path="forgot" element={<ForgotPassword />} />
         <Route path="verify-otp" element={<VerifyOtp />} />
 
-        <Route path="auth">
+        <Route path="auth" element={<ProtectedRoute />}>
           <Route index element={<Dashboard />} />
           <Route path="organizer">
             <Route path="profile" element={<Profile />} />
