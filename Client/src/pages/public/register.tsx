@@ -11,9 +11,12 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
+import { useAuth } from "../../lib/auth-context";
+import { ApiRequestError } from "../../services/auth.service";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const reduceMotion = useReducedMotion();
   const [form, setForm] = useState({
     name: "",
@@ -33,6 +36,7 @@ const Register = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [userType, setUserType] = useState("player");
+  const [serverError, setServerError] = useState("");
 
   const validate = () => {
     const newErrors = {
@@ -91,21 +95,39 @@ const Register = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
+    if (serverError) setServerError("");
     if (errors[name as keyof typeof errors]) {
       setErrors({ ...errors, [name]: "" });
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    if (validate()) {
-      setTimeout(() => {
-        setIsLoading(false);
-        navigate("/auth");
-      }, 1500);
-    } else {
+    if (!validate()) return;
+
+    setIsLoading(true);
+    setServerError("");
+
+    try {
+      await register({
+        name: form.name.trim(),
+        username: form.username.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: userType,
+      });
+
+      navigate(
+        `/verify-otp?email=${encodeURIComponent(form.email.trim())}&next=${encodeURIComponent("/login")}`,
+      );
+    } catch (error) {
+      if (error instanceof ApiRequestError) {
+        setServerError(error.message);
+      } else {
+        setServerError("Registration failed. Please try again.");
+      }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -162,6 +184,12 @@ const Register = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {serverError && (
+                <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  {serverError}
+                </div>
+              )}
+
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-slate-200 mb-1">
