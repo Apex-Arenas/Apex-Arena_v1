@@ -1,9 +1,17 @@
-export const API_BASE_URLS = 'https://api-apexarenas.onrender.com/api/v1/auth' as const;
+const DEFAULT_AUTH_BASE_URL = "https://api-apexarenas.onrender.com/api/v1/auth";
+
+// Optional Vite env override for local/dev:
+// `VITE_AUTH_BASE_URL=http://localhost:4000/api/v1/auth`
+export const API_BASE_URLS = (
+  (import.meta.env.VITE_AUTH_BASE_URL as string | undefined) ??
+  DEFAULT_AUTH_BASE_URL
+).replace(/\/+$/, "");
 
 export const AUTH_ENDPOINTS = {
     REGISTER: `${API_BASE_URLS}/register`,
     REGISTER_OTP: `${API_BASE_URLS}/resend-verification`,
     LOGIN: `${API_BASE_URLS}/login`,
+    LOGOUT: `${API_BASE_URLS}/logout`,
     GOOGLE: `${API_BASE_URLS}/google`,
     OTP_GENERATE: `${API_BASE_URLS}/otp/generate`,
     OTP_VERIFY: `${API_BASE_URLS}/otp/verify`,
@@ -11,6 +19,9 @@ export const AUTH_ENDPOINTS = {
     PASSWORD_CHANGE: `${API_BASE_URLS}/password/change`,
     PASSWORD_RESET: `${API_BASE_URLS}/password/reset`,
     PASSWORD_RESET_CONFIRM: `${API_BASE_URLS}/password/reset/confirm`,
+    TOKEN_REFRESH: `${API_BASE_URLS}/token/refresh`,
+    TOKEN_VALIDATE:`${API_BASE_URLS}/token/validate`,
+    TOKEN_REVOKE_OTHERS: `${API_BASE_URLS}/sessions/revoke-others`,
     PROFILE: `${API_BASE_URLS}/profile`,
 } as const;
 
