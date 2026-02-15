@@ -183,3 +183,70 @@ MIT License
 
 **In Active Development (MVP Phase)**  
 Confidential — Internal & Partner Use Only
+
+---
+
+## 🧩 Current Implementation (Feb 2026)
+
+### Frontend Apps
+- `Client/` — Main user app (players + organizers)
+- `SuperAdmin/` — Super admin interface (separate Vite app)
+
+### Auth Flows Implemented (Client)
+- Registration with role selection (`player` / `organizer`)
+- Login with backend integration
+- OTP verification and OTP resend
+- Forgot password request flow
+- Session persistence using local storage
+- Token validation on app bootstrap
+- Token refresh fallback handling
+- Protected `/auth/*` routes
+- Auth-aware navbar (guest vs authenticated actions)
+- Dashboard now fetches authenticated profile data
+
+### API Configuration
+- Auth API base URL is configured via:
+	- `VITE_AUTH_BASE_URL`
+- Default fallback in code:
+	- `https://api-apexarenas.onrender.com/api/v1/auth`
+
+---
+
+## 🌐 Deployment Notes (Render)
+
+### Frontend (Static Site)
+- Service type: **Static Site**
+- Root directory: `Client`
+- Build command: `npm install && npm run build`
+- Publish directory: `dist`
+- Required env var:
+	- `VITE_AUTH_BASE_URL=https://api-apexarenas.onrender.com/api/v1/auth`
+
+### SPA Rewrite Rule (Required)
+- Add rewrite rule in Render:
+	- Source: `/*`
+	- Destination: `/index.html`
+	- Action: `Rewrite`
+
+### Backend CORS (Required for Browser Requests)
+- Allow frontend origins in backend CORS config/env (example):
+	- `http://localhost:5173`
+	- `https://<your-render-frontend-domain>.onrender.com`
+- Ensure preflight responses include `Access-Control-Allow-Origin` and related CORS headers.
+
+---
+
+## 🧪 Local Run (Client)
+
+From `Client/`:
+
+```bash
+npm install
+npm run dev
+```
+
+Optional `.env` for local frontend testing:
+
+```env
+VITE_AUTH_BASE_URL=http://localhost:4000/api/v1/auth
+```
