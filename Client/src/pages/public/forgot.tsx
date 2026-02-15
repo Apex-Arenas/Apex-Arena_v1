@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Mail, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
+import { ApiRequestError, authService } from "../../services/auth.service";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -17,7 +18,7 @@ const ForgotPassword = () => {
     return "";
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const nextError = validate();
@@ -25,11 +26,19 @@ const ForgotPassword = () => {
     if (nextError) return;
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      await authService.requestPasswordReset(email.trim());
       setSent(true);
-    }, 1000);
+    } catch (error) {
+      if (error instanceof ApiRequestError) {
+        setError(error.message);
+      } else {
+        setError("Could not send reset link. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
