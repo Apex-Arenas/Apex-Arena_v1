@@ -1,19 +1,28 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Mail, Lock, Eye, EyeOff, Trophy } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "../../lib/auth-context";
+import { useGoogleAuth } from "../../lib/use-google-auth";
 import { ApiRequestError } from "../../services/auth.service";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { login, loginWithGoogle, linkGoogle } = useAuth();
+  const [googleLinkState, setGoogleLinkState] = useState<{ idToken: string; message: string } | null>(null);
+  const [linkPassword, setLinkPassword] = useState("");
+
+  const nextPath = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("next") || "/auth";
+  }, [location.search]);
   const [form, setForm] = useState({
-    identifier: "",
+    email: "",
     password: "",
   });
   const [errors, setErrors] = useState({
-    identifier: "",
+    email: "",
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -22,18 +31,76 @@ const Login = () => {
   const [serverError, setServerError] = useState("");
   const reduceMotion = useReducedMotion();
 
-  const validate = () => {
-    const newErrors = { identifier: "", password: "" };
-    const value = form.identifier.trim();
+  const handleGoogleToken = useCallback(
+    async (idToken: string) => {
+      setServerError("");
+      setIsLoading(true);
+      setGoogleLinkState(null);
 
-    if (!value) newErrors.identifier = "Username or email is required.";
-    else if (value.includes("@")) {
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value))
-        newErrors.identifier = "Invalid email.";
-    } else {
-      if (!/^[a-zA-Z0-9_]{3,20}$/.test(value))
-        newErrors.identifier = "Invalid username.";
+      try {
+        await loginWithGoogle(idToken);
+        navigate(nextPath, { replace: true });
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          if (error.code === "ACCOUNT_EXISTS_LINK_REQUIRED") {
+            setGoogleLinkState({
+              idToken,
+              message: "This email already has a password account. Enter your password to link Google Sign-In.",
+            });
+          } else if (error.code === "EMAIL_NOT_VERIFIED") {
+            setServerError("Please verify your email first, then try Google Sign-In.");
+          } else {
+            const friendly: Record<string, string> = {
+              ACCOUNT_BANNED: "This account has been suspended. Contact support for help.",
+              GOOGLE_AUTH_FAILED: "Google Sign-In failed. Please try again.",
+            };
+            setServerError(friendly[error.code] ?? error.message);
+          }
+        } else {
+          setServerError("Google Sign-In failed. Please try again.");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [loginWithGoogle, navigate, nextPath],
+  );
+
+  const { isReady: isGoogleReady, promptGoogleSignIn } = useGoogleAuth({
+    onToken: handleGoogleToken,
+  });
+
+  const handleLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!googleLinkState || !linkPassword) return;
+
+    setIsLoading(true);
+    setServerError("");
+
+    try {
+      await linkGoogle(googleLinkState.idToken, linkPassword);
+      navigate(nextPath, { replace: true });
+    } catch (error) {
+      if (error instanceof ApiRequestError) {
+        const friendly: Record<string, string> = {
+          INVALID_CREDENTIALS: "Incorrect password. Please try again.",
+        };
+        setServerError(friendly[error.code] ?? error.message);
+      } else {
+        setServerError("Failed to link Google account. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const validate = () => {
+    const newErrors = { email: "", password: "" };
+    const value = form.email.trim();
+
+    if (!value) newErrors.email = "Email is required.";
+    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value))
+      newErrors.email = "Please enter a valid email.";
 
     if (!form.password) newErrors.password = "Password is required.";
     else if (form.password.length < 6)
@@ -62,32 +129,33 @@ const Login = () => {
 
     try {
       await login({
-        identifier: form.identifier.trim(),
+        email: form.email.trim(),
         password: form.password,
       });
-      setForm({ identifier: "", password: "" });
+      setForm({ email: "", password: "" });
       setSubmitted(false);
-      navigate("/auth");
+      navigate(nextPath, { replace: true });
     } catch (error) {
       if (error instanceof ApiRequestError) {
         if (error.code === "EMAIL_NOT_VERIFIED") {
-          const email = form.identifier.trim();
-          if (email.includes("@")) {
-            navigate(
-              `/verify-otp?email=${encodeURIComponent(email)}&next=${encodeURIComponent("/auth")}`,
-            );
-            return;
-          }
-
-          setServerError(
-            "Please login with your email to continue verification.",
+          navigate(
+            `/verify-otp?email=${encodeURIComponent(form.email.trim())}&next=${encodeURIComponent("/login")}`,
           );
           return;
         }
 
-        setServerError(error.message);
+        // Map backend error codes to user-friendly messages
+        const friendlyMessages: Record<string, string> = {
+          INVALID_CREDENTIALS: "Incorrect email or password. Please try again.",
+          GOOGLE_ONLY_ACCOUNT: "This account uses Google Sign-In. Please use the Google button below.",
+          ACCOUNT_LOCKED: error.message,
+          ACCOUNT_BANNED: "This account has been suspended. Contact support for help.",
+          LOGIN_FAILED: "Something went wrong on our end. Please try again shortly.",
+        };
+
+        setServerError(friendlyMessages[error.code] ?? error.message);
       } else {
-        setServerError("Login failed. Please try again.");
+        setServerError("Something went wrong. Please check your connection and try again.");
       }
     } finally {
       setIsLoading(false);
@@ -127,31 +195,31 @@ const Login = () => {
         )}
 
         <div className="space-y-5">
-          {/* Username / Email */}
+          {/* Email */}
           <div>
             <label
               className="block text-sm font-medium text-slate-200 mb-1"
-              htmlFor="identifier"
+              htmlFor="email"
             >
-              Username or Email
+              Email
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
-                type="text"
-                name="identifier"
-                id="identifier"
-                value={form.identifier}
+                type="email"
+                name="email"
+                id="email"
+                value={form.email}
                 onChange={handleChange}
                 className={`pl-10 pr-3 py-3 w-full rounded-lg border ${
-                  errors.identifier ? "border-red-500" : "border-slate-700"
+                  errors.email ? "border-red-500" : "border-slate-700"
                 } bg-slate-950/60 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent`}
-                placeholder="username or you@email.com"
-                autoComplete="username"
+                placeholder="you@email.com"
+                autoComplete="email"
               />
             </div>
-            {errors.identifier && (
-              <p className="text-red-400 text-xs mt-1">{errors.identifier}</p>
+            {errors.email && (
+              <p className="text-red-400 text-xs mt-1">{errors.email}</p>
             )}
           </div>
 
@@ -233,10 +301,11 @@ const Login = () => {
           <div className="flex-1 border-t border-slate-700"></div>
         </div>
 
-        {/* Social Sign In */}
+        {/* Google Sign In */}
         <motion.button
           type="button"
-          disabled={isLoading}
+          disabled={isLoading || !isGoogleReady}
+          onClick={promptGoogleSignIn}
           className="w-full py-3 px-4 rounded-lg border border-slate-700 hover:border-slate-600 hover:bg-white/5 transition-colors flex items-center justify-center font-medium text-slate-200 disabled:opacity-50"
           whileHover={reduceMotion || isLoading ? undefined : { y: -1 }}
           whileTap={reduceMotion || isLoading ? undefined : { scale: 0.98 }}
@@ -261,6 +330,34 @@ const Login = () => {
           </svg>
           Continue with Google
         </motion.button>
+
+        {/* Google Link Account — shown when user has a password account that needs linking */}
+        {googleLinkState && (
+          <form onSubmit={handleLinkSubmit} className="mt-4 space-y-3">
+            <p className="text-sm text-amber-300 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+              {googleLinkState.message}
+            </p>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input
+                type="password"
+                value={linkPassword}
+                onChange={(e) => setLinkPassword(e.target.value)}
+                className="pl-10 pr-3 py-3 w-full rounded-lg border border-slate-700 bg-slate-950/60 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                placeholder="Enter your password to link"
+              />
+            </div>
+            <motion.button
+              type="submit"
+              disabled={isLoading || !linkPassword}
+              className="w-full py-3 rounded-lg bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 text-slate-950 font-semibold shadow hover:shadow-lg hover:shadow-cyan-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={reduceMotion || isLoading ? undefined : { y: -1 }}
+              whileTap={reduceMotion || isLoading ? undefined : { scale: 0.98 }}
+            >
+              {isLoading ? "Linking..." : "Link & Sign In"}
+            </motion.button>
+          </form>
+        )}
 
         {/* Sign Up Link */}
         <div className="mt-6 text-center">
