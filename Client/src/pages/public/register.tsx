@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   User,
   AtSign,
@@ -12,21 +12,24 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "../../lib/auth-context";
+import { useGoogleAuth } from "../../lib/use-google-auth";
 import { ApiRequestError } from "../../services/auth.service";
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const reduceMotion = useReducedMotion();
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     username: "",
     email: "",
     password: "",
     confirm: "",
   });
   const [errors, setErrors] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     username: "",
     email: "",
     password: "",
@@ -35,12 +38,41 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [userType, setUserType] = useState("player");
   const [serverError, setServerError] = useState("");
+
+  const handleGoogleToken = useCallback(
+    async (idToken: string) => {
+      setServerError("");
+      setIsLoading(true);
+
+      try {
+        await loginWithGoogle(idToken);
+        navigate("/auth", { replace: true });
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          if (error.code === "ACCOUNT_EXISTS_LINK_REQUIRED") {
+            setServerError("An account with this email already exists. Please log in and link Google from there.");
+          } else {
+            setServerError(error.message);
+          }
+        } else {
+          setServerError("Google Sign-Up failed. Please try again.");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [loginWithGoogle, navigate],
+  );
+
+  const { isReady: isGoogleReady, promptGoogleSignIn } = useGoogleAuth({
+    onToken: handleGoogleToken,
+  });
 
   const validate = () => {
     const newErrors = {
-      name: "",
+      firstName: "",
+      lastName: "",
       username: "",
       email: "",
       password: "",
@@ -48,16 +80,27 @@ const Register = () => {
     };
     let isValid = true;
 
-    if (!form.name.trim()) {
-      newErrors.name = "Name is required.";
+    if (!form.firstName.trim()) {
+      newErrors.firstName = "First name is required.";
+      isValid = false;
+    } else if (form.firstName.trim().length < 2) {
+      newErrors.firstName = "At least 2 characters.";
+      isValid = false;
+    }
+
+    if (!form.lastName.trim()) {
+      newErrors.lastName = "Last name is required.";
+      isValid = false;
+    } else if (form.lastName.trim().length < 2) {
+      newErrors.lastName = "At least 2 characters.";
       isValid = false;
     }
 
     if (!form.username.trim()) {
       newErrors.username = "Username is required.";
       isValid = false;
-    } else if (!/^[a-zA-Z0-9_]{3,20}$/.test(form.username)) {
-      newErrors.username = "3-20 chars: letters, numbers, underscore.";
+    } else if (!/^[a-zA-Z0-9_]{3,30}$/.test(form.username)) {
+      newErrors.username = "3-30 chars: letters, numbers, underscore.";
       isValid = false;
     }
 
@@ -75,8 +118,8 @@ const Register = () => {
     } else if (form.password.length < 8) {
       newErrors.password = "At least 8 characters.";
       isValid = false;
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(form.password)) {
-      newErrors.password = "Include uppercase, lowercase & number.";
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{}|;:'",.<>?/`~\\])/.test(form.password)) {
+      newErrors.password = "Include uppercase, lowercase, number & special character.";
       isValid = false;
     }
 
@@ -111,11 +154,12 @@ const Register = () => {
 
     try {
       await register({
-        name: form.name.trim(),
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
         username: form.username.trim(),
         email: form.email.trim(),
         password: form.password,
-        role: userType,
+        role: 'player',
       });
 
       navigate(
@@ -123,9 +167,14 @@ const Register = () => {
       );
     } catch (error) {
       if (error instanceof ApiRequestError) {
-        setServerError(error.message);
+        const friendlyMessages: Record<string, string> = {
+          EMAIL_ALREADY_EXISTS: "An account with this email already exists. Try logging in instead.",
+          USERNAME_ALREADY_EXISTS: "This username is already taken. Please choose another.",
+          VALIDATION_ERROR: error.message,
+        };
+        setServerError(friendlyMessages[error.code] ?? error.message);
       } else {
-        setServerError("Registration failed. Please try again.");
+        setServerError("Something went wrong. Please check your connection and try again.");
       }
     } finally {
       setIsLoading(false);
@@ -164,25 +213,6 @@ const Register = () => {
               Create Your Account
             </h1>
 
-            {/* User Type Toggle */}
-            <div className="flex mb-6 bg-slate-800/70 border border-slate-700 rounded-lg p-1">
-              {["player", "organizer"].map((type) => (
-                <motion.button
-                  key={type}
-                  type="button"
-                  onClick={() => setUserType(type)}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                    userType === type
-                      ? "bg-slate-950 text-white shadow-sm"
-                      : "text-slate-300 hover:text-white"
-                  }`}
-                  whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                >
-                  {type === "player" ? "Player Account" : "Organizer Account"}
-                </motion.button>
-              ))}
-            </div>
-
             <form onSubmit={handleSubmit} className="space-y-4">
               {serverError && (
                 <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
@@ -190,27 +220,50 @@ const Register = () => {
                 </div>
               )}
 
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-slate-200 mb-1">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    className={`pl-10 pr-3 py-3 w-full rounded-lg border ${
-                      errors.name ? "border-red-500" : "border-slate-700"
-                    } bg-slate-950/60 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent`}
-                    placeholder="Your full name"
-                  />
+              {/* First Name & Last Name */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-200 mb-1">
+                    First Name
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      name="firstName"
+                      value={form.firstName}
+                      onChange={handleChange}
+                      className={`pl-10 pr-3 py-3 w-full rounded-lg border ${
+                        errors.firstName ? "border-red-500" : "border-slate-700"
+                      } bg-slate-950/60 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent`}
+                      placeholder="First name"
+                    />
+                  </div>
+                  {errors.firstName && (
+                    <p className="text-red-400 text-xs mt-1">{errors.firstName}</p>
+                  )}
                 </div>
-                {errors.name && (
-                  <p className="text-red-400 text-xs mt-1">{errors.name}</p>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-slate-200 mb-1">
+                    Last Name
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      name="lastName"
+                      value={form.lastName}
+                      onChange={handleChange}
+                      className={`pl-10 pr-3 py-3 w-full rounded-lg border ${
+                        errors.lastName ? "border-red-500" : "border-slate-700"
+                      } bg-slate-950/60 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent`}
+                      placeholder="Last name"
+                    />
+                  </div>
+                  {errors.lastName && (
+                    <p className="text-red-400 text-xs mt-1">{errors.lastName}</p>
+                  )}
+                </div>
               </div>
 
               {/* Username */}
@@ -349,6 +402,16 @@ const Register = () => {
                         />
                         <span>Number</span>
                       </div>
+                      <div className="flex items-center">
+                        <Check
+                          className={`w-3 h-3 mr-1 ${
+                            /[^A-Za-z0-9]/.test(form.password)
+                              ? "text-green-500"
+                              : "text-slate-600"
+                          }`}
+                        />
+                        <span>Special character</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -407,7 +470,7 @@ const Register = () => {
                     Creating Account...
                   </span>
                 ) : (
-                  `Create ${userType === "organizer" ? "Organizer" : "Player"} Account`
+                  "Create Account"
                 )}
               </motion.button>
             </form>
@@ -421,10 +484,11 @@ const Register = () => {
               <div className="flex-1 border-t border-slate-700"></div>
             </div>
 
-            {/* Social Sign Up */}
+            {/* Google Sign Up */}
             <motion.button
               type="button"
-              disabled={isLoading}
+              disabled={isLoading || !isGoogleReady}
+              onClick={promptGoogleSignIn}
               className="w-full py-3 px-4 rounded-lg border border-slate-700 hover:border-slate-600 hover:bg-white/5 transition-colors flex items-center justify-center font-medium text-slate-200 disabled:opacity-50"
               whileHover={reduceMotion || isLoading ? undefined : { y: -1 }}
               whileTap={reduceMotion || isLoading ? undefined : { scale: 0.98 }}
@@ -501,9 +565,7 @@ const Register = () => {
               </ul>
               <div className="bg-white/5 border border-slate-700 rounded-xl p-4 mt-6">
                 <p className="text-sm text-slate-300">
-                  {userType === "player"
-                    ? "Compete with confidence knowing all prizes are secured before tournaments begin."
-                    : "Run professional tournaments with streamlined payments and built-in trust features."}
+                  Compete with confidence knowing all prizes are secured before tournaments begin.
                 </p>
               </div>
             </div>
