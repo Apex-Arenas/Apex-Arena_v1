@@ -1,175 +1,277 @@
 import { apiPost, apiGet } from '../utils/api.utils';
 import { AUTH_ENDPOINTS } from '../config/api.config';
-import { logout as clearAuthTokens, getRefreshToken } from '../utils/auth.utils';
-import type { ApiResponse } from '../config/api.config';
-import type {
-  LoginRequest,
-  LoginResponse,
-  RegisterRequest,
-  RegisterResponse,
-  VerifyEmailRequest,
-  VerifyEmailResponse,
-  ResendVerificationRequest,
-  CheckEmailResponse,
-  CheckUsernameResponse,
-  User,
-} from '../types/auth.types';
+import type { ApiSuccessResponse } from '../config/api.config';
+import type { User } from '../types/auth.types';
 
-// ----------------------------------------------------------------------
-// Authentication
-// ----------------------------------------------------------------------
+// ─── Error ───────────────────────────────────────────────────────────────────
 
-/**
- * Login with email and password
- */
-export const login = async (credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> => {
-  console.log('[AuthService] Logging in user:', credentials.email);
-  return await apiPost<LoginResponse>(
-    AUTH_ENDPOINTS.LOGIN,
-    credentials,
-    { skipAuth: true }
-  );
-};
-
-/**
- * Register a new user (player or organizer)
- */
-export const register = async (userData: RegisterRequest): Promise<ApiResponse<RegisterResponse>> => {
-  console.log('[AuthService] Registering user:', userData.email);
-  return await apiPost<RegisterResponse>(
-    AUTH_ENDPOINTS.REGISTER,
-    userData,
-    { skipAuth: true }
-  );
-};
-
-/**
- * Verify email with OTP
- */
-export const verifyEmail = async (data: VerifyEmailRequest): Promise<ApiResponse<VerifyEmailResponse>> => {
-  console.log('[AuthService] Verifying email:', data.email);
-  return await apiPost<VerifyEmailResponse>(
-    AUTH_ENDPOINTS.VERIFY_EMAIL,
-    data,
-    { skipAuth: true }
-  );
-};
-
-/**
- * Resend email verification OTP
- */
-export const resendVerification = async (data: ResendVerificationRequest): Promise<ApiResponse<any>> => {
-  console.log('[AuthService] Resending verification OTP to:', data.email);
-  return await apiPost(
-    AUTH_ENDPOINTS.RESEND_VERIFICATION,
-    data,
-    { skipAuth: true }
-  );
-};
-
-/**
- * Logout current user
- * - Calls the logout endpoint to invalidate refresh token on server
- * - Clears local tokens regardless of server response
- */
-export const logout = async (): Promise<ApiResponse<any>> => {
-  console.log('[AuthService] Logging out user');
-
-  const refreshToken = getRefreshToken(); // imported from auth.utils
-
-  try {
-    // Attempt to call logout endpoint
-    const response = await fetch(AUTH_ENDPOINTS.LOGOUT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    try {
-      const data = await response.json();
-      console.log('[AuthService] Logout API response:', data);
-    } catch {
-      console.warn('[AuthService] Could not parse logout response (not critical)');
-    }
-  } catch (error) {
-    console.warn('[AuthService] Logout API call failed (not critical):', error);
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code: string = 'UNKNOWN_ERROR',
+  ) {
+    super(message);
+    this.name = 'ApiRequestError';
   }
+}
 
-  // Always clear local auth
-  clearAuthTokens();
-
-  return {
-    success: true,
-    data: {},
-    message: 'Logged out successfully',
+function codeToStatus(code: string): number {
+  const map: Record<string, number> = {
+    AUTHENTICATION_FAILED: 401,
+    UNAUTHORIZED: 401,
+    TOKEN_EXPIRED: 401,
+    TOKEN_INVALID: 401,
+    FORBIDDEN: 403,
+    EMAIL_NOT_VERIFIED: 403,
+    NOT_FOUND: 404,
   };
-};
+  return map[code] ?? 400;
+}
 
-/**
- * Get current authenticated user's profile
- */
-export const getCurrentUser = async (): Promise<ApiResponse<User>> => {
-  console.log('[AuthService] Fetching current user');
-  return await apiGet<User>(AUTH_ENDPOINTS.ME);
-};
+function assertSuccess<T>(
+  response: { success: boolean; data?: unknown; error?: { code: string; message: string } },
+): asserts response is ApiSuccessResponse<T> {
+  if (!response.success) {
+    const code = response.error?.code ?? 'REQUEST_FAILED';
+    const message = response.error?.message ?? 'Request failed';
+    throw new ApiRequestError(message, codeToStatus(code), code);
+  }
+}
 
-// ----------------------------------------------------------------------
-// Helpers for registration forms
-// ----------------------------------------------------------------------
+// ─── Mapping helpers ────────────────────────────────────────────────────────
 
-/**
- * Check if email is available for registration
- */
-export const checkEmailAvailability = async (email: string): Promise<ApiResponse<CheckEmailResponse>> => {
-  console.log('[AuthService] Checking email availability:', email);
-  const url = `${AUTH_ENDPOINTS.CHECK_EMAIL}?email=${encodeURIComponent(email)}`;
-  return await apiGet<CheckEmailResponse>(url, { skipAuth: true });
-};
+/** Map a snake_case user object from the backend to our camelCase User type */
+function mapUser(raw: Record<string, unknown>): User {
+  return {
+    id: String(raw.user_id ?? raw.id ?? ''),
+    email: String(raw.email ?? ''),
+    username: String(raw.username ?? ''),
+    firstName: String(raw.first_name ?? raw.firstName ?? ''),
+    lastName: String(raw.last_name ?? raw.lastName ?? ''),
+    role: (raw.role as User['role']) ?? 'player',
+    avatarUrl: raw.avatar_url as string | undefined ?? raw.avatarUrl as string | undefined,
+    isEmailVerified: raw.is_email_verified as boolean | undefined ?? raw.isEmailVerified as boolean | undefined,
+    isActive: raw.is_active as boolean | undefined ?? raw.isActive as boolean | undefined,
+    createdAt: raw.created_at as string | undefined ?? raw.createdAt as string | undefined,
+    updatedAt: raw.updated_at as string | undefined ?? raw.updatedAt as string | undefined,
+  };
+}
 
-/**
- * Check if username is available for registration
- */
-export const checkUsernameAvailability = async (username: string): Promise<ApiResponse<CheckUsernameResponse>> => {
-  console.log('[AuthService] Checking username availability:', username);
-  const url = `${AUTH_ENDPOINTS.CHECK_USERNAME}?username=${encodeURIComponent(username)}`;
-  return await apiGet<CheckUsernameResponse>(url, { skipAuth: true });
-};
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-// ----------------------------------------------------------------------
-// Password management
-// ----------------------------------------------------------------------
+export type AuthUser = User;
 
-/**
- * Request password reset (send OTP)
- */
-export const requestPasswordReset = async (email: string): Promise<ApiResponse<any>> => {
-  console.log('[AuthService] Requesting password reset for:', email);
-  return await apiPost(
-    AUTH_ENDPOINTS.PASSWORD_RESET,
-    { email },
-    { skipAuth: true }
-  );
-};
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken?: string;
+}
 
-/**
- * Confirm password reset with OTP and new password
- */
-export const confirmPasswordReset = async (email: string, otp: string, newPassword: string): Promise<ApiResponse<any>> => {
-  console.log('[AuthService] Confirming password reset');
-  return await apiPost(
-    AUTH_ENDPOINTS.PASSWORD_RESET_CONFIRM,
-    { email, otp, newPassword },
-    { skipAuth: true }
-  );
-};
+export interface AuthResult {
+  tokens?: AuthTokens;
+  user?: AuthUser;
+  message?: string;
+}
 
-/**
- * Change password (requires authentication)
- */
-export const changePassword = async (currentPassword: string, newPassword: string): Promise<ApiResponse<any>> => {
-  console.log('[AuthService] Changing password');
-  return await apiPost(
-    AUTH_ENDPOINTS.PASSWORD_CHANGE,
-    { currentPassword, newPassword }
-  );
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+  username: string;
+  password: string;
+  role: 'player' | 'organizer';
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+export const authService = {
+  async login(payload: LoginPayload): Promise<AuthResult> {
+    const response = await apiPost(AUTH_ENDPOINTS.LOGIN, payload, { skipAuth: true });
+    assertSuccess<Record<string, unknown>>(response);
+
+    const data = response.data;
+    const accessToken = String(data.access_token ?? data.accessToken ?? '');
+    const refreshToken = (data.refresh_token ?? data.refreshToken) as string | undefined;
+    const rawUser = (data.user ?? {}) as Record<string, unknown>;
+
+    return {
+      tokens: { accessToken, refreshToken: refreshToken ? String(refreshToken) : undefined },
+      user: mapUser(rawUser),
+    };
+  },
+
+  async register(payload: RegisterPayload): Promise<AuthResult> {
+    // Map camelCase frontend fields to snake_case backend fields
+    const body = {
+      first_name: payload.firstName,
+      last_name: payload.lastName,
+      email: payload.email,
+      username: payload.username,
+      password: payload.password,
+      role: payload.role,
+    };
+    const response = await apiPost(AUTH_ENDPOINTS.REGISTER, body, { skipAuth: true });
+    assertSuccess<Record<string, unknown>>(response);
+
+    const data = response.data;
+    const rawUser = data.user as Record<string, unknown> | undefined;
+    const message = data.message as string | undefined;
+
+    return {
+      user: rawUser ? mapUser(rawUser) : undefined,
+      message,
+    };
+  },
+
+  async logout(accessToken?: string): Promise<void> {
+    try {
+      const opts = accessToken
+        ? { headers: { Authorization: `Bearer ${accessToken}` }, skipAuth: true as const }
+        : undefined;
+      await apiPost(AUTH_ENDPOINTS.LOGOUT, {}, opts);
+    } catch {
+      // logout failures are non-critical
+    }
+  },
+
+  async refreshToken(refreshToken?: string): Promise<AuthResult> {
+    const body = refreshToken
+      ? { refresh_token: refreshToken }
+      : {};
+    const response = await apiPost(
+      AUTH_ENDPOINTS.TOKEN_REFRESH,
+      body,
+      { skipAuth: true },
+    );
+    assertSuccess<Record<string, unknown>>(response);
+
+    const data = response.data;
+    const newAccessToken = String(data.access_token ?? data.accessToken ?? '');
+    const newRefreshToken = (data.refresh_token ?? data.refreshToken ?? refreshToken) as string | undefined;
+
+    return {
+      tokens: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken ? String(newRefreshToken) : undefined,
+      },
+    };
+  },
+
+  async validateToken(accessToken: string): Promise<AuthResult> {
+    const response = await apiGet(AUTH_ENDPOINTS.ME, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      skipAuth: true,
+    });
+    if (!response.success) {
+      const code = response.error?.code ?? 'TOKEN_INVALID';
+      throw new ApiRequestError(
+        response.error?.message ?? 'Token validation failed',
+        codeToStatus(code),
+        code,
+      );
+    }
+    assertSuccess<Record<string, unknown>>(response);
+
+    // /me may return the user directly as data, or nested under data.user
+    const data = response.data;
+    const rawUser = (data.user ?? data) as Record<string, unknown>;
+
+    return { user: mapUser(rawUser) };
+  },
+
+  async getProfile(accessToken: string): Promise<AuthResult> {
+    const response = await apiGet(AUTH_ENDPOINTS.ME, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      skipAuth: true,
+    });
+    if (!response.success) {
+      const code = response.error?.code ?? 'UNAUTHORIZED';
+      throw new ApiRequestError(
+        response.error?.message ?? 'Failed to load profile',
+        codeToStatus(code),
+        code,
+      );
+    }
+    assertSuccess<Record<string, unknown>>(response);
+
+    const data = response.data;
+    const rawUser = (data.user ?? data) as Record<string, unknown>;
+
+    return { user: mapUser(rawUser) };
+  },
+
+  async verifyOtp(data: { email: string; otp: string }): Promise<AuthResult> {
+    const response = await apiPost(AUTH_ENDPOINTS.VERIFY_EMAIL, data, { skipAuth: true });
+    assertSuccess<Record<string, unknown>>(response);
+
+    const respData = response.data;
+    const accessToken = (respData.access_token ?? respData.accessToken) as string | undefined;
+    const refreshToken = (respData.refresh_token ?? respData.refreshToken) as string | undefined;
+    const rawUser = respData.user as Record<string, unknown> | undefined;
+    const message = respData.message as string | undefined;
+
+    return {
+      user: rawUser ? mapUser(rawUser) : undefined,
+      tokens: accessToken ? { accessToken, refreshToken } : undefined,
+      message,
+    };
+  },
+
+  async resendOtp(email: string): Promise<{ message?: string }> {
+    const response = await apiPost(
+      AUTH_ENDPOINTS.RESEND_VERIFICATION,
+      { email, type: 'email_verification' },
+      { skipAuth: true },
+    );
+    assertSuccess<{ message?: string }>(response);
+    return { message: response.data.message };
+  },
+
+  async requestPasswordReset(email: string): Promise<{ message?: string }> {
+    const response = await apiPost(AUTH_ENDPOINTS.PASSWORD_RESET, { email }, { skipAuth: true });
+    assertSuccess<{ message?: string }>(response);
+    return { message: response.data.message };
+  },
+
+  async googleAuth(idToken: string, role?: 'player' | 'organizer'): Promise<AuthResult> {
+    const body: Record<string, string> = { id_token: idToken };
+    if (role) body.role = role;
+
+    const response = await apiPost(AUTH_ENDPOINTS.GOOGLE_AUTH, body, { skipAuth: true });
+    assertSuccess<Record<string, unknown>>(response);
+
+    const data = response.data;
+    const accessToken = String(data.access_token ?? data.accessToken ?? '');
+    const refreshToken = (data.refresh_token ?? data.refreshToken) as string | undefined;
+    const rawUser = (data.user ?? {}) as Record<string, unknown>;
+
+    return {
+      tokens: { accessToken, refreshToken: refreshToken ? String(refreshToken) : undefined },
+      user: mapUser(rawUser),
+    };
+  },
+
+  async googleLink(idToken: string, password: string): Promise<AuthResult> {
+    const response = await apiPost(
+      AUTH_ENDPOINTS.GOOGLE_LINK,
+      { id_token: idToken, password },
+      { skipAuth: true },
+    );
+    assertSuccess<Record<string, unknown>>(response);
+
+    const data = response.data;
+    const accessToken = String(data.access_token ?? data.accessToken ?? '');
+    const refreshToken = (data.refresh_token ?? data.refreshToken) as string | undefined;
+    const rawUser = (data.user ?? {}) as Record<string, unknown>;
+
+    return {
+      tokens: { accessToken, refreshToken: refreshToken ? String(refreshToken) : undefined },
+      user: mapUser(rawUser),
+    };
+  },
 };
