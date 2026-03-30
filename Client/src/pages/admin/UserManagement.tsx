@@ -13,6 +13,8 @@ import {
   MoreHorizontal,
   Filter,
   X,
+  BadgeCheck,
+  RefreshCw,
 } from 'lucide-react';
 import { adminService, type UsersListParams, type UsersListResult } from '../../services/admin.service';
 import type { ManagedUser } from '../../types/admin.types';
@@ -24,7 +26,9 @@ type ActionType =
   | 'reactivate'
   | 'verify-email'
   | 'force-logout'
-  | 'unlock';
+  | 'unlock'
+  | 'verify-organizer'
+  | 'change-role';
 
 const roleBadge: Record<string, string> = {
   player: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
@@ -53,6 +57,8 @@ const UserManagement = () => {
   const [actionError, setActionError] = useState('');
   const [banReason, setBanReason] = useState('');
   const [banTarget, setBanTarget] = useState<ManagedUser | null>(null);
+  const [roleTarget, setRoleTarget] = useState<ManagedUser | null>(null);
+  const [newRole, setNewRole] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   const fetchUsers = useCallback(async (p: UsersListParams) => {
@@ -87,18 +93,25 @@ const UserManagement = () => {
       setActiveMenu(null);
       return;
     }
+    if (action === 'change-role') {
+      setRoleTarget(user);
+      setNewRole(user.role);
+      setActiveMenu(null);
+      return;
+    }
 
     setActionLoading(user.id);
     setActiveMenu(null);
     setActionError('');
 
-    const actions: Record<Exclude<ActionType, 'ban'>, () => Promise<boolean>> = {
+    const actions: Record<Exclude<ActionType, 'ban' | 'change-role'>, () => Promise<boolean>> = {
       unban: () => adminService.unbanUser(user.id),
       deactivate: () => adminService.deactivateUser(user.id),
       reactivate: () => adminService.reactivateUser(user.id),
       'verify-email': () => adminService.forceVerifyEmail(user.id),
       'force-logout': () => adminService.forceLogout(user.id),
       unlock: () => adminService.unlockUser(user.id),
+      'verify-organizer': () => adminService.verifyOrganizer(user.id),
     };
 
     try {
@@ -112,6 +125,26 @@ const UserManagement = () => {
       setActionError(`Failed to ${action.replace('-', ' ')} user.`);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleRoleSubmit = async () => {
+    if (!roleTarget || !newRole || newRole === roleTarget.role) return;
+    setActionLoading(roleTarget.id);
+    setActionError('');
+    try {
+      const success = await adminService.changeUserRole(roleTarget.id, newRole);
+      if (success) {
+        await fetchUsers(params);
+      } else {
+        setActionError('Failed to change role.');
+      }
+    } catch {
+      setActionError('Failed to change role.');
+    } finally {
+      setActionLoading(null);
+      setRoleTarget(null);
+      setNewRole('');
     }
   };
 
@@ -155,6 +188,11 @@ const UserManagement = () => {
       actions.push({ action: 'verify-email', label: 'Verify Email', icon: MailCheck });
     }
 
+    if (user.role === 'player') {
+      actions.push({ action: 'verify-organizer', label: 'Verify as Organizer', icon: BadgeCheck });
+    }
+
+    actions.push({ action: 'change-role', label: 'Change Role', icon: RefreshCw });
     actions.push({ action: 'force-logout', label: 'Force Logout', icon: LogOut });
     actions.push({ action: 'unlock', label: 'Unlock', icon: Unlock });
 
@@ -203,6 +241,42 @@ const UserManagement = () => {
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition-colors disabled:opacity-50"
               >
                 {actionLoading === banTarget.id ? 'Banning...' : 'Ban User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Role Modal */}
+      {roleTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-white mb-1">Change Role</h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Change role for <span className="text-white font-medium">{roleTarget.username}</span>
+            </p>
+            <label className="block text-sm font-medium text-slate-200 mb-1">New Role</label>
+            <select
+              value={newRole}
+              onChange={e => setNewRole(e.target.value)}
+              className="w-full rounded-lg border border-slate-700 bg-slate-950/60 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-transparent"
+            >
+              <option value="player">Player</option>
+              <option value="organizer">Organizer</option>
+            </select>
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => { setRoleTarget(null); setNewRole(''); }}
+                className="px-4 py-2 rounded-lg text-sm text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRoleSubmit}
+                disabled={!newRole || newRole === roleTarget.role || actionLoading === roleTarget.id}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors disabled:opacity-50"
+              >
+                {actionLoading === roleTarget.id ? 'Updating...' : 'Update Role'}
               </button>
             </div>
           </div>
