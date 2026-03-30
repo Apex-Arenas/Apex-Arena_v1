@@ -1,32 +1,45 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Home,
-  CalendarDays,
   UserCircle,
   Bell,
   Receipt,
-  Crown,
   LogOut,
   Trophy,
   ChevronLeft,
   ChevronRight,
+  PlusCircle,
+  ListTodo,
+  Shield,
+  Swords,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../lib/auth-context";
 
-const navItems = [
+const playerNavItems = [
   { to: "/auth", icon: Home, label: "Home", end: true },
-  { to: "/auth/events", icon: CalendarDays, label: "Events" },
+  { to: "/auth/tournaments", icon: Swords, label: "Tournaments" },
   { to: "/auth/player/profile", icon: UserCircle, label: "Profile" },
   { to: "/auth/notifications", icon: Bell, label: "Notifications" },
   { to: "/auth/transactions", icon: Receipt, label: "Transactions" },
-  { to: "/auth/upgrade", icon: Crown, label: "Upgrade" },
+] as const;
+
+const organizerNavItems = [
+  { to: "/auth", icon: Home, label: "Home", end: true },
+  { to: "/auth/organizer/tournaments", icon: ListTodo, label: "My Tournaments" },
+  { to: "/auth/organizer/create-tournament", icon: PlusCircle, label: "Create" },
+  { to: "/auth/organizer/profile", icon: UserCircle, label: "Profile" },
+  { to: "/auth/notifications", icon: Bell, label: "Notifications" },
+  { to: "/auth/transactions", icon: Receipt, label: "Transactions" },
 ] as const;
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
+
+  const isOrganizer = user?.role === "organizer";
+  const navItems = isOrganizer ? organizerNavItems : playerNavItems;
 
   const handleLogout = async () => {
     await logout();
@@ -70,6 +83,23 @@ const Sidebar = () => {
             {!collapsed && <span>{label}</span>}
           </NavLink>
         ))}
+
+        {/* Become an Organizer — players only, not yet organizer */}
+        {!isOrganizer && (
+          <NavLink
+            to="/auth/become-organizer"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-2 ${
+                isActive
+                  ? "bg-indigo-500/15 text-indigo-300"
+                  : "text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10"
+              }`
+            }
+          >
+            <Shield className="w-5 h-5 shrink-0" />
+            {!collapsed && <span>Become an Organizer</span>}
+          </NavLink>
+        )}
       </nav>
 
       {/* Bottom actions */}
