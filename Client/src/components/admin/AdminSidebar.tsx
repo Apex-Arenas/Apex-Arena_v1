@@ -3,12 +3,12 @@ import {
   LayoutDashboard,
   Users,
   Shield,
-  Trophy,
+  Gamepad2,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Activity,
-  Settings,
+  BadgeCheck,
+  UserCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAdminAuth } from '../../lib/admin-auth-context';
@@ -16,10 +16,9 @@ import { useAdminAuth } from '../../lib/admin-auth-context';
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/admin/users', icon: Users, label: 'Users' },
-  { to: '/admin/tournaments', icon: Trophy, label: 'Tournaments' },
-  { to: '/admin/security', icon: Shield, label: 'Security' },
-  { to: '/admin/audit', icon: Activity, label: 'Audit Log' },
-  { to: '/admin/settings', icon: Settings, label: 'Settings' },
+  { to: '/admin/verifications', icon: BadgeCheck, label: 'Verifications' },
+  { to: '/admin/games', icon: Gamepad2, label: 'Games' },
+  { to: '/admin/profile', icon: UserCircle, label: 'Profile' },
 ] as const;
 
 const AdminSidebar = () => {
