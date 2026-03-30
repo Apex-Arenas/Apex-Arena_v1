@@ -8,6 +8,20 @@
 // User roles – player and organizer are the primary frontend roles (admin omitted)
 export type UserRole = 'player' | 'organizer';
 
+export interface UserSocialLinks {
+  discord?: string;
+  twitter?: string;
+  twitch?: string;
+  youtube?: string;
+}
+
+export interface UserGameProfile {
+  gameId: string;
+  gameName?: string;
+  inGameId: string;
+  skillLevel?: 'beginner' | 'intermediate' | 'advanced' | 'pro';
+}
+
 export interface User {
   id: string;
   email: string;
@@ -16,10 +30,59 @@ export interface User {
   lastName: string;
   role: UserRole;
   avatarUrl?: string;
+  bio?: string;
+  country?: string;
+  phone?: string;
+  socialLinks?: UserSocialLinks;
+  gameProfiles?: UserGameProfile[];
+  organizerVerified?: boolean;
   isEmailVerified?: boolean;
   isActive?: boolean;
   createdAt?: string;      // ISO date string
   updatedAt?: string;      // ISO date string
+}
+
+export type OrganizerVerificationStatus =
+  | 'pending'
+  | 'under_review'
+  | 'approved'
+  | 'rejected'
+  | 'needs_resubmission';
+
+export interface OrganizerVerificationInfo {
+  status: OrganizerVerificationStatus;
+  requestId?: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+  rejectionReasons?: string[];
+  reviewNotes?: string;
+}
+
+export interface UpdateProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  country?: string;
+  phone?: string;
+  avatarUrl?: string;
+  discord?: string;
+  twitter?: string;
+  twitch?: string;
+  youtube?: string;
+  gameProfiles?: { gameId: string; inGameId: string; skillLevel?: string }[];
+}
+
+export interface OrganizerVerificationPayload {
+  businessName: string;
+  businessType: string;
+  registrationNumber?: string;
+  taxId?: string;
+  contactPerson?: string;
+  address?: string;
+  idFrontUrl: string;
+  idBackUrl: string;
+  selfieWithIdUrl: string;
+  businessRegistrationUrl?: string;
 }
 
 /** Helper to get a display name from a User */
