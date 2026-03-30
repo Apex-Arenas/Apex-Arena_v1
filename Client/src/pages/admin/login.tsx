@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, Shield, KeyRound, Trophy } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Shield, KeyRound, Trophy, Copy, Check } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAdminAuth } from '../../lib/admin-auth-context';
 import { adminAuthService, AdminApiError } from '../../services/admin-auth.service';
 import type { AdminLoginResult } from '../../types/admin.types';
 
-type Step = 'credentials' | '2fa-setup' | '2fa-verify';
+type Step = 'credentials' | '2fa-setup' | '2fa-backup' | '2fa-verify';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -25,6 +26,8 @@ const AdminLogin = () => {
   const [pendingUserId, setPendingUserId] = useState('');
   const [qrCode, setQrCode] = useState('');
   const [setupSecret, setSetupSecret] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -103,13 +106,19 @@ const AdminLogin = () => {
     setServerError('');
 
     try {
-      const verifyFn =
-        step === '2fa-setup'
-          ? adminAuthService.verify2FASetup
-          : adminAuthService.verify2FA;
-
-      const result = await verifyFn({ userId: pendingUserId, code: twoFACode });
-      handleLoginSuccess(result);
+      if (step === '2fa-setup') {
+        // Setup verification — returns backup codes, no tokens
+        const result = await adminAuthService.verify2FASetup({ userId: pendingUserId, code: twoFACode });
+        if (result.setupComplete) {
+          setBackupCodes(result.backupCodes ?? []);
+          setTwoFACode('');
+          setStep('2fa-backup');
+        }
+      } else {
+        // Login verification — returns tokens
+        const result = await adminAuthService.verify2FA({ userId: pendingUserId, code: twoFACode });
+        handleLoginSuccess(result);
+      }
     } catch (error) {
       if (error instanceof AdminApiError) {
         const friendly: Record<string, string> = {
@@ -150,6 +159,7 @@ const AdminLogin = () => {
           <p className="text-center text-slate-400 text-sm mb-8">
             {step === 'credentials' && 'Sign in to the admin dashboard'}
             {step === '2fa-setup' && 'Set up two-factor authentication'}
+            {step === '2fa-backup' && 'Save your backup codes'}
             {step === '2fa-verify' && 'Enter your authenticator code'}
           </p>
 
@@ -255,25 +265,58 @@ const AdminLogin = () => {
           {/* Step 2: 2FA Setup (QR Code) */}
           {step === '2fa-setup' && (
             <form onSubmit={handle2FASubmit} className="space-y-5">
-              <div className="text-center space-y-3">
+              <div className="text-center space-y-4">
                 <p className="text-sm text-slate-300">
-                  Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
+                  Scan this QR code with <strong className="text-white">Google Authenticator</strong> or <strong className="text-white">Authy</strong>, then enter the 6-digit code below.
                 </p>
-                {qrCode && (
-                  <div className="flex justify-center">
+
+                {/* QR Code
+                    Backend returns qr_code_data_url (base64 PNG) in data.setup.
+                    Render as <img> directly. Fall back to react-qr-code if only secret available. */}
+                <div className="flex justify-center">
+                  {qrCode ? (
                     <img
                       src={qrCode}
                       alt="2FA QR Code"
-                      className="w-48 h-48 rounded-lg bg-white p-2"
+                      className="w-52 h-52 rounded-xl bg-white p-2 mx-auto"
                     />
-                  </div>
-                )}
+                  ) : setupSecret ? (
+                    <div className="bg-white p-3 rounded-xl inline-block">
+                      <QRCode
+                        value={`otpauth://totp/ApexArenas:admin?secret=${setupSecret.replace(/\s/g, '')}&issuer=ApexArenas`}
+                        size={180}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-52 h-52 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto">
+                      <p className="text-xs text-slate-500 text-center px-4">
+                        QR code unavailable — use the manual key below
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Manual secret key */}
                 {setupSecret && (
-                  <div className="mt-2">
-                    <p className="text-xs text-slate-400 mb-1">Or enter this key manually:</p>
-                    <code className="text-sm text-amber-300 bg-slate-800 px-3 py-1.5 rounded-lg select-all">
-                      {setupSecret}
-                    </code>
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400">Or enter this key manually in your app:</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <code className="text-sm text-amber-300 bg-slate-800 px-3 py-1.5 rounded-lg select-all tracking-widest font-mono">
+                        {setupSecret}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(setupSecret);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                        title="Copy secret"
+                      >
+                        {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -316,7 +359,43 @@ const AdminLogin = () => {
             </form>
           )}
 
-          {/* Step 3: 2FA Verify (returning admin) */}
+          {/* Step 3: Backup Codes (after first-time setup) */}
+          {step === '2fa-backup' && (
+            <div className="space-y-5">
+              <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 text-sm text-amber-300">
+                <Shield className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  Save these backup codes somewhere safe. Each code can only be used once to access your account if you lose your authenticator.
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {backupCodes.map((code, i) => (
+                  <code
+                    key={i}
+                    className="text-sm text-amber-300 bg-slate-800 px-3 py-2 rounded-lg text-center font-mono tracking-wider select-all"
+                  >
+                    {code}
+                  </code>
+                ))}
+              </div>
+
+              <motion.button
+                type="button"
+                onClick={() => {
+                  setStep('2fa-verify');
+                  setServerError('');
+                }}
+                className="w-full py-3 rounded-lg bg-linear-to-r from-amber-400 via-orange-400 to-red-400 text-slate-950 font-semibold text-lg shadow hover:shadow-lg hover:shadow-amber-500/30 transition-all"
+                whileHover={reduceMotion ? undefined : { y: -1 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+              >
+                I've saved my codes — Continue to Login
+              </motion.button>
+            </div>
+          )}
+
+          {/* Step 4: 2FA Verify (returning admin, or after setup) */}
           {step === '2fa-verify' && (
             <form onSubmit={handle2FASubmit} className="space-y-5">
               <div className="text-center">
