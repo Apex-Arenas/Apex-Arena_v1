@@ -80,16 +80,19 @@ export const adminAuthService = {
     const data = response.data;
 
     // Case 1: 2FA setup required (first-time admin)
+    // Backend shape: { requires_2fa_setup: true, user_id, setup: { qr_code_data_url, manual_entry_key, issuer } }
     if (data.requires_2fa_setup || data.requires2FASetup) {
+      const setup = (data.setup ?? {}) as Record<string, unknown>;
       return {
         requires2FASetup: true,
         userId: String(data.user_id ?? data.userId ?? ''),
-        qrCode: String(data.qr_code ?? data.qrCode ?? ''),
-        secret: String(data.secret ?? ''),
+        qrCode: String(setup.qr_code_data_url ?? setup.qr_code ?? data.qr_code_data_url ?? data.qr_code ?? ''),
+        secret: String(setup.manual_entry_key ?? setup.secret ?? data.manual_entry_key ?? data.secret ?? ''),
       };
     }
 
-    // Case 2: 2FA verification required
+    // Case 2: 2FA verification required (returning admin)
+    // Backend shape: { requires_2fa: true, user_id, two_factor_method }
     if (data.requires_2fa || data.requires2FA) {
       return {
         requires2FA: true,
@@ -129,6 +132,8 @@ export const adminAuthService = {
 
   /**
    * Verify 2FA setup (first time — user scanned QR, enters code).
+   * Backend returns { enabled: true, backup_codes, message } — NO tokens.
+   * After this the admin must log in again with credentials + 2FA code.
    */
   async verify2FASetup(payload: Admin2FAVerifyPayload): Promise<AdminLoginResult> {
     const body = { user_id: payload.userId, code: payload.code };
@@ -136,13 +141,9 @@ export const adminAuthService = {
     assertSuccess<Record<string, unknown>>(response);
 
     const data = response.data;
-    const accessToken = String(data.access_token ?? data.accessToken ?? '');
-    const refreshToken = (data.refresh_token ?? data.refreshToken) as string | undefined;
-    const rawUser = (data.user ?? {}) as Record<string, unknown>;
-
     return {
-      tokens: { accessToken, refreshToken: refreshToken ? String(refreshToken) : undefined },
-      user: mapAdminUser(rawUser),
+      setupComplete: true,
+      backupCodes: (data.backup_codes ?? []) as string[],
     };
   },
 
