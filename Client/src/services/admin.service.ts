@@ -211,7 +211,7 @@ export interface UsersListResult {
 
 export const adminService = {
   async fetchStats(): Promise<AdminStats | null> {
-    const response = await apiGet(AUTH_ENDPOINTS.ADMIN_STATS, adminHeaders());
+    const response = await apiGet(AUTH_ENDPOINTS.ADMIN_SYSTEM_STATS, adminHeaders());
     if (!response.success) return null;
     return mapStats(response.data as Record<string, unknown>);
   },
@@ -226,7 +226,7 @@ export const adminService = {
     if (params.sort) query.set('sort', params.sort);
     if (params.order) query.set('order', params.order);
 
-    const url = `${AUTH_ENDPOINTS.ADMIN_USERS}?${query.toString()}`;
+    const url = `${AUTH_ENDPOINTS.ADMIN_GET_USERS}?${query.toString()}`;
     const response = await apiGet(url, adminHeaders());
 
     if (!response.success) {
@@ -296,7 +296,7 @@ export const adminService = {
   // ─── Games ────────────────────────────────────────────────────────────────
 
   async fetchGames(): Promise<AdminGame[]> {
-    const response = await apiGet(TOURNAMENT_ENDPOINTS.GAMES, adminHeaders());
+    const response = await apiGet(TOURNAMENT_ENDPOINTS.GAMES_LIST, adminHeaders());
     if (!response.success) return [];
     const raw = response.data as Record<string, unknown>;
     const list = Array.isArray(raw) ? raw : ((raw.games ?? raw.data ?? []) as Record<string, unknown>[]);
@@ -320,7 +320,7 @@ export const adminService = {
       is_featured: payload.isFeatured ?? false,
       is_active: true,
     };
-    const response = await apiPost(TOURNAMENT_ENDPOINTS.GAMES, body, adminHeaders());
+    const response = await apiPost(TOURNAMENT_ENDPOINTS.GAME_CREATE, body, adminHeaders());
     if (!response.success) {
       const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to create game';
       throw new Error(msg);
@@ -368,8 +368,8 @@ export const adminService = {
 
   async fetchVerifications(status?: string): Promise<OrganizerVerificationRequest[]> {
     const url = status
-      ? `${AUTH_ENDPOINTS.ADMIN_VERIFICATIONS}?status=${status}`
-      : AUTH_ENDPOINTS.ADMIN_VERIFICATIONS;
+      ? `${AUTH_ENDPOINTS.ADMIN_VERIFICATIONS_DETAILS}?status=${status}`
+      : AUTH_ENDPOINTS.ADMIN_VERIFICATIONS_DETAILS;
     const response = await apiGet(url, adminHeaders());
     if (!response.success) return [];
     const raw = response.data as Record<string, unknown>;
@@ -378,7 +378,7 @@ export const adminService = {
   },
 
   async startVerificationReview(requestId: string): Promise<boolean> {
-    const response = await apiPost(`${AUTH_ENDPOINTS.ADMIN_VERIFICATIONS}/${requestId}/review-start`, {}, adminHeaders());
+    const response = await apiPost(`${AUTH_ENDPOINTS.ADMIN_VERIFICATIONS_DETAILS}/${requestId}/review-start`, {}, adminHeaders());
     return response.success;
   },
 
@@ -391,7 +391,7 @@ export const adminService = {
     const body: Record<string, unknown> = { action };
     if (notes) body.review_notes = notes;
     if (rejectionReasons?.length) body.rejection_reasons = rejectionReasons;
-    const response = await apiPost(`${AUTH_ENDPOINTS.ADMIN_VERIFICATIONS}/${requestId}/review`, body, adminHeaders());
+    const response = await apiPost(`${AUTH_ENDPOINTS.ADMIN_VERIFICATIONS_DETAILS}/${requestId}/review`, body, adminHeaders());
     return response.success;
   },
 
