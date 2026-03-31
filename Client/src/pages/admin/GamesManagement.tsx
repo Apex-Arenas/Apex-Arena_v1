@@ -20,6 +20,7 @@ import { adminService, type AdminGame, type CreateGamePayload } from '../../serv
 const CATEGORIES = ['fps', 'moba', 'sports', 'fighting', 'battle_royale', 'card', 'racing', 'other'];
 const PLATFORMS = ['pc', 'ps4', 'ps5', 'xbox', 'nintendo', 'mobile', 'cross_platform'];
 const FORMATS = ['1v1', '2v2', '3v3', '4v4', '5v5', 'solo', 'squad'];
+const SUPPORTED_TOURNAMENT_TYPES = ['single_elimination', 'double_elimination', 'round_robin', 'swiss'];
 
 const inputCls = 'w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors';
 const selectCls = 'w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors';
