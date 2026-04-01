@@ -23,14 +23,6 @@ import TournamentManage from "./pages/auth/organizer/tournament-manage";
 import BecomeOrganizer from "./pages/auth/become-organizer";
 
 // Admin
-import AdminLogin from "./pages/admin/login";
-import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
-import AdminLayout from "./components/admin/AdminLayout";
-import AdminDashboard from "./pages/admin/Dashboard";
-import UserManagement from "./pages/admin/UserManagement";
-import GamesManagement from "./pages/admin/GamesManagement";
-import OrganizerVerifications from "./pages/admin/OrganizerVerifications";
-import AdminProfile from "./pages/admin/AdminProfile";
 
 /** Public layout — Navbar + Footer */
 const PublicLayout = () => {
@@ -84,19 +76,6 @@ const App = () => {
         </Route>
       </Route>
 
-      {/* Admin — standalone login (no layout wrapper) */}
-      <Route path="admin/login" element={<AdminLogin />} />
-
-      {/* Admin — authenticated pages with admin layout */}
-      <Route path="admin" element={<AdminProtectedRoute />}>
-        <Route element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="games" element={<GamesManagement />} />
-          <Route path="verifications" element={<OrganizerVerifications />} />
-          <Route path="profile" element={<AdminProfile />} />
-        </Route>
-      </Route>
     </Routes>
   );
 };
