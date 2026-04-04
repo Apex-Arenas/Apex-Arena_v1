@@ -2,6 +2,7 @@ export const GOOGLE_CLIENT_ID =
   '741961090257-2jlbfq9ovv99bvcqpu01m4cf04qm0en4.apps.googleusercontent.com';
 
 export const API_BASE_URLS = {
+  CORE: "https://api-apexarenas.onrender.com/api/v1",
   AUTH: "https://api-apexarenas.onrender.com/api/v1/auth",
   TOURNAMENT: "https://api-apexarenas.onrender.com/api/v1/tournament",
   FINANCE: "https://api-apexarenas.onrender.com/api/v1/finance",
@@ -60,8 +61,8 @@ export const AUTH_ENDPOINTS = {
   PROFILE: `${API_BASE_URLS.AUTH}/user/profile`,
   UPDATE_PROFILE: `${API_BASE_URLS.AUTH}/user/profile`,      // PUT
   DEACTIVATE_ACCOUNT: `${API_BASE_URLS.AUTH}/user/deactivate`,
-  ORGANIZER_VERIFICATION_REQUEST: `${API_BASE_URLS.AUTH}/user/request-organizer-verification`,
-  ORGANIZER_VERIFICATION_STATUS: `${API_BASE_URLS.AUTH}/user/verification-status`,
+  ORGANIZER_VERIFICATION_REQUEST: `${API_BASE_URLS.AUTH}/user/verification/request`,
+  ORGANIZER_VERIFICATION_STATUS: `${API_BASE_URLS.AUTH}/user/verification/status`,
   ADD_PASSWORD: `${API_BASE_URLS.AUTH}/user/add-password`,
   AUTH_METHODS: `${API_BASE_URLS.AUTH}/user/auth-methods`,
 
@@ -81,9 +82,11 @@ export const AUTH_ENDPOINTS = {
   ADMIN_USER_SESSION_REVOKE: `${API_BASE_URLS.AUTH}/admin/users`, // + /:userId/sessions/:sessionId
   ADMIN_USER_UNLOCK: `${API_BASE_URLS.AUTH}/admin/users`,     // + /:userId/unlock
   ADMIN_USER_FORCE_PASSWORD_RESET: `${API_BASE_URLS.AUTH}/admin/users`, // + /:userId/force-password-reset
-  ADMIN_VERIFICATIONS_DETAILS: `${API_BASE_URLS.AUTH}/admin/verifications`, // + /:requestId/
-  ADMIN_VERIFICATIONS_MARK_UNDER_REVIEW: `${API_BASE_URLS.AUTH}/admin/verifications`, // +/:requestId/review-start
-  ADMIN_APPROVE_OR_REJECT_VERIFICATIONS: `${API_BASE_URLS.AUTH}/admin/verifications`, // +/:requestId/review,
+  ADMIN_VERIFICATIONS: `${API_BASE_URLS.AUTH}/admin/verifications`, // base path
+  ADMIN_VERIFICATIONS_LIST: `${API_BASE_URLS.AUTH}/admin/verifications`, // GET list
+  ADMIN_VERIFICATIONS_DETAILS: `${API_BASE_URLS.AUTH}/admin/verifications`, // + /:requestId
+  ADMIN_VERIFICATIONS_MARK_UNDER_REVIEW: `${API_BASE_URLS.AUTH}/admin/verifications`, // + /:requestId/review-start
+  ADMIN_APPROVE_OR_REJECT_VERIFICATIONS: `${API_BASE_URLS.AUTH}/admin/verifications`, // + /:requestId/review
   ADMIN_SEARCH_AUDIT_LOGS: `${API_BASE_URLS.AUTH}/admin/audit`,
   ADMIN_USER_AUDIT_TRAIL: `${API_BASE_URLS.AUTH}/admin/users`, // +/:userId/audit
   ADMIN_SYSTEM_STATS: `${API_BASE_URLS.AUTH}/admin/stats`,
@@ -102,24 +105,24 @@ export const TOURNAMENT_ENDPOINTS = {
   TOURNAMENT_CAPACITY: `${API_BASE_URLS.TOURNAMENT}/tournaments`,         // + /:tournamentId/capacity
 
   // Registration
-  REGISTER: `${API_BASE_URLS.TOURNAMENT}/tournaments`,                    // + /:tournamentId/register
-  UNREGISTER: `${API_BASE_URLS.TOURNAMENT}/tournaments`,                  // + /:tournamentId/unregister
-  TOURNAMENT_REGISTRATIONS: `${API_BASE_URLS.TOURNAMENT}/tournaments`,    // + /:tournamentId/registrations
-  MY_REGISTRATIONS: `${API_BASE_URLS.TOURNAMENT}/tournaments/my-registrations`,
-  UPDATE_IN_GAME_ID: `${API_BASE_URLS.TOURNAMENT}/registrations`,         // + /:registrationId/in-game-id
+  REGISTER: `${API_BASE_URLS.TOURNAMENT}/registration`,                    // + /:tournamentId/register
+  UNREGISTER: `${API_BASE_URLS.TOURNAMENT}/registration`,                  // + /:tournamentId/unregister
+  TOURNAMENT_REGISTRATIONS: `${API_BASE_URLS.TOURNAMENT}/registration`,    // + /:tournamentId/registrations
+  MY_REGISTRATIONS: `${API_BASE_URLS.TOURNAMENT}/registration/my-registrations`,
+  UPDATE_IN_GAME_ID: `${API_BASE_URLS.TOURNAMENT}/registration`,         // + /:registrationId/in-game-id
 
   // Bracket
-  BRACKET: `${API_BASE_URLS.TOURNAMENT}/tournaments`,                     // GET + /:tournamentId/bracket | POST for generate /:tournamentId/bracket/generate
-  BRACKET_CURRENT_ROUND: `${API_BASE_URLS.TOURNAMENT}/tournaments`,       // + /:tournamentId/bracket/current-round
+  BRACKET: `${API_BASE_URLS.TOURNAMENT}/bracket`,                     // GET + /:tournamentId/bracket | POST for generate /:tournamentId/bracket/generate
+  BRACKET_CURRENT_ROUND: `${API_BASE_URLS.TOURNAMENT}/bracket`,       // + /:tournamentId/bracket/current-round
 
   // Check-in
-  CHECK_IN: `${API_BASE_URLS.TOURNAMENT}/tournaments`,                    // + /:tournamentId/check-in
-  CHECK_IN_STATUS: `${API_BASE_URLS.TOURNAMENT}/tournaments`,             // + /:tournamentId/check-in/status
-  CHECKED_IN_PLAYERS: `${API_BASE_URLS.TOURNAMENT}/tournaments`,          // + /:tournamentId/check-in/players
+  CHECK_IN: `${API_BASE_URLS.TOURNAMENT}/checks`,                    // + /:tournamentId/check-in
+  CHECK_IN_STATUS: `${API_BASE_URLS.TOURNAMENT}/checks`,             // + /:tournamentId/check-in/status
+  CHECKED_IN_PLAYERS: `${API_BASE_URLS.TOURNAMENT}/checks`,          // + /:tournamentId/check-in/players
 
   // Results
-  RESULTS: `${API_BASE_URLS.TOURNAMENT}/tournaments`,                     // + /:tournamentId/results (GET, POST)
-  RESULTS_VERIFY: `${API_BASE_URLS.TOURNAMENT}/tournaments`,              // + /:tournamentId/results/verify
+  RESULTS: `${API_BASE_URLS.TOURNAMENT}/results`,                     // + /:tournamentId/results (GET, POST)
+  RESULTS_VERIFY: `${API_BASE_URLS.TOURNAMENT}/results`,              // + /:tournamentId/results/verify
 
   // Matches
   MATCHES: `${API_BASE_URLS.TOURNAMENT}/matches`,                         // + /:matchId
@@ -158,11 +161,16 @@ export const TOURNAMENT_ENDPOINTS = {
   RECRUITMENT_APPLICATION_RESPOND: `${API_BASE_URLS.TOURNAMENT}/recruitment`, // + /:postId/applications/:applicationId/respond
 
   // Games
+  GAMES: `${API_BASE_URLS.TOURNAMENT}/games`,                              // compatibility alias
   GAMES_LIST: `${API_BASE_URLS.TOURNAMENT}/games`,                         // GET GAMES
   GAME_CREATE: `${API_BASE_URLS.TOURNAMENT}/games`,                        // GET, POST (admin)
   GAME_DETAIL: `${API_BASE_URLS.TOURNAMENT}/games`,                       // + /:gameId (GET, PATCH, DELETE)
   GAME_TOGGLE_ACTIVE: `${API_BASE_URLS.TOURNAMENT}/games`,                // + /:gameId/toggle-active
   GAME_UPDATE_STATS: `${API_BASE_URLS.TOURNAMENT}/games`,                 // + /:gameId/stats
+
+  // Player Game Profiles
+  GAME_PROFILES: `${API_BASE_URLS.TOURNAMENT}/game-profiles`,             // GET, POST
+  GAME_PROFILE_DETAIL: `${API_BASE_URLS.TOURNAMENT}/game-profiles`,       // + /:gameId (GET, PUT, DELETE)
 
   // Game Requests
   GAME_REQUESTS: `${API_BASE_URLS.TOURNAMENT}/game-requests`,             // GET, POST
@@ -203,6 +211,7 @@ export const FINANCE_ENDPOINTS = {
   TRANSACTIONS: `${API_BASE_URLS.FINANCE}/transactions`,            // GET
 
   //  Escrow (User) 
+  ESCROW_INITIATE_DEPOSIT: `${API_BASE_URLS.FINANCE}/escrow/initiate-deposit`, // POST — organizer funds prize pool in a single call
   ESCROW_DEPOSIT: `${API_BASE_URLS.FINANCE}/escrow/deposit`,        // POST — organizer records prize pool deposit
   ESCROW_STATUS: `${API_BASE_URLS.FINANCE}/escrow`,                 // + /:tournamentId (GET)
   ESCROW_SUBMIT_WINNERS: `${API_BASE_URLS.FINANCE}/escrow`,         // + /:tournamentId/winners (POST)
@@ -228,6 +237,13 @@ export const FINANCE_ENDPOINTS = {
 export const WEBHOOK_ENDPOINTS = {
   PAYSTACK: `${API_BASE_URLS.WEBHOOKS}/paystack`,                   // POST — called by Paystack gateway
   FLUTTERWAVE: `${API_BASE_URLS.WEBHOOKS}/flutterwave`,             // POST — called by Flutterwave gateway
+} as const;
+
+export const NOTIFICATION_ENDPOINTS = {
+  LIST: `${API_BASE_URLS.CORE}/notifications`,
+  UNREAD_COUNT: `${API_BASE_URLS.CORE}/notifications/unread-count`,
+  MARK_ALL_READ: `${API_BASE_URLS.CORE}/notifications/read-all`,
+  MARK_READ: `${API_BASE_URLS.CORE}/notifications`, // + /:notificationId/read
 } as const;
 
 export const HTTP_METHODS = {
