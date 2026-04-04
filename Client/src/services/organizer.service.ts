@@ -1,6 +1,7 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from '../utils/api.utils';
-import { TOURNAMENT_ENDPOINTS } from '../config/api.config';
+import { TOURNAMENT_ENDPOINTS, FINANCE_ENDPOINTS } from '../config/api.config';
 import { mapTournament, type Tournament } from './tournament.service';
+import { generateUniqueIdempotencyKey } from '../utils/idempotency.utils';
 
 export type { Tournament };
 
@@ -26,24 +27,200 @@ export interface CreateTournamentPayload {
   title: string;
   description?: string;
   gameId: string;
-  tournamentType?: string;
-  format?: string;
+  tournamentType: string;
+  format: string;
   isFree: boolean;
   entryFee?: number;
   currency?: string;
   maxParticipants: number;
-  minParticipants?: number;
+  minParticipants: number;
+  teamSize?: number;
   registrationStart: string;
   registrationEnd: string;
   tournamentStart: string;
   tournamentEnd?: string;
   checkInStart?: string;
   checkInEnd?: string;
+  timezone?: string;
   prizePool?: number;
   rules?: string;
   region?: string;
   visibility?: string;
   thumbnailUrl?: string;
+  contactEmail?: string;
+  waitlistEnabled?: boolean;
+  prizeDistribution?: Array<{
+    position: number;
+    percentage: number;
+  }>;
+  mapPool?: string[];
+  antiCheatRequired?: boolean;
+  streamRequired?: boolean;
+  defaultBestOf?: number;
+  inGameIdRequired?: boolean;
+  allowedRegions?: string[];
+  verifiedEmailRequired?: boolean;
+}
+
+export interface WalletBalance {
+  availableBalance: number;
+  pendingBalance: number;
+  totalBalance: number;
+  escrowLocked: number;
+  currency: string;
+}
+
+export interface WalletTopUpResult {
+  authorizationUrl?: string;
+  reference?: string;
+  confirmationMode?: string;
+}
+
+export interface EscrowDepositInitiationResult {
+  authorizationUrl?: string;
+  reference?: string;
+  amountSummary?: {
+    youWillBeCharged?: string;
+    netPrizePool?: string;
+    platformFee?: string;
+  };
+}
+
+export interface EscrowStatusSummary {
+  status: string;
+  playerEntries?: {
+    totalCollected: number;
+    totalPlayers: number;
+  };
+  organizerDeposit?: {
+    grossAmount: number;
+    netPrizePool: number;
+    depositedAt?: string;
+  } | null;
+  processingSchedule?: {
+    cancellationCutoff?: string;
+    tournamentStart?: string;
+    winnersSubmitted?: boolean;
+    tournamentStarted?: boolean;
+    pastCancellationCutoff?: boolean;
+    prizesDistributed?: boolean;
+    tournamentEnd?: string;
+  };
+  winnerSubmissions?: {
+    submittedAt?: string;
+    allWinnersVerified?: boolean;
+    totalPrizeDistributedLabel?: string;
+    winners?: EscrowWinnerSummary[];
+  } | null;
+}
+
+export interface EscrowWinnerSummary {
+  position: number;
+  inGameId: string;
+  matchStatus: string;
+  payoutStatus: string;
+  prizeAmountLabel?: string;
+}
+
+export interface WinnerSubmissionInput {
+  position: number;
+  inGameId: string;
+  prizePercentage: number;
+}
+
+const GENERIC_PUBLISH_MESSAGES = new Set([
+  'Failed to publish tournament',
+  'Request failed',
+  'Internal server error',
+]);
+
+const GENERIC_CREATE_MESSAGES = new Set([
+  'Failed to create tournament',
+  'Request failed',
+  'Internal server error',
+]);
+
+const CREATE_ERROR_MESSAGES: Record<string, string> = {
+  FAILED_TO_CREATE_TOURNAMENT:
+    'Unable to create tournament. Please verify all required fields and schedule settings.',
+  VALIDATION_ERROR:
+    'Some tournament fields are invalid. Please review the form and try again.',
+  MISSING_REQUIRED_FIELDS:
+    'Required fields are missing: title, game, tournament type, format, schedule, and capacity.',
+  ORGANIZER_NOT_VERIFIED:
+    'Organizer verification is required to create paid tournaments.',
+};
+
+const PUBLISH_ERROR_MESSAGES: Record<string, string> = {
+  FAILED_TO_PUBLISH_TOURNAMENT:
+    'Unable to publish this tournament right now. Please check required fields and try again.',
+  PUBLISH_VALIDATION_FAILED:
+    'Tournament publish validation failed. Check schedule, game selection, participant limits, and prize settings.',
+  TOURNAMENT_INVALID_STATUS:
+    'Only draft tournaments can be published.',
+  INVALID_STATUS:
+    'Only draft tournaments can be published.',
+  SCHEDULE_PAST:
+    'Registration start must be in the future before publishing.',
+  PRIZE_DISTRIBUTION_REQUIRED:
+    'Add a valid prize distribution before publishing this paid tournament.',
+  INVALID_MIN_PARTICIPANTS:
+    'Minimum participants must be greater than 0 before publishing.',
+  ESCROW_CREATION_FAILED:
+    'Escrow setup failed while publishing. Please try again in a moment.',
+};
+
+function resolvePublishErrorMessage(code?: string, message?: string): string {
+  const normalizedMessage = (message ?? '').trim();
+  const hasUsefulMessage =
+    normalizedMessage.length > 0 &&
+    !GENERIC_PUBLISH_MESSAGES.has(normalizedMessage);
+
+  if (hasUsefulMessage) {
+    return normalizedMessage;
+  }
+
+  if (code && PUBLISH_ERROR_MESSAGES[code]) {
+    return PUBLISH_ERROR_MESSAGES[code];
+  }
+
+  return 'Failed to publish tournament. Please review tournament details and try again.';
+}
+
+function resolveCreateTournamentErrorMessage(code?: string, message?: string): string {
+  const normalizedMessage = (message ?? '').trim();
+  const hasUsefulMessage =
+    normalizedMessage.length > 0 &&
+    !GENERIC_CREATE_MESSAGES.has(normalizedMessage);
+
+  if (hasUsefulMessage) {
+    return normalizedMessage;
+  }
+
+  if (code && CREATE_ERROR_MESSAGES[code]) {
+    return CREATE_ERROR_MESSAGES[code];
+  }
+
+  return 'Failed to create tournament. Please review required fields and try again.';
+}
+
+function resolveFinanceErrorMessage(message?: string, fallback?: string): string {
+  const normalizedMessage = (message ?? '').trim();
+  if (normalizedMessage.length > 0 && normalizedMessage !== 'Request failed') {
+    return normalizedMessage;
+  }
+  return fallback ?? 'Finance request failed. Please try again.';
+}
+
+function getStoredUserId(): string | null {
+  try {
+    const raw = localStorage.getItem('apex_arenas_auth');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { user?: { id?: string } };
+    return parsed.user?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function mapRegistrant(raw: Record<string, unknown>): TournamentRegistrant {
@@ -76,8 +253,12 @@ function mapRegistrant(raw: Record<string, unknown>): TournamentRegistrant {
 
 export const organizerService = {
   async getMyTournaments(): Promise<Tournament[]> {
-    // Filter tournaments by organizer — backend uses /tournaments with query params
-    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.TOURNAMENTS}?mine=true`);
+    const userId = getStoredUserId();
+    if (!userId) return [];
+
+    const url = `${TOURNAMENT_ENDPOINTS.TOURNAMENTS}?organizer_id=${encodeURIComponent(userId)}`;
+
+    const response = await apiGet(url);
     if (!response.success) return [];
 
     const data = response.data as Record<string, unknown>;
@@ -89,11 +270,20 @@ export const organizerService = {
   },
 
   async createTournament(payload: CreateTournamentPayload): Promise<Tournament> {
+    const maxParticipants = payload.maxParticipants;
+    const minParticipants = payload.minParticipants;
+    const isFreeTournament =
+      payload.isFree || payload.entryFee === undefined || payload.entryFee <= 0;
+
     const body: Record<string, unknown> = {
       title: payload.title,
       game_id: payload.gameId,
-      is_free: payload.isFree,
-      max_participants: payload.maxParticipants,
+      is_free: isFreeTournament,
+      capacity: {
+        max_participants: maxParticipants,
+        min_participants: minParticipants,
+        waitlist_enabled: payload.waitlistEnabled ?? true,
+      },
       schedule: {
         registration_start: payload.registrationStart,
         registration_end: payload.registrationEnd,
@@ -102,23 +292,78 @@ export const organizerService = {
         ...(payload.checkInStart && { check_in_start: payload.checkInStart }),
         ...(payload.checkInEnd && { check_in_end: payload.checkInEnd }),
       },
+      timezone: payload.timezone || 'Africa/Accra',
+      entry_fee: isFreeTournament ? 0 : payload.entryFee,
     };
 
+    if (!isFreeTournament && payload.prizePool !== undefined) {
+      const distribution =
+        payload.prizeDistribution && payload.prizeDistribution.length > 0
+          ? payload.prizeDistribution
+          : [
+              { position: 1, percentage: 60 },
+              { position: 2, percentage: 30 },
+              { position: 3, percentage: 10 },
+            ];
+
+      body.prize_structure = {
+        organizer_gross_deposit: payload.prizePool,
+        total_winning_positions: distribution.length,
+        distribution,
+      };
+    }
+
     if (payload.description) body.description = payload.description;
-    if (payload.tournamentType) body.tournament_type = payload.tournamentType;
-    if (payload.format) body.format = payload.format;
-    if (!payload.isFree && payload.entryFee !== undefined) body.entry_fee = payload.entryFee;
+    body.tournament_type = payload.tournamentType;
+    body.format = payload.format;
     if (payload.currency) body.currency = payload.currency;
-    if (payload.minParticipants) body.min_participants = payload.minParticipants;
-    if (payload.rules) body.rules = { description: payload.rules };
+    if (
+      payload.rules ||
+      payload.mapPool ||
+      payload.antiCheatRequired !== undefined ||
+      payload.streamRequired !== undefined ||
+      payload.defaultBestOf !== undefined ||
+      payload.inGameIdRequired !== undefined
+    ) {
+      body.rules = {
+        ...(payload.rules ? { description: payload.rules } : {}),
+        ...(payload.mapPool && payload.mapPool.length > 0 ? { map_pool: payload.mapPool } : {}),
+        anti_cheat_required: payload.antiCheatRequired ?? true,
+        stream_required: payload.streamRequired ?? false,
+        default_best_of: payload.defaultBestOf ?? 3,
+        in_game_id_required: payload.inGameIdRequired ?? true,
+      };
+    }
     if (payload.region) body.region = payload.region;
     if (payload.visibility) body.visibility = payload.visibility;
     if (payload.thumbnailUrl) body.thumbnail_url = payload.thumbnailUrl;
-    if (payload.prizePool) body.prize_structure = { organizer_deposit: payload.prizePool };
+    if (
+      payload.teamSize ||
+      (payload.allowedRegions && payload.allowedRegions.length > 0) ||
+      payload.verifiedEmailRequired !== undefined
+    ) {
+      body.requirements = {
+        ...(body.requirements as Record<string, unknown> | undefined),
+        ...(payload.teamSize ? { team_size: payload.teamSize } : {}),
+        ...(payload.allowedRegions && payload.allowedRegions.length > 0
+          ? { allowed_regions: payload.allowedRegions }
+          : {}),
+        ...(payload.verifiedEmailRequired !== undefined
+          ? { verified_email_required: payload.verifiedEmailRequired }
+          : {}),
+      };
+    }
+    if (payload.contactEmail) {
+      body.communication = {
+        ...(body.communication as Record<string, unknown> | undefined),
+        contact_email: payload.contactEmail,
+      };
+    }
 
     const response = await apiPost(TOURNAMENT_ENDPOINTS.TOURNAMENTS, body);
     if (!response.success) {
-      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to create tournament';
+      const error = (response as { error?: { code?: string; message?: string } }).error;
+      const msg = resolveCreateTournamentErrorMessage(error?.code, error?.message);
       throw new Error(msg);
     }
 
@@ -149,13 +394,181 @@ export const organizerService = {
     return mapTournament(raw);
   },
 
-  async publishTournament(tournamentId: string): Promise<void> {
+  async publishTournament(tournamentId: string): Promise<Tournament> {
     const response = await apiPost(
       `${TOURNAMENT_ENDPOINTS.TOURNAMENT_PUBLISH}/${tournamentId}/publish`,
       {},
     );
     if (!response.success) {
-      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to publish tournament';
+      const error = (response as { error?: { code?: string; message?: string } }).error;
+      const msg = resolvePublishErrorMessage(error?.code, error?.message);
+      throw new Error(msg);
+    }
+
+    const data = response.data as Record<string, unknown>;
+    const raw = (data.tournament ?? data) as Record<string, unknown>;
+    return mapTournament(raw);
+  },
+
+  async getWalletBalance(): Promise<WalletBalance> {
+    const response = await apiGet(FINANCE_ENDPOINTS.WALLET);
+    if (!response.success) {
+      const msg = resolveFinanceErrorMessage(
+        (response as { error?: { message?: string } }).error?.message,
+        'Failed to fetch wallet balance',
+      );
+      throw new Error(msg);
+    }
+
+    const data = response.data as Record<string, unknown>;
+    return {
+      availableBalance: Number(data.available_balance ?? 0),
+      pendingBalance: Number(data.pending_balance ?? 0),
+      totalBalance: Number(data.total_balance ?? 0),
+      escrowLocked: Number(data.escrow_locked ?? 0),
+      currency: String(data.currency ?? 'GHS'),
+    };
+  },
+
+  async initiateWalletTopUp(amountGhs: number): Promise<WalletTopUpResult> {
+    const response = await apiPost(FINANCE_ENDPOINTS.DEPOSIT, {
+      amount_ghs: amountGhs,
+      idempotency_key: generateUniqueIdempotencyKey(),
+    });
+
+    if (!response.success) {
+      const msg = resolveFinanceErrorMessage(
+        (response as { error?: { message?: string } }).error?.message,
+        'Failed to initiate wallet top-up',
+      );
+      throw new Error(msg);
+    }
+
+    const data = response.data as Record<string, unknown>;
+    return {
+      authorizationUrl: data.authorization_url as string | undefined,
+      reference: data.reference as string | undefined,
+      confirmationMode: data.confirmation_mode as string | undefined,
+    };
+  },
+
+  async initiateEscrowDeposit(
+    tournamentId: string,
+    grossAmountGhs: number,
+  ): Promise<EscrowDepositInitiationResult> {
+    const response = await apiPost(FINANCE_ENDPOINTS.ESCROW_INITIATE_DEPOSIT, {
+      tournament_id: tournamentId,
+      gross_amount_ghs: grossAmountGhs,
+      idempotency_key: generateUniqueIdempotencyKey(),
+    });
+
+    if (!response.success) {
+      const msg = resolveFinanceErrorMessage(
+        (response as { error?: { message?: string } }).error?.message,
+        'Failed to deposit prize pool',
+      );
+      throw new Error(msg);
+    }
+
+    const data = response.data as Record<string, unknown>;
+    const amountSummary = (data.amount_summary ?? {}) as Record<string, unknown>;
+
+    return {
+      authorizationUrl: data.authorization_url as string | undefined,
+      reference: data.reference as string | undefined,
+      amountSummary: {
+        youWillBeCharged: amountSummary.you_will_be_charged as string | undefined,
+        netPrizePool: amountSummary.net_prize_pool as string | undefined,
+        platformFee: amountSummary.platform_fee as string | undefined,
+      },
+    };
+  },
+
+  async getEscrowStatus(tournamentId: string): Promise<EscrowStatusSummary | null> {
+    const response = await apiGet(`${FINANCE_ENDPOINTS.ESCROW_STATUS}/${tournamentId}`);
+
+    if (!response.success) {
+      const errorCode = (response as { error?: { code?: string } }).error?.code;
+      if (errorCode === 'ESCROW_NOT_FOUND') {
+        return null;
+      }
+
+      const msg = resolveFinanceErrorMessage(
+        (response as { error?: { message?: string } }).error?.message,
+        'Failed to fetch escrow status',
+      );
+      throw new Error(msg);
+    }
+
+    const data = response.data as Record<string, unknown>;
+    const playerEntries = (data.player_entries ?? {}) as Record<string, unknown>;
+    const organizerDeposit = (data.organizer_deposit ?? null) as Record<string, unknown> | null;
+    const processingSchedule = (data.processing_schedule ?? {}) as Record<string, unknown>;
+    const winnerSubmissions = (data.winner_submissions ?? null) as Record<string, unknown> | null;
+    const winnerRows = Array.isArray(winnerSubmissions?.winners)
+      ? (winnerSubmissions?.winners as Record<string, unknown>[])
+      : [];
+
+    return {
+      status: String(data.status ?? ''),
+      playerEntries: {
+        totalCollected: Number(playerEntries.total_collected ?? 0),
+        totalPlayers: Number(playerEntries.total_players ?? 0),
+      },
+      organizerDeposit: organizerDeposit
+        ? {
+            grossAmount: Number(organizerDeposit.gross_amount ?? 0),
+            netPrizePool: Number(organizerDeposit.net_prize_pool ?? 0),
+            depositedAt: organizerDeposit.deposited_at as string | undefined,
+          }
+        : null,
+      processingSchedule: {
+        cancellationCutoff: processingSchedule.cancellation_cutoff as string | undefined,
+        tournamentStart: processingSchedule.tournament_start as string | undefined,
+        winnersSubmitted: Boolean(processingSchedule.winners_submitted ?? false),
+        tournamentStarted: Boolean(processingSchedule.tournament_started ?? false),
+        pastCancellationCutoff: Boolean(processingSchedule.past_cancellation_cutoff ?? false),
+        prizesDistributed: Boolean(processingSchedule.prizes_distributed ?? false),
+        tournamentEnd: processingSchedule.tournament_end as string | undefined,
+      },
+      winnerSubmissions: winnerSubmissions
+        ? {
+            submittedAt: winnerSubmissions.submitted_at as string | undefined,
+            allWinnersVerified: Boolean(
+              winnerSubmissions.all_winners_verified ?? false,
+            ),
+            totalPrizeDistributedLabel:
+              winnerSubmissions.total_prize_distributed as string | undefined,
+            winners: winnerRows.map((winner) => ({
+              position: Number(winner.position ?? 0),
+              inGameId: String(winner.in_game_id ?? ''),
+              matchStatus: String(winner.match_status ?? ''),
+              payoutStatus: String(winner.payout_status ?? ''),
+              prizeAmountLabel: winner.prize_amount_ghs as string | undefined,
+            })),
+          }
+        : null,
+    };
+  },
+
+  async submitWinners(
+    tournamentId: string,
+    winners: WinnerSubmissionInput[],
+  ): Promise<void> {
+    const response = await apiPost(`${FINANCE_ENDPOINTS.ESCROW_SUBMIT_WINNERS}/${tournamentId}/winners`, {
+      winners: winners.map((winner) => ({
+        position: winner.position,
+        in_game_id: winner.inGameId,
+        prize_percentage: winner.prizePercentage,
+      })),
+      idempotency_key: generateUniqueIdempotencyKey(),
+    });
+
+    if (!response.success) {
+      const msg = resolveFinanceErrorMessage(
+        (response as { error?: { message?: string } }).error?.message,
+        'Failed to submit winners',
+      );
       throw new Error(msg);
     }
   },
@@ -163,7 +576,7 @@ export const organizerService = {
   async cancelTournament(tournamentId: string, reason?: string): Promise<void> {
     const response = await apiPost(
       `${TOURNAMENT_ENDPOINTS.TOURNAMENT_CANCEL}/${tournamentId}/cancel`,
-      { reason: reason ?? '' },
+      { reason: (reason ?? '').trim() },
     );
     if (!response.success) {
       const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to cancel tournament';
