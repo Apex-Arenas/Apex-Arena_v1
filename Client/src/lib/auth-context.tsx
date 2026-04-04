@@ -37,12 +37,37 @@ interface AuthContextValue {
   isInitializing: boolean;
   login: (payload: LoginPayload) => Promise<AuthResult>;
   register: (payload: RegisterPayload) => Promise<AuthResult>;
-  loginWithGoogle: (idToken: string, role?: 'player' | 'organizer') => Promise<AuthResult>;
+  loginWithGoogle: (
+    idToken: string,
+    role?: "player" | "organizer",
+  ) => Promise<AuthResult>;
   linkGoogle: (idToken: string, password: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<string | null>;
   setSession: (tokens: AuthTokens | null, user?: AuthUser | null) => void;
 }
+
+const mergeUserData = (
+  previous: AuthUser | null | undefined,
+  incoming: AuthUser | null | undefined,
+): AuthUser | null => {
+  if (!previous && !incoming) return null;
+  if (!previous) return incoming ?? null;
+  if (!incoming) return previous;
+
+  return {
+    ...previous,
+    ...incoming,
+    socialLinks:
+      incoming.socialLinks && Object.keys(incoming.socialLinks).length > 0
+        ? incoming.socialLinks
+        : previous.socialLinks,
+    gameProfiles:
+      incoming.gameProfiles && incoming.gameProfiles.length > 0
+        ? incoming.gameProfiles
+        : previous.gameProfiles,
+  };
+};
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -146,7 +171,9 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
 
     try {
-      const result = await authService.refreshToken(currentTokens?.refreshToken);
+      const result = await authService.refreshToken(
+        currentTokens?.refreshToken,
+      );
       const nextTokens = result.tokens;
 
       if (!nextTokens?.accessToken) {
@@ -159,7 +186,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           accessToken: nextTokens.accessToken,
           refreshToken: nextTokens.refreshToken ?? currentTokens?.refreshToken,
         },
-        result.user ?? userRef.current,
+        mergeUserData(userRef.current, result.user),
       );
 
       return nextTokens.accessToken;
@@ -185,7 +212,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   }, []);
 
   const loginWithGoogle = useCallback(
-    async (idToken: string, role?: 'player' | 'organizer') => {
+    async (idToken: string, role?: "player" | "organizer") => {
       const result = await authService.googleAuth(idToken, role);
       if (result.tokens?.accessToken) {
         setSession(result.tokens, result.user ?? null);
@@ -245,10 +272,12 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
             accessToken:
               validateResult.tokens?.accessToken ?? stored.tokens.accessToken,
             refreshToken:
-              validateResult.tokens?.refreshToken ??
-              stored.tokens.refreshToken,
+              validateResult.tokens?.refreshToken ?? stored.tokens.refreshToken,
           };
-          const freshUser = validateResult.user ?? stored.user ?? null;
+          const freshUser = mergeUserData(
+            stored.user ?? null,
+            validateResult.user,
+          );
 
           setTokens(freshTokens);
           setUser(freshUser);
@@ -281,7 +310,10 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
                   refreshResult.tokens.refreshToken ??
                   stored.tokens.refreshToken,
               };
-              const freshUser = refreshResult.user ?? stored.user ?? null;
+              const freshUser = mergeUserData(
+                stored.user ?? null,
+                refreshResult.user,
+              );
 
               setTokens(freshTokens);
               setUser(freshUser);
