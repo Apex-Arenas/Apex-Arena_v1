@@ -16,6 +16,16 @@ interface GoogleIdConfig {
   cancel_on_tap_outside?: boolean;
 }
 
+interface GoogleButtonConfig {
+  type?: 'standard' | 'icon';
+  theme?: 'outline' | 'filled_blue' | 'filled_black';
+  size?: 'large' | 'medium' | 'small';
+  text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+  shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+  width?: number;
+  logo_alignment?: 'left' | 'center';
+}
+
 declare global {
   interface Window {
     google?: {
@@ -23,7 +33,7 @@ declare global {
         id: {
           initialize: (config: GoogleIdConfig) => void;
           prompt: (callback?: (notification: { isNotDisplayed: () => boolean; isSkippedMoment: () => boolean }) => void) => void;
-          renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void;
+          renderButton: (parent: HTMLElement, options: GoogleButtonConfig) => void;
           revoke: (hint: string, callback?: () => void) => void;
         };
       };
@@ -108,5 +118,23 @@ export function useGoogleAuth({ onToken }: UseGoogleAuthOptions) {
     });
   }, []);
 
-  return { isReady, isLoading, setIsLoading, promptGoogleSignIn };
+  const renderGoogleButton = useCallback(
+    (container: HTMLElement, options: GoogleButtonConfig = {}) => {
+      if (!window.google?.accounts?.id) return;
+
+      container.innerHTML = '';
+      window.google.accounts.id.renderButton(container, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'pill',
+        logo_alignment: 'left',
+        ...options,
+      });
+    },
+    [],
+  );
+
+  return { isReady, isLoading, setIsLoading, promptGoogleSignIn, renderGoogleButton };
 }
