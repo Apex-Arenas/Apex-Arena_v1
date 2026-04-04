@@ -18,7 +18,11 @@ import { useAuth } from "../lib/auth-context";
 
 const playerNavItems = [
   { to: "/auth", icon: Home, label: "Home", end: true },
-  { to: "/auth/tournaments", icon: Swords, label: "Tournaments" },
+  {
+    to: "/auth/player/join-tournament",
+    icon: Swords,
+    label: "Tournaments",
+  },
   { to: "/auth/player/profile", icon: UserCircle, label: "Profile" },
   { to: "/auth/notifications", icon: Bell, label: "Notifications" },
   { to: "/auth/transactions", icon: Receipt, label: "Transactions" },
@@ -26,8 +30,16 @@ const playerNavItems = [
 
 const organizerNavItems = [
   { to: "/auth", icon: Home, label: "Home", end: true },
-  { to: "/auth/organizer/tournaments", icon: ListTodo, label: "My Tournaments" },
-  { to: "/auth/organizer/create-tournament", icon: PlusCircle, label: "Create" },
+  {
+    to: "/auth/organizer/tournaments",
+    icon: ListTodo,
+    label: "My Tournaments",
+  },
+  {
+    to: "/auth/organizer/create-tournament",
+    icon: PlusCircle,
+    label: "Create",
+  },
   { to: "/auth/organizer/profile", icon: UserCircle, label: "Profile" },
   { to: "/auth/notifications", icon: Bell, label: "Notifications" },
   { to: "/auth/transactions", icon: Receipt, label: "Transactions" },
@@ -49,7 +61,7 @@ const Sidebar = () => {
   return (
     <aside
       className={`sticky top-0 h-dvh flex flex-col border-r border-slate-800 bg-slate-950/80 transition-all duration-200 ${
-        collapsed ? "w-[68px]" : "w-56"
+        collapsed ? "w-17" : "w-56"
       }`}
     >
       {/* Logo */}
