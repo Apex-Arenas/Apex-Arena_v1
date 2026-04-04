@@ -51,6 +51,22 @@ function mapUser(raw: Record<string, unknown>): User {
   const profile = (raw.profile ?? {}) as Record<string, unknown>;
   const social = (profile.social_links ?? raw.social_links ?? {}) as Record<string, unknown>;
   const games = (profile.game_profiles ?? raw.game_profiles ?? []) as Record<string, unknown>[];
+  const gameProfiles = games
+    .map((g) => {
+      const nestedGame = (g.game ?? {}) as Record<string, unknown>;
+      const gameId = String(g.game_id ?? g.gameId ?? nestedGame._id ?? nestedGame.id ?? '');
+      const inGameId = String(g.in_game_id ?? g.inGameId ?? '');
+
+      if (!gameId && !inGameId) return null;
+
+      return {
+        gameId,
+        gameName: (g.game_name ?? g.gameName ?? nestedGame.name) as string | undefined,
+        inGameId,
+        skillLevel: (g.skill_level ?? g.skillLevel) as User['gameProfiles'] extends (infer T)[] ? (T extends { skillLevel?: infer S } ? S : never) : never,
+      };
+    })
+    .filter((g): g is NonNullable<typeof g> => Boolean(g));
 
   return {
     id: String(raw.user_id ?? raw._id ?? raw.id ?? ''),
@@ -62,19 +78,14 @@ function mapUser(raw: Record<string, unknown>): User {
     avatarUrl: (profile.avatar_url ?? raw.avatar_url ?? raw.avatarUrl) as string | undefined,
     bio: (profile.bio ?? raw.bio) as string | undefined,
     country: (profile.country ?? raw.country) as string | undefined,
-    phone: (profile.phone ?? raw.phone) as string | undefined,
+    phone: (profile.phone_number ?? profile.phone ?? raw.phone_number ?? raw.phone) as string | undefined,
     socialLinks: {
       discord: social.discord as string | undefined,
       twitter: social.twitter as string | undefined,
       twitch: social.twitch as string | undefined,
       youtube: social.youtube as string | undefined,
     },
-    gameProfiles: games.map((g) => ({
-      gameId: String(g.game_id ?? g.gameId ?? ''),
-      gameName: g.game_name as string | undefined,
-      inGameId: String(g.in_game_id ?? ''),
-      skillLevel: g.skill_level as User['gameProfiles'] extends (infer T)[] ? (T extends { skillLevel?: infer S } ? S : never) : never,
-    })),
+    gameProfiles: gameProfiles.length > 0 ? gameProfiles : undefined,
     organizerVerified: (raw.organizer_verified ?? raw.organizerVerified) as boolean | undefined,
     isEmailVerified: (raw.is_email_verified ?? raw.isEmailVerified) as boolean | undefined,
     isActive: (raw.is_active ?? raw.isActive) as boolean | undefined,
@@ -370,14 +381,19 @@ export const authService = {
     if (!response.success) return null;
 
     const data = response.data as Record<string, unknown>;
+    const hasRequest = data.has_request as boolean | undefined;
+    if (hasRequest === false) return null;
+
     const req = (data.request ?? data) as Record<string, unknown>;
+    if (!req.status) return null;
+
     return {
-      status: (req.status as OrganizerVerificationInfo['status']) ?? 'pending',
-      requestId: req._id as string | undefined,
-      submittedAt: req.created_at as string | undefined,
+      status: req.status as OrganizerVerificationInfo['status'],
+      requestId: (req.request_id ?? req._id) as string | undefined,
+      submittedAt: (req.submitted_at ?? req.created_at) as string | undefined,
       reviewedAt: req.reviewed_at as string | undefined,
       rejectionReasons: req.rejection_reasons as string[] | undefined,
-      reviewNotes: req.review_notes as string | undefined,
+      reviewNotes: (req.admin_notes ?? req.review_notes) as string | undefined,
     };
   },
 };
