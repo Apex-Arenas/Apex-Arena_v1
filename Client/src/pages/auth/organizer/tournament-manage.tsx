@@ -559,6 +559,9 @@ const TournamentManage = () => {
   useEffect(() => {
     if (!tournamentId || !tournament || tournament.isFree) return;
 
+    // If escrow is missing (ESCROW_NOT_FOUND), avoid polling repeatedly.
+    if (!escrowSummary) return;
+
     const escrowStatus = escrowSummary?.status;
     const shouldPoll =
       !escrowStatus || !FINAL_ESCROW_STATUSES.has(escrowStatus);
