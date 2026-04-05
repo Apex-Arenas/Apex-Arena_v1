@@ -266,7 +266,68 @@ export const organizerService = {
       ? data
       : ((data.tournaments ?? data.data ?? []) as Record<string, unknown>[]);
 
-    return list.map((t) => mapTournament(t as Record<string, unknown>));
+    const missingGameIds = list
+      .map((item) => {
+        const gameNode =
+          (item.game_id as Record<string, unknown> | string | undefined) ??
+          (item.game as Record<string, unknown> | string | undefined);
+
+        const hasGameName =
+          typeof item.game_name === 'string' ||
+          typeof item.gameName === 'string' ||
+          (typeof gameNode === 'object' &&
+            gameNode !== null &&
+            typeof (gameNode as Record<string, unknown>).name === 'string');
+
+        if (hasGameName) return undefined;
+
+        if (typeof gameNode === 'string') return gameNode;
+        if (
+          gameNode &&
+          typeof gameNode === 'object' &&
+          (typeof (gameNode as Record<string, unknown>)._id === 'string' ||
+            typeof (gameNode as Record<string, unknown>).id === 'string')
+        ) {
+          return String(
+            (gameNode as Record<string, unknown>)._id ??
+              (gameNode as Record<string, unknown>).id,
+          );
+        }
+
+        return undefined;
+      })
+      .filter((id): id is string => Boolean(id));
+
+    let gameLookup: Map<string, { id: string; name: string; logoUrl?: string }> | undefined;
+    if (missingGameIds.length > 0) {
+      const gamesResponse = await apiGet(TOURNAMENT_ENDPOINTS.GAMES, { skipCache: true });
+      if (gamesResponse.success) {
+        const gamesPayload = gamesResponse.data as Record<string, unknown>;
+        const gamesList = Array.isArray(gamesPayload)
+          ? (gamesPayload as Record<string, unknown>[])
+          : ((gamesPayload.games ?? gamesPayload.data ?? []) as Record<string, unknown>[]);
+
+        const wanted = new Set(missingGameIds);
+        const lookup = new Map<string, { id: string; name: string; logoUrl?: string }>();
+
+        gamesList.forEach((game) => {
+          const id = String(game._id ?? game.id ?? '');
+          const name = String(game.name ?? '');
+          if (!id || !name || !wanted.has(id)) return;
+          lookup.set(id, {
+            id,
+            name,
+            logoUrl: game.logo_url as string | undefined,
+          });
+        });
+
+        gameLookup = lookup;
+      }
+    }
+
+    return list.map((t) =>
+      mapTournament(t as Record<string, unknown>, gameLookup),
+    );
   },
 
   async createTournament(payload: CreateTournamentPayload): Promise<Tournament> {
@@ -374,11 +435,133 @@ export const organizerService = {
 
   async updateTournament(tournamentId: string, updates: Partial<CreateTournamentPayload>): Promise<Tournament> {
     const body: Record<string, unknown> = {};
-    if (updates.title) body.title = updates.title;
+    if (updates.title !== undefined) body.title = updates.title;
     if (updates.description !== undefined) body.description = updates.description;
+    if (updates.gameId !== undefined) body.game_id = updates.gameId;
+    if (updates.tournamentType !== undefined) body.tournament_type = updates.tournamentType;
+    if (updates.format !== undefined) body.format = updates.format;
+    if (updates.entryFee !== undefined) body.entry_fee = updates.entryFee;
+    if (updates.currency !== undefined) body.currency = updates.currency;
+
+    if (
+      updates.maxParticipants !== undefined ||
+      updates.minParticipants !== undefined ||
+      updates.waitlistEnabled !== undefined
+    ) {
+      body.capacity = {
+        ...(updates.maxParticipants !== undefined
+          ? { max_participants: updates.maxParticipants }
+          : {}),
+        ...(updates.minParticipants !== undefined
+          ? { min_participants: updates.minParticipants }
+          : {}),
+        ...(updates.waitlistEnabled !== undefined
+          ? { waitlist_enabled: updates.waitlistEnabled }
+          : {}),
+      };
+    }
+
+    if (
+      updates.registrationStart !== undefined ||
+      updates.registrationEnd !== undefined ||
+      updates.tournamentStart !== undefined ||
+      updates.tournamentEnd !== undefined ||
+      updates.checkInStart !== undefined ||
+      updates.checkInEnd !== undefined
+    ) {
+      body.schedule = {
+        ...(updates.registrationStart !== undefined
+          ? { registration_start: updates.registrationStart }
+          : {}),
+        ...(updates.registrationEnd !== undefined
+          ? { registration_end: updates.registrationEnd }
+          : {}),
+        ...(updates.tournamentStart !== undefined
+          ? { tournament_start: updates.tournamentStart }
+          : {}),
+        ...(updates.tournamentEnd !== undefined
+          ? { tournament_end: updates.tournamentEnd }
+          : {}),
+        ...(updates.checkInStart !== undefined
+          ? { check_in_start: updates.checkInStart }
+          : {}),
+        ...(updates.checkInEnd !== undefined
+          ? { check_in_end: updates.checkInEnd }
+          : {}),
+      };
+    }
+
+    if (updates.prizePool !== undefined || updates.prizeDistribution !== undefined) {
+      const distribution =
+        updates.prizeDistribution && updates.prizeDistribution.length > 0
+          ? updates.prizeDistribution
+          : undefined;
+
+      body.prize_structure = {
+        ...(updates.prizePool !== undefined
+          ? { organizer_gross_deposit: updates.prizePool }
+          : {}),
+        ...(distribution
+          ? {
+              total_winning_positions: distribution.length,
+              distribution,
+            }
+          : {}),
+      };
+    }
+
     if (updates.thumbnailUrl !== undefined) body.thumbnail_url = updates.thumbnailUrl;
-    if (updates.rules !== undefined) body.rules = { description: updates.rules };
-    if (updates.maxParticipants !== undefined) body.max_participants = updates.maxParticipants;
+    if (updates.region !== undefined) body.region = updates.region;
+    if (updates.visibility !== undefined) body.visibility = updates.visibility;
+    if (updates.timezone !== undefined) body.timezone = updates.timezone;
+
+    if (
+      updates.rules !== undefined ||
+      updates.mapPool !== undefined ||
+      updates.antiCheatRequired !== undefined ||
+      updates.streamRequired !== undefined ||
+      updates.defaultBestOf !== undefined ||
+      updates.inGameIdRequired !== undefined
+    ) {
+      body.rules = {
+        ...(updates.rules !== undefined ? { description: updates.rules } : {}),
+        ...(updates.mapPool !== undefined ? { map_pool: updates.mapPool } : {}),
+        ...(updates.antiCheatRequired !== undefined
+          ? { anti_cheat_required: updates.antiCheatRequired }
+          : {}),
+        ...(updates.streamRequired !== undefined
+          ? { stream_required: updates.streamRequired }
+          : {}),
+        ...(updates.defaultBestOf !== undefined
+          ? { default_best_of: updates.defaultBestOf }
+          : {}),
+        ...(updates.inGameIdRequired !== undefined
+          ? { in_game_id_required: updates.inGameIdRequired }
+          : {}),
+      };
+    }
+
+    if (
+      updates.teamSize !== undefined ||
+      updates.allowedRegions !== undefined ||
+      updates.verifiedEmailRequired !== undefined
+    ) {
+      body.requirements = {
+        ...(updates.teamSize !== undefined ? { team_size: updates.teamSize } : {}),
+        ...(updates.allowedRegions !== undefined
+          ? { allowed_regions: updates.allowedRegions }
+          : {}),
+        ...(updates.verifiedEmailRequired !== undefined
+          ? { verified_email_required: updates.verifiedEmailRequired }
+          : {}),
+      };
+    }
+
+    if (updates.contactEmail !== undefined) {
+      body.communication = {
+        contact_email: updates.contactEmail,
+      };
+    }
 
     const response = await apiPatch(
       `${TOURNAMENT_ENDPOINTS.TOURNAMENT_DETAIL}/${tournamentId}`,
@@ -431,8 +614,11 @@ export const organizerService = {
   },
 
   async initiateWalletTopUp(amountGhs: number): Promise<WalletTopUpResult> {
+    const callbackUrl = `${window.location.origin}/payment/callback`;
+
     const response = await apiPost(FINANCE_ENDPOINTS.DEPOSIT, {
       amount_ghs: amountGhs,
+      callback_url: callbackUrl,
       idempotency_key: generateUniqueIdempotencyKey(),
     });
 
@@ -456,9 +642,12 @@ export const organizerService = {
     tournamentId: string,
     grossAmountGhs: number,
   ): Promise<EscrowDepositInitiationResult> {
+    const callbackUrl = `${window.location.origin}/payment/callback`;
+
     const response = await apiPost(FINANCE_ENDPOINTS.ESCROW_INITIATE_DEPOSIT, {
       tournament_id: tournamentId,
       gross_amount_ghs: grossAmountGhs,
+      callback_url: callbackUrl,
       idempotency_key: generateUniqueIdempotencyKey(),
     });
 
@@ -627,6 +816,17 @@ export const organizerService = {
     );
     if (!response.success) {
       const msg = (response as { error?: { message?: string } }).error?.message ?? 'Bulk check-in failed';
+      throw new Error(msg);
+    }
+  },
+
+  async generateBracket(tournamentId: string): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.BRACKET}/${tournamentId}/bracket/generate`,
+      {},
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to generate bracket';
       throw new Error(msg);
     }
   },
