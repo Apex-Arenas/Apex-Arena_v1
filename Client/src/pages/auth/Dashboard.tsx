@@ -161,7 +161,7 @@ function TournamentCard({ reg }: { reg: TournamentRegistration }) {
     : "TBD";
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 h-full">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-semibold text-white truncate">
@@ -192,6 +192,120 @@ function TournamentCard({ reg }: { reg: TournamentRegistration }) {
           {reg.prizeWon ? ` — Won $${reg.prizeWon.toLocaleString()}` : ""}
         </p>
       )}
+    </div>
+  );
+}
+
+function formatTournamentDate(value?: string) {
+  if (!value) return "TBD";
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function JoinedTournamentDetailsCard({ reg }: { reg: TournamentRegistration }) {
+  const registrationStatusColors: Record<string, string> = {
+    registered: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+    checked_in: "bg-green-500/20 text-green-300 border-green-500/30",
+    pending_payment: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+    disqualified: "bg-red-500/20 text-red-300 border-red-500/30",
+    withdrawn: "bg-slate-500/20 text-slate-400 border-slate-600/30",
+    cancelled: "bg-slate-500/20 text-slate-400 border-slate-600/30",
+  };
+
+  const tournamentStatusColors: Record<string, string> = {
+    draft: "bg-slate-600/20 text-slate-300 border-slate-600/30",
+    awaiting_deposit: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+    published: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+    open: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+    ongoing: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    awaiting_results: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+    verifying_results: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    completed: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+    cancelled: "bg-slate-500/20 text-slate-400 border-slate-600/30",
+  };
+
+  const registrationStatus = reg.status.replace(/_/g, " ");
+  const tournamentStatus = reg.tournamentStatus
+    ? reg.tournamentStatus.replace(/_/g, " ")
+    : "Unknown";
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <h4 className="text-sm font-semibold text-white truncate">
+            {reg.tournamentTitle}
+          </h4>
+          <p className="text-xs text-slate-400 mt-1">
+            Joined {formatTournamentDate(reg.createdAt)}
+          </p>
+        </div>
+        <Link
+          to={`/auth/tournaments/${reg.tournamentId}`}
+          className="text-xs px-2.5 py-1 rounded-md border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 transition-colors whitespace-nowrap"
+        >
+          View Details
+        </Link>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        <span
+          className={`text-[11px] px-2 py-0.5 rounded-full capitalize border ${
+            registrationStatusColors[reg.status] ??
+            "bg-slate-700 text-slate-300 border-slate-600"
+          }`}
+        >
+          Registration: {registrationStatus}
+        </span>
+        <span
+          className={`text-[11px] px-2 py-0.5 rounded-full capitalize border ${
+            tournamentStatusColors[reg.tournamentStatus] ??
+            "bg-slate-700 text-slate-300 border-slate-600"
+          }`}
+        >
+          Tournament: {tournamentStatus}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+        <div className="text-slate-400">Start Date</div>
+        <div className="text-slate-200 text-right">
+          {formatTournamentDate(reg.tournamentSchedule.startDate)}
+        </div>
+
+        <div className="text-slate-400">Check-In</div>
+        <div className="text-slate-200 text-right">
+          {formatTournamentDate(reg.tournamentSchedule.checkInStart)}
+        </div>
+
+        <div className="text-slate-400">Entry Type</div>
+        <div className="text-slate-200 text-right capitalize">
+          {reg.registrationType}
+        </div>
+
+        <div className="text-slate-400">In-Game ID</div>
+        <div
+          className="text-slate-200 text-right truncate"
+          title={reg.inGameId || "Not set"}
+        >
+          {reg.inGameId || "Not set"}
+        </div>
+
+        {reg.teamName ? (
+          <>
+            <div className="text-slate-400">Team Name</div>
+            <div
+              className="text-slate-200 text-right truncate"
+              title={reg.teamName}
+            >
+              {reg.teamName}
+            </div>
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -386,6 +500,21 @@ const Dashboard = () => {
       r.status !== "registered" &&
       r.status !== "checked_in" &&
       r.status !== "pending_payment",
+  );
+  const joinedTournamentDetails = [...registrations]
+    .sort((a, b) => {
+      const aTime = new Date(a.createdAt).getTime();
+      const bTime = new Date(b.createdAt).getTime();
+
+      if (Number.isNaN(aTime) && Number.isNaN(bTime)) return 0;
+      if (Number.isNaN(aTime)) return 1;
+      if (Number.isNaN(bTime)) return -1;
+      return bTime - aTime;
+    })
+    .slice(0, 6);
+  const joinedTournamentHiddenCount = Math.max(
+    0,
+    registrations.length - joinedTournamentDetails.length,
   );
 
   const initials = profile
@@ -714,7 +843,7 @@ const Dashboard = () => {
               My Tournaments
             </h2>
             {activeRegistrations.length > 0 ? (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {activeRegistrations.map((reg) => (
                   <TournamentCard key={reg.id} reg={reg} />
                 ))}
@@ -732,20 +861,39 @@ const Dashboard = () => {
             )}
           </section>
 
-          {/* Upcoming Matches */}
+          {/* Joined Tournaments Details */}
           <section>
             <h2 className="font-display text-lg font-semibold text-white mb-3">
-              Upcoming Matches
+              Joined Tournaments Details
             </h2>
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60">
-              <EmptyState
-                icon={Gamepad2}
-                title="No Upcoming Matches"
-                description="You don't have any scheduled matches. Join tournaments to get matched with opponents."
-                actionLabel="Join a Tournament"
-                actionTo="/auth/player/join-tournament"
-              />
-            </div>
+            {joinedTournamentDetails.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {joinedTournamentDetails.map((reg) => (
+                    <JoinedTournamentDetailsCard
+                      key={`joined-${reg.id}`}
+                      reg={reg}
+                    />
+                  ))}
+                </div>
+                {joinedTournamentHiddenCount > 0 && (
+                  <p className="text-xs text-slate-400 mt-2">
+                    {joinedTournamentHiddenCount} more joined tournament
+                    {joinedTournamentHiddenCount > 1 ? "s" : ""} hidden.
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="rounded-xl border border-slate-800 bg-slate-900/60">
+                <EmptyState
+                  icon={Gamepad2}
+                  title="No Joined Tournaments"
+                  description="You have not joined any tournaments yet. Join one to see detailed tracking here."
+                  actionLabel="Join a Tournament"
+                  actionTo="/auth/player/join-tournament"
+                />
+              </div>
+            )}
           </section>
 
           {/* Past Tournaments */}
