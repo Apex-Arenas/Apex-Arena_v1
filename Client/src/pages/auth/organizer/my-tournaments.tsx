@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Trophy,
   PlusCircle,
@@ -10,6 +10,7 @@ import {
   Globe,
   Lock,
   AlertCircle,
+  Pencil,
 } from "lucide-react";
 import { organizerService } from "../../../services/organizer.service";
 import type { Tournament } from "../../../services/tournament.service";
@@ -40,10 +41,14 @@ function formatDate(iso?: string) {
 // ─── Tournament Card ──────────────────────────────────────────────────────────
 
 function TournamentCard({ tournament }: { tournament: Tournament }) {
+  const navigate = useNavigate();
   const statusColor =
     STATUS_COLORS[tournament.status] ?? "bg-slate-700 text-slate-300";
   const needsPrizeDeposit =
     tournament.status === "awaiting_deposit" && !tournament.isFree;
+  const canEdit = ["draft", "awaiting_deposit", "open", "locked"].includes(
+    tournament.status,
+  );
   const cardHref = needsPrizeDeposit
     ? `/auth/organizer/tournaments/${tournament.id}?openDeposit=1`
     : `/auth/organizer/tournaments/${tournament.id}`;
@@ -63,6 +68,20 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {canEdit && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                navigate(`/auth/organizer/tournaments/${tournament.id}/edit`);
+              }}
+              className="inline-flex items-center gap-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-1 text-[11px] font-semibold text-cyan-200 hover:bg-cyan-500/20 transition-colors"
+            >
+              <Pencil className="w-3 h-3" />
+              Edit
+            </button>
+          )}
           <span
             className={`text-xs px-2 py-0.5 rounded-full capitalize ${statusColor}`}
           >
