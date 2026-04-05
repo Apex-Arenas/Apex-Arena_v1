@@ -80,6 +80,23 @@ export interface OrganizerVerificationRequest {
 function mapGame(raw: Record<string, unknown>): AdminGame {
   const stats = (raw.stats ?? {}) as Record<string, unknown>;
   const inGameIdConfig = (raw.in_game_id_config ?? {}) as Record<string, unknown>;
+
+  const tournamentCount = Number(
+    stats.tournament_count ??
+      stats.tournaments_hosted ??
+      raw.tournament_count ??
+      raw.tournaments_hosted ??
+      0,
+  );
+
+  const playerCount = Number(
+    stats.player_count ??
+      stats.total_players ??
+      raw.player_count ??
+      raw.total_players ??
+      0,
+  );
+
   return {
     id: String(raw._id ?? raw.id ?? ''),
     name: String(raw.name ?? ''),
@@ -94,8 +111,8 @@ function mapGame(raw: Record<string, unknown>): AdminGame {
     isActive: Boolean(raw.is_active ?? true),
     isFeatured: Boolean(raw.is_featured ?? false),
     publisher: raw.publisher as string | undefined,
-    tournamentCount: Number(stats.tournament_count ?? 0),
-    playerCount: Number(stats.player_count ?? 0),
+    tournamentCount,
+    playerCount,
   };
 }
 
