@@ -22,6 +22,7 @@ import {
 import {
   organizerService,
   type Tournament as OrganizerTournament,
+  type WalletBalance,
 } from "../../services/organizer.service";
 import {
   CalendarWidget,
@@ -44,6 +45,11 @@ const Dashboard = () => {
   const [organizerWalletBalance, setOrganizerWalletBalance] = useState<
     number | null
   >(null);
+  const [playerWallet, setPlayerWallet] = useState<WalletBalance | null>(null);
+  const [walletAmountInput, setWalletAmountInput] = useState("10");
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
+  const [walletInfo, setWalletInfo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const hasFetched = useRef(false);
   const isOrganizer = user?.role === "organizer";
@@ -70,11 +76,16 @@ const Dashboard = () => {
         });
         setOrganizerTournaments(tournaments);
         setOrganizerWalletBalance(wallet?.availableBalance ?? null);
+        setPlayerWallet(null);
       } else {
-        const result = await dashboardService.fetchDashboard();
+        const [result, wallet] = await Promise.all([
+          dashboardService.fetchDashboard(),
+          organizerService.getWalletBalance().catch(() => null),
+        ]);
         setData(result);
         setOrganizerTournaments([]);
         setOrganizerWalletBalance(null);
+        setPlayerWallet(wallet);
       }
     } catch {
       // Silently fail — show empty states
@@ -166,6 +177,46 @@ const Dashboard = () => {
     0,
     organizerActiveList.length - organizerActivePreview.length,
   );
+
+  const formatGhs = (amountMinorUnits?: number | null) => {
+    const value = Number(amountMinorUnits ?? 0) / 100;
+    return `GHS ${value.toFixed(2)}`;
+  };
+
+  const handleDeposit = async () => {
+    const amount = Number(walletAmountInput);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setWalletError("Enter a valid amount greater than 0.");
+      return;
+    }
+
+    setIsDepositing(true);
+    setWalletError(null);
+    setWalletInfo(null);
+    try {
+      const result = await organizerService.initiateWalletTopUp(amount);
+      if (result.authorizationUrl) {
+        window.location.href = result.authorizationUrl;
+        return;
+      }
+
+      setWalletInfo(
+        "Deposit initiated. Check your payment app or transaction history for confirmation.",
+      );
+      const refreshedWallet = await organizerService
+        .getWalletBalance()
+        .catch(() => null);
+      if (refreshedWallet) {
+        setPlayerWallet(refreshedWallet);
+      }
+    } catch (error) {
+      setWalletError(
+        error instanceof Error ? error.message : "Failed to initiate deposit.",
+      );
+    } finally {
+      setIsDepositing(false);
+    }
+  };
 
   const playerCalendarEvents = useMemo<CalendarEvent[]>(() => {
     const events: CalendarEvent[] = [];
@@ -590,6 +641,74 @@ const Dashboard = () => {
         <div className="space-y-4">
           {/* Calendar */}
           <CalendarWidget events={playerCalendarEvents} />
+
+          {/* Wallet */}
+          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-cyan-300" />
+              Wallet
+            </h3>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-lg border border-slate-800 bg-slate-800/40 px-3 py-2">
+                <p className="text-slate-400">Available</p>
+                <p className="font-semibold text-emerald-300">
+                  {formatGhs(playerWallet?.availableBalance)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-800 bg-slate-800/40 px-3 py-2">
+                <p className="text-slate-400">Pending</p>
+                <p className="font-semibold text-amber-300">
+                  {formatGhs(playerWallet?.pendingBalance)}
+                </p>
+              </div>
+              <div className="col-span-2 rounded-lg border border-slate-800 bg-slate-800/40 px-3 py-2">
+                <p className="text-slate-400">Total Balance</p>
+                <p className="font-semibold text-cyan-300">
+                  {formatGhs(playerWallet?.totalBalance)}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs text-slate-400" htmlFor="wallet-amount">
+                Deposit Amount (GHS)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="wallet-amount"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={walletAmountInput}
+                  onChange={(e) => setWalletAmountInput(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:outline-none"
+                  placeholder="e.g. 20"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleDeposit();
+                  }}
+                  disabled={isDepositing}
+                  className="shrink-0 rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-60"
+                >
+                  {isDepositing ? "Processing..." : "Deposit"}
+                </button>
+              </div>
+            </div>
+
+            {walletError && (
+              <p className="text-xs text-red-300 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-2">
+                {walletError}
+              </p>
+            )}
+            {walletInfo && (
+              <p className="text-xs text-cyan-300 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-2">
+                {walletInfo}
+              </p>
+            )}
+          </div>
 
           {/* Score Confirmations */}
           <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">

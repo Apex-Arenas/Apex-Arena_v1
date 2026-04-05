@@ -23,6 +23,7 @@ import MyTournaments from "./pages/auth/organizer/my-tournaments";
 import TournamentManage from "./pages/auth/organizer/tournament-manage";
 import BecomeOrganizer from "./pages/auth/player/become-organizer";
 import TournamentDetail from "./pages/auth/player/tournament-detail";
+import TransactionsPage from "./pages/auth/transactions";
 
 // Admin
 
@@ -61,13 +62,17 @@ const App = () => {
       <Route path="auth" element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
+          <Route path="transactions" element={<TransactionsPage />} />
 
           {/* Player-only routes */}
           <Route element={<RoleRoute role="player" />}>
             <Route path="player/profile" element={<PlayerProfile />} />
             <Route path="player/join-tournament" element={<JoinTournament />} />
             <Route path="tournaments" element={<JoinTournament />} />
-            <Route path="tournaments/:tournamentId" element={<TournamentDetail />} />
+            <Route
+              path="tournaments/:tournamentId"
+              element={<TournamentDetail />}
+            />
             <Route path="become-organizer" element={<BecomeOrganizer />} />
           </Route>
 
