@@ -141,6 +141,37 @@ function StatCard({
 
 // ─── Tournament Card ────────────────────────────────────────────────────────
 
+function TournamentImage({
+  reg,
+  className,
+}: {
+  reg: TournamentRegistration;
+  className?: string;
+}) {
+  const [hasImageError, setHasImageError] = useState(false);
+  const imageUrl =
+    reg.tournamentThumbnailUrl ?? reg.tournamentBannerUrl ?? reg.gameLogoUrl;
+
+  if (!imageUrl || hasImageError) {
+    return (
+      <div
+        className={`rounded-lg border border-slate-700 bg-slate-800/70 flex items-center justify-center text-slate-500 ${className ?? "w-12 h-12"}`}
+      >
+        <Gamepad2 className="w-4 h-4" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={reg.tournamentTitle}
+      className={`rounded-lg border border-slate-700 object-cover ${className ?? "w-12 h-12"}`}
+      onError={() => setHasImageError(true)}
+    />
+  );
+}
+
 function TournamentCard({ reg }: { reg: TournamentRegistration }) {
   const statusColors: Record<string, string> = {
     registered: "bg-cyan-500/20 text-cyan-300",
@@ -163,19 +194,22 @@ function TournamentCard({ reg }: { reg: TournamentRegistration }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 h-full">
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-white truncate">
-            {reg.tournamentTitle}
-          </h4>
-          <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
-            <span className="flex items-center gap-1">
-              <CalendarDays className="w-3.5 h-3.5" />
-              {dateStr}
-            </span>
-            <span className="flex items-center gap-1">
-              <Gamepad2 className="w-3.5 h-3.5" />
-              {reg.registrationType}
-            </span>
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <TournamentImage reg={reg} className="w-12 h-12 shrink-0" />
+          <div className="min-w-0">
+            <h4 className="text-sm font-semibold text-white truncate">
+              {reg.tournamentTitle}
+            </h4>
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
+              <span className="flex items-center gap-1">
+                <CalendarDays className="w-3.5 h-3.5" />
+                {dateStr}
+              </span>
+              <span className="flex items-center gap-1">
+                <Gamepad2 className="w-3.5 h-3.5" />
+                {reg.gameName ?? reg.registrationType}
+              </span>
+            </div>
           </div>
         </div>
         <span
@@ -233,15 +267,21 @@ function JoinedTournamentDetailsCard({ reg }: { reg: TournamentRegistration }) {
     : "Unknown";
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 h-full">
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="min-w-0">
-          <h4 className="text-sm font-semibold text-white truncate">
-            {reg.tournamentTitle}
-          </h4>
-          <p className="text-xs text-slate-400 mt-1">
-            Joined {formatTournamentDate(reg.createdAt)}
-          </p>
+        <div className="flex items-start gap-3 min-w-0">
+          <TournamentImage reg={reg} className="w-12 h-12 shrink-0" />
+          <div className="min-w-0">
+            <h4 className="text-sm font-semibold text-white truncate">
+              {reg.tournamentTitle}
+            </h4>
+            <p className="text-xs text-slate-400 mt-1">
+              Joined {formatTournamentDate(reg.createdAt)}
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+              {reg.gameName ?? "Game not set"}
+            </p>
+          </div>
         </div>
         <Link
           to={`/auth/tournaments/${reg.tournamentId}`}

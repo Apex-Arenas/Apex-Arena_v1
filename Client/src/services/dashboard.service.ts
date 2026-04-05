@@ -23,11 +23,16 @@ export interface TournamentRegistration {
   tournamentId: string;
   tournamentTitle: string;
   tournamentStatus: string;
+  tournamentThumbnailUrl?: string;
+  tournamentBannerUrl?: string;
   tournamentSchedule: {
     startDate?: string;
     endDate?: string;
     checkInStart?: string;
   };
+  gameId?: string;
+  gameName?: string;
+  gameLogoUrl?: string;
   registrationType: 'solo' | 'team';
   teamName?: string;
   status: string;
@@ -69,22 +74,88 @@ function mapProfile(raw: Record<string, unknown>): DashboardProfile {
   };
 }
 
+function extractGameId(value: unknown): string | undefined {
+  if (typeof value === 'string' || typeof value === 'number') {
+    const id = String(value);
+    return id.length > 0 ? id : undefined;
+  }
+
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const id = record._id ?? record.id;
+    if (typeof id === 'string' || typeof id === 'number') {
+      const normalized = String(id);
+      return normalized.length > 0 ? normalized : undefined;
+    }
+  }
+
+  return undefined;
+}
+
+async function fetchGameLookupByIds(gameIds: string[]): Promise<Map<string, { name?: string; logoUrl?: string }>> {
+  const uniqueGameIds = Array.from(new Set(gameIds.filter((id) => id.length > 0)));
+  if (uniqueGameIds.length === 0) {
+    return new Map();
+  }
+
+  const response = await apiGet(TOURNAMENT_ENDPOINTS.GAMES, { skipCache: true });
+  if (!response.success) {
+    return new Map();
+  }
+
+  const payload = response.data as Record<string, unknown>;
+  const list = Array.isArray(payload)
+    ? (payload as Record<string, unknown>[])
+    : ((payload.games ?? payload.data ?? []) as Record<string, unknown>[]);
+
+  const lookup = new Map<string, { name?: string; logoUrl?: string }>();
+  list.forEach((gameRaw) => {
+    const id = extractGameId(gameRaw._id ?? gameRaw.id);
+    if (!id || !uniqueGameIds.includes(id)) {
+      return;
+    }
+
+    lookup.set(id, {
+      name: typeof gameRaw.name === 'string' ? gameRaw.name : undefined,
+      logoUrl: typeof gameRaw.logo_url === 'string' ? gameRaw.logo_url : undefined,
+    });
+  });
+
+  return lookup;
+}
+
 function mapRegistration(raw: Record<string, unknown>): TournamentRegistration {
   const tournament = (raw.tournament_id ?? {}) as Record<string, unknown>;
   const team = (raw.team_id ?? null) as Record<string, unknown> | null;
   const checkIn = (raw.check_in ?? {}) as Record<string, unknown>;
   const schedule = (tournament.schedule ?? {}) as Record<string, unknown>;
+  const game = (tournament.game_id ?? {}) as Record<string, unknown>;
+  const gameId = extractGameId(tournament.game_id);
 
   return {
     id: String(raw._id ?? ''),
     tournamentId: String(tournament._id ?? raw.tournament_id ?? ''),
     tournamentTitle: String(tournament.title ?? 'Unknown Tournament'),
     tournamentStatus: String(tournament.status ?? ''),
+    tournamentThumbnailUrl:
+      (tournament.thumbnail_url as string | undefined) ??
+      (tournament.thumbnailUrl as string | undefined),
+    tournamentBannerUrl:
+      (tournament.banner_url as string | undefined) ??
+      (tournament.bannerUrl as string | undefined),
     tournamentSchedule: {
       startDate: schedule.start_date as string | undefined ?? schedule.startDate as string | undefined,
       endDate: schedule.end_date as string | undefined ?? schedule.endDate as string | undefined,
       checkInStart: schedule.check_in_start as string | undefined,
     },
+    gameId,
+    gameName:
+      (game.name as string | undefined) ??
+      (tournament.game_name as string | undefined) ??
+      (tournament.gameName as string | undefined),
+    gameLogoUrl:
+      (game.logo_url as string | undefined) ??
+      (game.logoUrl as string | undefined),
     registrationType: (raw.registration_type as 'solo' | 'team') ?? 'solo',
     teamName: team?.name as string | undefined,
     status: String(raw.status ?? ''),
@@ -113,7 +184,35 @@ export const dashboardService = {
     const list = Array.isArray(data) ? data : (data as Record<string, unknown>).data;
     if (!Array.isArray(list)) return [];
 
-    return list.map((item: Record<string, unknown>) => mapRegistration(item));
+    const registrations = list.map((item: Record<string, unknown>) => mapRegistration(item));
+
+    const missingGameLogoIds = registrations
+      .map((registration) =>
+        registration.gameId && !registration.gameLogoUrl ? registration.gameId : undefined,
+      )
+      .filter((gameId): gameId is string => Boolean(gameId));
+
+    if (missingGameLogoIds.length === 0) {
+      return registrations;
+    }
+
+    const gameLookup = await fetchGameLookupByIds(missingGameLogoIds);
+    return registrations.map((registration) => {
+      if (!registration.gameId || registration.gameLogoUrl) {
+        return registration;
+      }
+
+      const game = gameLookup.get(registration.gameId);
+      if (!game) {
+        return registration;
+      }
+
+      return {
+        ...registration,
+        gameName: registration.gameName ?? game.name,
+        gameLogoUrl: game.logoUrl,
+      };
+    });
   },
 
   async fetchDashboard(): Promise<DashboardData> {
