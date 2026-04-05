@@ -125,9 +125,78 @@ function normalizeStatus(value: unknown): string {
   return String(value ?? '').trim().toLowerCase();
 }
 
+function extractGameId(value: unknown): string | undefined {
+  if (typeof value === 'string' || typeof value === 'number') {
+    const id = String(value);
+    return id.length > 0 ? id : undefined;
+  }
+
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const id = record._id ?? record.id;
+    if (typeof id === 'string' || typeof id === 'number') {
+      const normalized = String(id);
+      return normalized.length > 0 ? normalized : undefined;
+    }
+  }
+
+  return undefined;
+}
+
+function extractGameName(value: unknown): string | undefined {
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const nameCandidate = record.name ?? record.title ?? record.game_name ?? record.gameName;
+    if (typeof nameCandidate === 'string' && nameCandidate.trim().length > 0) {
+      return nameCandidate;
+    }
+  }
+
+  return undefined;
+}
+
+async function fetchGameLookupByIds(gameIds: string[]): Promise<Map<string, TournamentGame>> {
+  const uniqueGameIds = Array.from(new Set(gameIds.filter((id) => id.length > 0)));
+  if (uniqueGameIds.length === 0) {
+    return new Map();
+  }
+
+  const response = await apiGet(TOURNAMENT_ENDPOINTS.GAMES, { skipCache: true });
+  if (!response.success) {
+    return new Map();
+  }
+
+  const payload = response.data as Record<string, unknown>;
+  const list = Array.isArray(payload)
+    ? (payload as Record<string, unknown>[])
+    : ((payload.games ?? payload.data ?? []) as Record<string, unknown>[]);
+
+  const lookup = new Map<string, TournamentGame>();
+  list.forEach((gameRaw) => {
+    const id = extractGameId(gameRaw._id ?? gameRaw.id);
+    const name = typeof gameRaw.name === 'string' ? gameRaw.name : undefined;
+    if (!id || !name) {
+      return;
+    }
+
+    if (uniqueGameIds.includes(id)) {
+      lookup.set(id, {
+        id,
+        name,
+        logoUrl: gameRaw.logo_url as string | undefined,
+      });
+    }
+  });
+
+  return lookup;
+}
+
 // ─── Mappers ────────────────────────────────────────────────────────────────
 
-export function mapTournament(raw: Record<string, unknown>): Tournament {
+export function mapTournament(
+  raw: Record<string, unknown>,
+  gameLookup?: Map<string, TournamentGame>,
+): Tournament {
   const game = (raw.game_id ?? raw.game ?? {}) as Record<string, unknown>;
   const schedule = (raw.schedule ?? {}) as Record<string, unknown>;
   const prize = (raw.prize_structure ?? {}) as Record<string, unknown>;
@@ -141,17 +210,38 @@ export function mapTournament(raw: Record<string, unknown>): Tournament {
       ? 'open'
       : rawStatus;
 
+  const explicitGameName =
+    (typeof raw.game_name === 'string' && raw.game_name.trim().length > 0
+      ? (raw.game_name as string)
+      : undefined) ??
+    (typeof raw.gameName === 'string' && raw.gameName.trim().length > 0
+      ? (raw.gameName as string)
+      : undefined);
+
+  const gameId =
+    extractGameId(raw.game_id) ??
+    extractGameId(raw.game) ??
+    extractGameId((raw.game as Record<string, unknown> | undefined)?._id);
+  const rawGameName = extractGameName(raw.game_id) ?? extractGameName(raw.game) ?? explicitGameName;
+  const fallbackGame = gameId ? gameLookup?.get(gameId) : undefined;
+
+  const mappedGame: TournamentGame | undefined =
+    gameId || rawGameName || fallbackGame
+      ? {
+          id: gameId ?? fallbackGame?.id ?? '',
+          name: rawGameName ?? fallbackGame?.name ?? '',
+          logoUrl:
+            (game.logo_url as string | undefined) ??
+            ((raw.game as Record<string, unknown> | undefined)?.logo_url as string | undefined) ??
+            fallbackGame?.logoUrl,
+        }
+      : undefined;
+
   return {
     id: String(raw._id ?? raw.id ?? ''),
     title: String(raw.title ?? ''),
     description: raw.description as string | undefined,
-    game: game._id
-      ? {
-          id: String(game._id ?? ''),
-          name: String(game.name ?? ''),
-          logoUrl: game.logo_url as string | undefined,
-        }
-      : undefined,
+    game: mappedGame,
     organizerId: String(organizer._id ?? raw.organizer_id ?? ''),
     organizerName: (organizer.username ?? organizer.first_name) as string | undefined,
     tournamentType: raw.tournament_type as string | undefined,
@@ -207,6 +297,21 @@ export const tournamentService = {
 
     const data = response.data as Record<string, unknown>;
     const list = Array.isArray(data) ? data : ((data.tournaments ?? data.data ?? []) as Record<string, unknown>[]);
+
+    const missingGameIds = list
+      .map((item) => {
+        const hasName =
+          typeof item.game_name === 'string' ||
+          typeof item.gameName === 'string' ||
+          extractGameName(item.game_id) !== undefined ||
+          extractGameName(item.game) !== undefined;
+        if (hasName) return undefined;
+        return extractGameId(item.game_id) ?? extractGameId(item.game);
+      })
+      .filter((id): id is string => Boolean(id));
+
+    const gameLookup = await fetchGameLookupByIds(missingGameIds);
+
     const pagination = (data.pagination ?? {}) as Record<string, unknown>;
     const page = Number(pagination.page ?? data.page ?? filters.page ?? 1);
     const limit = Number(pagination.limit ?? data.limit ?? filters.limit ?? 10);
@@ -217,7 +322,9 @@ export const tournamentService = {
     );
 
     return {
-      tournaments: list.map((t) => mapTournament(t as Record<string, unknown>)),
+      tournaments: list.map((t) =>
+        mapTournament(t as Record<string, unknown>, gameLookup),
+      ),
       pagination: {
         total,
         page,
@@ -228,12 +335,20 @@ export const tournamentService = {
   },
 
   async getTournamentDetail(tournamentId: string): Promise<Tournament | null> {
-    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.TOURNAMENT_DETAIL}/${tournamentId}`);
+    const response = await apiGet(
+      `${TOURNAMENT_ENDPOINTS.TOURNAMENT_DETAIL}/${tournamentId}`,
+      { skipCache: true },
+    );
     if (!response.success) return null;
 
     const data = response.data as Record<string, unknown>;
     const raw = (data.tournament ?? data) as Record<string, unknown>;
-    return mapTournament(raw);
+
+    const gameId = extractGameId(raw.game_id) ?? extractGameId(raw.game);
+    const hasGameName = Boolean(extractGameName(raw.game_id) ?? extractGameName(raw.game));
+    const gameLookup = gameId && !hasGameName ? await fetchGameLookupByIds([gameId]) : undefined;
+
+    return mapTournament(raw, gameLookup);
   },
 
   async canRegister(tournamentId: string): Promise<CanRegisterResult> {
