@@ -75,7 +75,7 @@ export const refreshAccessToken = async (): Promise<boolean> => {
     const response = await fetch(AUTH_ENDPOINTS.TOKEN_REFRESH, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
     if (!response.ok) {
@@ -89,9 +89,25 @@ export const refreshAccessToken = async (): Promise<boolean> => {
       return false;
     }
 
+    const payload = (data.data ?? {}) as {
+      access_token?: string;
+      accessToken?: string;
+      refresh_token?: string;
+      refreshToken?: string;
+    };
+
+    const nextAccessToken = payload.access_token ?? payload.accessToken;
+    const nextRefreshToken =
+      payload.refresh_token ?? payload.refreshToken ?? refreshToken;
+
+    if (!nextAccessToken) {
+      console.error('[API] Token refresh succeeded but no access token returned');
+      return false;
+    }
+
     saveTokens({
-      accessToken: data.data.accessToken,
-      refreshToken: data.data.refreshToken || refreshToken,
+      accessToken: nextAccessToken,
+      refreshToken: nextRefreshToken,
     });
 
     console.log('[API] Access token refreshed successfully');
