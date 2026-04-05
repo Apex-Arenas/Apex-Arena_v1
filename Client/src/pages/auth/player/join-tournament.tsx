@@ -15,6 +15,7 @@ import {
   Loader2,
   Lock,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   tournamentService,
   type MyTournamentRegistration,
@@ -263,6 +264,7 @@ function TournamentCard({
   isLoadingRegistrations: boolean;
   onRegister: (t: Tournament) => void;
 }) {
+  const navigate = useNavigate();
   const statusColor =
     STATUS_COLORS[tournament.status] ?? "bg-slate-700 text-slate-300";
   const normalizedStatus = normalizeRegistrationStatus(registrationStatus);
@@ -276,7 +278,10 @@ function TournamentCard({
   const isFull = tournament.currentCount >= tournament.maxParticipants;
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col gap-3 hover:border-slate-700 transition-colors">
+    <div
+      className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col gap-3 hover:border-slate-600 transition-colors cursor-pointer"
+      onClick={() => navigate(`/auth/tournaments/${tournament.id}`)}
+    >
       {/* Banner / Game Badge */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -332,11 +337,15 @@ function TournamentCard({
         )}
       </div>
 
-      {/* Register CTA */}
+      {/* CTA */}
       <button
-        onClick={() => onRegister(tournament)}
-        disabled={isLoadingRegistrations || !canRegister || isFull}
-        className="mt-auto w-full py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+        onClick={(e) => {
+          e.stopPropagation();
+          if (canRegister) onRegister(tournament);
+          else navigate(`/auth/tournaments/${tournament.id}`);
+        }}
+        disabled={isLoadingRegistrations}
+        className="mt-auto w-full py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50
           bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500 hover:text-slate-950 border border-cyan-500/30 hover:border-cyan-500
           disabled:hover:bg-cyan-500/10 disabled:hover:text-cyan-300 disabled:hover:border-cyan-500/30
           flex items-center justify-center gap-2"
@@ -344,16 +353,16 @@ function TournamentCard({
         {isLoadingRegistrations ? (
           "Checking..."
         ) : isAlreadyRegistered ? (
-          `Joined (${(normalizedStatus || "registered").replace("_", " ")})`
+          `View (${(normalizedStatus || "registered").replace("_", " ")})`
         ) : isFull ? (
           <>
             <Lock className="w-4 h-4" />
-            Full
+            Full — View Details
           </>
         ) : canRegister ? (
           "Join Tournament"
         ) : (
-          "Registration Closed"
+          "View Details"
         )}
       </button>
     </div>
@@ -740,7 +749,8 @@ const JoinTournament = () => {
               return (
                 <div
                   key={registration.registrationId}
-                  className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col gap-3"
+                  className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col gap-3 cursor-pointer hover:border-slate-600 transition-colors"
+                  onClick={() => navigate(`/auth/tournaments/${registration.tournamentId}`)}
                 >
                   <div className="space-y-1.5">
                     <h3 className="text-sm font-semibold text-white line-clamp-2">
@@ -771,7 +781,8 @@ const JoinTournament = () => {
                   </div>
 
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       handleWithdrawRequest(registration);
                     }}
                     disabled={!canWithdraw || isWithdrawing}
