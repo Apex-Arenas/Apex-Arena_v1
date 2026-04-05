@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ChevronLeft,
   Users,
@@ -16,8 +16,6 @@ import {
   Send,
   Trash2,
   Wallet,
-  RefreshCw,
-  ExternalLink,
   Circle,
 } from "lucide-react";
 import {
@@ -363,7 +361,6 @@ function RegistrantRow({
 const TournamentManage = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [registrants, setRegistrants] = useState<TournamentRegistrant[]>([]);
@@ -375,17 +372,12 @@ const TournamentManage = () => {
     msg: string;
   } | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isGeneratingBracket, setIsGeneratingBracket] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const [showDepositModal, setShowDepositModal] = useState(false);
-  const [isDepositingPrizePool, setIsDepositingPrizePool] = useState(false);
-  const [isStartingTopUp, setIsStartingTopUp] = useState(false);
-  const [isLoadingWallet, setIsLoadingWallet] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [depositAmountGhs, setDepositAmountGhs] = useState("");
-  const [topUpAmountGhs, setTopUpAmountGhs] = useState("");
+  const [isInitiatingPayment, setIsInitiatingPayment] = useState(false);
   const [escrowSummary, setEscrowSummary] =
     useState<EscrowStatusSummary | null>(null);
   const [showWinnersModal, setShowWinnersModal] = useState(false);
@@ -400,7 +392,6 @@ const TournamentManage = () => {
   );
 
   const hasFetched = useRef(false);
-  const hasAutoOpenedDeposit = useRef(false);
 
   const showToast = (type: "success" | "error", msg: string) => {
     setToast({ type, msg });
@@ -448,63 +439,11 @@ const TournamentManage = () => {
     }
   }, [refreshEscrowSummary, tournamentId]);
 
-  const refreshWalletBalance = useCallback(async () => {
-    setIsLoadingWallet(true);
-    try {
-      const balance = await organizerService.getWalletBalance();
-      setWalletBalance(balance.availableBalance);
-      return balance.availableBalance;
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "Failed to load wallet balance.",
-      );
-      return null;
-    } finally {
-      setIsLoadingWallet(false);
-    }
-  }, []);
-
-  const pollTournamentStatusAfterDeposit = useCallback(async () => {
-    if (!tournamentId) return false;
-
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      const latest = await tournamentService.getTournamentDetail(tournamentId);
-      if (latest) {
-        setTournament(latest);
-        if (latest.status === "open") {
-          return true;
-        }
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-    }
-
-    return false;
-  }, [tournamentId]);
-
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
     void loadData();
   }, [loadData]);
-
-  useEffect(() => {
-    if (hasAutoOpenedDeposit.current) return;
-
-    const params = new URLSearchParams(location.search);
-    const shouldAutoOpen = params.get("openDeposit") === "1";
-    const canAutoOpen =
-      shouldAutoOpen &&
-      Boolean(tournament) &&
-      tournament?.status === "awaiting_deposit" &&
-      !tournament?.isFree;
-
-    if (!canAutoOpen) return;
-
-    hasAutoOpenedDeposit.current = true;
-    void openDepositModal();
-  }, [location.search, tournament]);
 
   useEffect(() => {
     if (!tournamentId || !tournament || tournament.isFree) return;
@@ -630,6 +569,23 @@ const TournamentManage = () => {
     }
   };
 
+  const handleGenerateBracket = async () => {
+    if (!tournamentId) return;
+    setIsGeneratingBracket(true);
+    try {
+      await organizerService.generateBracket(tournamentId);
+      showToast("success", "Bracket generated successfully.");
+      await loadData();
+    } catch (err) {
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to generate bracket.",
+      );
+    } finally {
+      setIsGeneratingBracket(false);
+    }
+  };
+
   const handleCancel = async () => {
     if (!tournamentId) return;
     const reason = cancelReason.trim();
@@ -665,123 +621,35 @@ const TournamentManage = () => {
     }
   };
 
-  const openDepositModal = async () => {
-    if (!tournament) return;
+  const handlePayPrizePool = async () => {
+    if (!tournamentId || !tournament) return;
 
     const requiredPesewas =
       tournament.organizerGrossDeposit ?? tournament.prizePool ?? 0;
-    const defaultGhs =
-      requiredPesewas > 0 ? (requiredPesewas / 100).toFixed(2) : "";
-
-    setDepositAmountGhs(defaultGhs);
-    setTopUpAmountGhs(defaultGhs);
-    setShowDepositModal(true);
-    await refreshWalletBalance();
-  };
-
-  const handleStartWalletTopUp = async () => {
-    const amount = Number(topUpAmountGhs);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      showToast("error", "Enter a valid wallet top-up amount in GHS.");
+    if (requiredPesewas <= 0) {
+      showToast("error", "Prize pool amount is not set for this tournament.");
       return;
     }
 
-    setIsStartingTopUp(true);
-    try {
-      const result = await organizerService.initiateWalletTopUp(amount);
-      if (result.authorizationUrl) {
-        window.open(result.authorizationUrl, "_blank", "noopener,noreferrer");
-      }
-      showToast(
-        "success",
-        "Top-up initiated. Complete payment, then click Refresh Balance.",
-      );
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "Failed to start wallet top-up.",
-      );
-    } finally {
-      setIsStartingTopUp(false);
-    }
-  };
-
-  const handleCompletePrizeDeposit = async () => {
-    if (!tournamentId) return;
-
-    const amount = Number(depositAmountGhs);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      showToast("error", "Enter a valid prize deposit amount in GHS.");
-      return;
-    }
-
-    if (requiredDepositPesewas > 0) {
-      const requiredAmountGhs = Number(
-        (requiredDepositPesewas / 100).toFixed(2),
-      );
-      if (Math.abs(amount - requiredAmountGhs) > 0.0001) {
-        showToast(
-          "error",
-          `Use the exact required deposit amount: GHS ${requiredAmountGhs.toFixed(2)}.`,
-        );
-        return;
-      }
-    }
-
-    setIsDepositingPrizePool(true);
+    const amountGhs = requiredPesewas / 100;
+    setIsInitiatingPayment(true);
     try {
       const result = await organizerService.initiateEscrowDeposit(
         tournamentId,
-        amount,
+        amountGhs,
       );
-
       if (!result.authorizationUrl) {
         throw new Error("Payment link was not returned. Please try again.");
       }
-
-      const paymentWindow = window.open(
-        result.authorizationUrl,
-        "_blank",
-        "noopener,noreferrer",
-      );
-
-      if (!paymentWindow) {
-        throw new Error(
-          "Popup blocked. Allow popups for this site and try again.",
-        );
-      }
-
-      showToast(
-        "success",
-        "Payment initiated. Complete payment in the new tab; we will sync status automatically.",
-      );
-
-      setShowDepositModal(false);
-
-      const isOpen = await pollTournamentStatusAfterDeposit();
-
-      if (isOpen) {
-        showToast(
-          "success",
-          "Prize deposit successful. Tournament is now open.",
-        );
-      } else {
-        showToast(
-          "success",
-          "Awaiting payment confirmation. If you completed payment, status will update shortly.",
-        );
-      }
-
-      await loadData();
+      window.location.href = result.authorizationUrl;
     } catch (err) {
       showToast(
         "error",
         err instanceof Error
           ? err.message
-          : "Failed to complete prize deposit.",
+          : "Failed to initiate prize deposit.",
       );
-    } finally {
-      setIsDepositingPrizePool(false);
+      setIsInitiatingPayment(false);
     }
   };
 
@@ -965,6 +833,9 @@ const TournamentManage = () => {
   }
 
   const canPublish = tournament.status === "draft";
+  const canGenerateBracket = ["locked", "ready_to_start"].includes(
+    tournament.status,
+  );
   const canCancel = !["completed", "cancelled"].includes(tournament.status);
   const canDepositPrizePool =
     tournament.status === "awaiting_deposit" && !tournament.isFree;
@@ -1001,12 +872,6 @@ const TournamentManage = () => {
   const escrowNeedsAttention =
     escrowSummary !== null &&
     ["disputed", "cancelled"].includes(escrowSummary.status);
-  const requiredDepositPesewas =
-    tournament.organizerGrossDeposit ?? tournament.prizePool ?? 0;
-  const walletShortfallPesewas =
-    walletBalance !== null
-      ? Math.max(0, requiredDepositPesewas - walletBalance)
-      : null;
 
   return (
     <div className="px-6 py-6 max-w-5xl mx-auto space-y-6">
@@ -1087,13 +952,36 @@ const TournamentManage = () => {
               Publish
             </button>
           )}
+          {canGenerateBracket && (
+            <button
+              onClick={() => {
+                void handleGenerateBracket();
+              }}
+              disabled={isGeneratingBracket}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 text-white text-sm font-semibold hover:bg-indigo-400 disabled:opacity-60 transition-colors"
+            >
+              {isGeneratingBracket ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trophy className="w-4 h-4" />
+              )}
+              Generate Bracket
+            </button>
+          )}
           {canDepositPrizePool && (
             <button
-              onClick={openDepositModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 text-slate-950 text-sm font-semibold hover:bg-amber-400 transition-colors"
+              onClick={() => {
+                void handlePayPrizePool();
+              }}
+              disabled={isInitiatingPayment}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 text-slate-950 text-sm font-semibold hover:bg-amber-400 disabled:opacity-60 transition-colors"
             >
-              <Wallet className="w-4 h-4" />
-              Complete Prize Deposit
+              {isInitiatingPayment ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Wallet className="w-4 h-4" />
+              )}
+              Pay Prize Pool
             </button>
           )}
           {canOpenWinnersModal && (
@@ -1514,143 +1402,6 @@ const TournamentManage = () => {
           )}
         </div>
       </div>
-
-      {/* Deposit Modal */}
-      {showDepositModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                  <Wallet className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <h3 className="font-display text-lg font-bold text-white">
-                    Complete Prize Deposit
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Tournament will open after escrow deposit is recorded.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowDepositModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Required deposit</span>
-                <span className="font-semibold text-white">
-                  {requiredDepositPesewas > 0
-                    ? formatGhsFromPesewas(requiredDepositPesewas)
-                    : "Set amount below"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Available wallet balance</span>
-                <span className="font-semibold text-white">
-                  {walletBalance === null
-                    ? "Loading..."
-                    : formatGhsFromPesewas(walletBalance)}
-                </span>
-              </div>
-              {walletShortfallPesewas !== null &&
-                walletShortfallPesewas > 0 && (
-                  <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2">
-                    Wallet shortfall:{" "}
-                    {formatGhsFromPesewas(walletShortfallPesewas)}
-                  </p>
-                )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-xs font-medium text-slate-400">
-                Prize deposit amount (GHS)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={depositAmountGhs}
-                onChange={(e) => setDepositAmountGhs(e.target.value)}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
-                placeholder="e.g. 50.00"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-xs font-medium text-slate-400">
-                Top-up amount (GHS) if wallet is low
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={topUpAmountGhs}
-                  onChange={(e) => setTopUpAmountGhs(e.target.value)}
-                  className="flex-1 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
-                  placeholder="e.g. 50.00"
-                />
-                <button
-                  onClick={handleStartWalletTopUp}
-                  disabled={isStartingTopUp}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-cyan-500/40 text-cyan-300 text-sm font-medium hover:bg-cyan-500/10 disabled:opacity-60 transition-colors"
-                >
-                  {isStartingTopUp ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <ExternalLink className="w-4 h-4" />
-                  )}
-                  Top Up Wallet
-                </button>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  void refreshWalletBalance();
-                }}
-                disabled={isLoadingWallet}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-700 text-slate-300 text-sm hover:bg-white/5 disabled:opacity-60 transition-colors"
-              >
-                {isLoadingWallet ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-                Refresh Balance
-              </button>
-            </div>
-
-            <div className="flex gap-3 pt-1">
-              <button
-                onClick={() => setShowDepositModal(false)}
-                className="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-300 text-sm font-medium hover:bg-white/5 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCompletePrizeDeposit}
-                disabled={isDepositingPrizePool}
-                className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg bg-amber-500 text-slate-950 text-sm font-semibold hover:bg-amber-400 disabled:opacity-60 transition-colors"
-              >
-                {isDepositingPrizePool ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Wallet className="w-4 h-4" />
-                )}
-                Confirm Deposit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Winners Modal */}
       {showWinnersModal && (
