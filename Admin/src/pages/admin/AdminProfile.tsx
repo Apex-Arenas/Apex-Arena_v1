@@ -11,6 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useAdminAuth } from "../../lib/admin-auth-context";
+import ImageUploadDropzone from "../../components/ImageUploadDropzone";
 import { apiPost, apiPut } from "../../utils/api.utils";
 import { AUTH_ENDPOINTS } from "../../config/api.config";
 import { getAdminAccessToken } from "../../utils/auth.utils";
@@ -270,13 +271,11 @@ const AdminProfile = () => {
           />
         </Field>
 
-        <Field label="Avatar URL">
-          <input
-            type="url"
+        <Field label="Avatar Image">
+          <ImageUploadDropzone
             value={avatarUrl}
-            onChange={(e) => setAvatarUrl(e.target.value)}
-            placeholder="https://example.com/avatar.png"
-            className={inputCls}
+            onChange={setAvatarUrl}
+            folder="apex-arenas/admin/avatars"
           />
         </Field>
 
