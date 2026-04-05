@@ -10,6 +10,7 @@ import Register from "./pages/public/register";
 import Login from "./pages/public/login";
 import Dashboard from "./pages/auth/Dashboard";
 import VerifyOtp from "./pages/public/verify-otp";
+import PaymentCallback from "./pages/public/payment-callback.tsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleRoute from "./components/RoleRoute";
 
@@ -21,6 +22,7 @@ import CreateTournament from "./pages/auth/organizer/create-tournament";
 import MyTournaments from "./pages/auth/organizer/my-tournaments";
 import TournamentManage from "./pages/auth/organizer/tournament-manage";
 import BecomeOrganizer from "./pages/auth/player/become-organizer";
+import TournamentDetail from "./pages/auth/player/tournament-detail";
 
 // Admin
 
@@ -51,6 +53,7 @@ const App = () => {
         <Route path="login" element={<Login />} />
         <Route path="forgot" element={<ForgotPassword />} />
         <Route path="verify-otp" element={<VerifyOtp />} />
+        <Route path="payment/callback" element={<PaymentCallback />} />
         <Route path="*" element={<NotFound />} />
       </Route>
 
@@ -64,6 +67,7 @@ const App = () => {
             <Route path="player/profile" element={<PlayerProfile />} />
             <Route path="player/join-tournament" element={<JoinTournament />} />
             <Route path="tournaments" element={<JoinTournament />} />
+            <Route path="tournaments/:tournamentId" element={<TournamentDetail />} />
             <Route path="become-organizer" element={<BecomeOrganizer />} />
           </Route>
 
@@ -72,6 +76,10 @@ const App = () => {
             <Route path="organizer/profile" element={<OrganizerProfile />} />
             <Route
               path="organizer/create-tournament"
+              element={<CreateTournament />}
+            />
+            <Route
+              path="organizer/tournaments/:tournamentId/edit"
               element={<CreateTournament />}
             />
             <Route path="organizer/tournaments" element={<MyTournaments />} />
