@@ -18,6 +18,7 @@ import {
   type AdminGame,
   type CreateGamePayload,
 } from "../../services/admin.service";
+import ImageUploadDropzone from "../../components/ImageUploadDropzone";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -305,13 +306,11 @@ function GameFormModal({ game, onClose, onSaved }: GameFormProps) {
             </Field>
           </div>
 
-          <Field label="Logo URL">
-            <input
-              type="url"
+          <Field label="Logo Image">
+            <ImageUploadDropzone
               value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://example.com/game-logo.png"
-              className={inputCls}
+              onChange={setLogoUrl}
+              folder="apex-arenas/games/logos"
             />
           </Field>
 
