@@ -601,17 +601,17 @@ const TournamentDetail = () => {
     void loadAll();
   }, [loadAll]);
 
-  // Auto-poll every 10s when locked (waiting for bracket) or check-in is open
+  // Auto-poll every 10s only while check-in is open.
+  // Bracket refresh is now manual to avoid automatic updates in the bracket section.
   useEffect(() => {
     if (!tournament) return;
     const shouldPoll =
-      tournament.status === "locked" ||
-      (tournament.status === "open" &&
-        Boolean(
-          checkInStatus?.is_check_in_open ??
-          checkInStatus?.check_in_open ??
-          false,
-        ));
+      tournament.status === "open" &&
+      Boolean(
+        checkInStatus?.is_check_in_open ??
+        checkInStatus?.check_in_open ??
+        false,
+      );
     if (!shouldPoll) return;
 
     const id = window.setInterval(() => {
