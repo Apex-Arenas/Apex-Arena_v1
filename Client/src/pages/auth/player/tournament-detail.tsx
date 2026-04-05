@@ -345,8 +345,8 @@ function matchIncludesCurrentPlayer(
     const participantInGameId = participant.in_game_id?.trim().toLowerCase();
     return Boolean(
       normalizedInGameId &&
-        participantInGameId &&
-        participantInGameId === normalizedInGameId,
+      participantInGameId &&
+      participantInGameId === normalizedInGameId,
     );
   });
 }
@@ -730,8 +730,9 @@ const TournamentDetail = () => {
     useState<BracketMatch | null>(null);
   const [submitWinnerId, setSubmitWinnerId] = useState("");
   const [submitVideoUrl, setSubmitVideoUrl] = useState("");
-  const [submitScreenshotFile, setSubmitScreenshotFile] =
-    useState<File | null>(null);
+  const [submitScreenshotFile, setSubmitScreenshotFile] = useState<File | null>(
+    null,
+  );
   const [isSubmittingResult, setIsSubmittingResult] = useState(false);
   const [activeDisputeMatch, setActiveDisputeMatch] =
     useState<BracketMatch | null>(null);
@@ -912,8 +913,15 @@ const TournamentDetail = () => {
   }, []);
 
   const uploadMatchEvidence = useCallback(
-    async (matchId: string, file: File, description: string): Promise<string> => {
-      const uploadedUrl = await uploadImageMedia(file, `match-proof/${matchId}`);
+    async (
+      matchId: string,
+      file: File,
+      description: string,
+    ): Promise<string> => {
+      const uploadedUrl = await uploadImageMedia(
+        file,
+        `match-proof/${matchId}`,
+      );
 
       try {
         await ensureMatchSessionExists(matchId);
@@ -934,20 +942,17 @@ const TournamentDetail = () => {
     [ensureMatchSessionExists],
   );
 
-  const openSubmitResultModal = useCallback(
-    (match: BracketMatch) => {
-      const participants = (match.participants ?? []).filter(
-        (participant) => getParticipantEntityId(participant).length > 0,
-      );
-      const firstWinner = getParticipantEntityId(participants[0]);
+  const openSubmitResultModal = useCallback((match: BracketMatch) => {
+    const participants = (match.participants ?? []).filter(
+      (participant) => getParticipantEntityId(participant).length > 0,
+    );
+    const firstWinner = getParticipantEntityId(participants[0]);
 
-      setActiveSubmitMatch(match);
-      setSubmitWinnerId(firstWinner);
-      setSubmitVideoUrl("");
-      setSubmitScreenshotFile(null);
-    },
-    [],
-  );
+    setActiveSubmitMatch(match);
+    setSubmitWinnerId(firstWinner);
+    setSubmitVideoUrl("");
+    setSubmitScreenshotFile(null);
+  }, []);
 
   const closeSubmitResultModal = useCallback(() => {
     setActiveSubmitMatch(null);
@@ -1701,7 +1706,8 @@ const TournamentDetail = () => {
                 const canDisputeResult = canConfirmResult;
 
                 const winnerParticipant = (match.participants ?? []).find(
-                  (participant) => getParticipantEntityId(participant) === winnerId,
+                  (participant) =>
+                    getParticipantEntityId(participant) === winnerId,
                 );
 
                 const statusText = disputeActive
@@ -1727,7 +1733,9 @@ const TournamentDetail = () => {
                           Match #{match.match_number ?? index + 1}
                         </p>
                         <p className="text-xs text-slate-400">
-                          Round {match.round ?? match.round_number ?? 1} • Opponent: {getOpponentLabel(match, currentUserId, myInGameId)}
+                          Round {match.round ?? match.round_number ?? 1} •
+                          Opponent:{" "}
+                          {getOpponentLabel(match, currentUserId, myInGameId)}
                         </p>
                       </div>
                       <span className="text-[11px] uppercase tracking-wide text-slate-300 px-2.5 py-1 rounded-full border border-slate-600 bg-slate-800/60">
@@ -1739,14 +1747,16 @@ const TournamentDetail = () => {
                       <p>{statusText}</p>
                       {winnerParticipant && (
                         <p className="text-cyan-300">
-                          Submitted winner: {getParticipantLabel(winnerParticipant)}
+                          Submitted winner:{" "}
+                          {getParticipantLabel(winnerParticipant)}
                         </p>
                       )}
-                      {match.dispute?.is_disputed && match.dispute?.dispute_reason && (
-                        <p className="text-amber-300">
-                          Dispute reason: {match.dispute.dispute_reason}
-                        </p>
-                      )}
+                      {match.dispute?.is_disputed &&
+                        match.dispute?.dispute_reason && (
+                          <p className="text-amber-300">
+                            Dispute reason: {match.dispute.dispute_reason}
+                          </p>
+                        )}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -1772,7 +1782,9 @@ const TournamentDetail = () => {
                           ) : (
                             <CheckCircle2 className="w-3.5 h-3.5" />
                           )}
-                          {isConfirmLoading ? "Confirming..." : "Confirm Result"}
+                          {isConfirmLoading
+                            ? "Confirming..."
+                            : "Confirm Result"}
                         </button>
                       )}
 
@@ -1831,26 +1843,28 @@ const TournamentDetail = () => {
                   Winner
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {(activeSubmitMatch.participants ?? []).map((participant, idx) => {
-                    const participantId = getParticipantEntityId(participant);
-                    if (!participantId) return null;
+                  {(activeSubmitMatch.participants ?? []).map(
+                    (participant, idx) => {
+                      const participantId = getParticipantEntityId(participant);
+                      if (!participantId) return null;
 
-                    const selected = submitWinnerId === participantId;
+                      const selected = submitWinnerId === participantId;
 
-                    return (
-                      <button
-                        key={`${participantId}-${idx}`}
-                        onClick={() => setSubmitWinnerId(participantId)}
-                        className={`text-left rounded-lg border px-3 py-2 text-sm transition-colors ${
-                          selected
-                            ? "border-cyan-500 bg-cyan-500/15 text-cyan-200"
-                            : "border-slate-700 bg-slate-800/60 text-slate-200 hover:border-slate-500"
-                        }`}
-                      >
-                        {getParticipantLabel(participant)}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={`${participantId}-${idx}`}
+                          onClick={() => setSubmitWinnerId(participantId)}
+                          className={`text-left rounded-lg border px-3 py-2 text-sm transition-colors ${
+                            selected
+                              ? "border-cyan-500 bg-cyan-500/15 text-cyan-200"
+                              : "border-slate-700 bg-slate-800/60 text-slate-200 hover:border-slate-500"
+                          }`}
+                        >
+                          {getParticipantLabel(participant)}
+                        </button>
+                      );
+                    },
+                  )}
                 </div>
               </div>
 
@@ -1965,7 +1979,9 @@ const TournamentDetail = () => {
                 <input
                   type="url"
                   value={disputeEvidenceUrl}
-                  onChange={(event) => setDisputeEvidenceUrl(event.target.value)}
+                  onChange={(event) =>
+                    setDisputeEvidenceUrl(event.target.value)
+                  }
                   placeholder="https://..."
                   className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
                 />
@@ -1982,7 +1998,9 @@ const TournamentDetail = () => {
                   onClick={() => {
                     void handleSubmitDispute();
                   }}
-                  disabled={isSubmittingDispute || disputeReason.trim().length < 5}
+                  disabled={
+                    isSubmittingDispute || disputeReason.trim().length < 5
+                  }
                   className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-lg bg-amber-500 text-slate-950 text-sm font-semibold hover:bg-amber-400 disabled:opacity-60 transition-colors"
                 >
                   {isSubmittingDispute ? (
