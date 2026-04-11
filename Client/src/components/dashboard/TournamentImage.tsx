@@ -18,10 +18,10 @@ export default function TournamentImage({
   if (!imageUrl || hasImageError) {
     return (
       <div
-        className={`rounded-lg border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 flex flex-col items-center justify-center gap-1.5 text-slate-600 ${className ?? "w-12 h-12"}`}
+        className={`bg-gradient-to-br from-cyan-950/60 via-slate-800 to-indigo-950/60 flex flex-col items-center justify-center gap-2 text-slate-500 ${className ?? "w-12 h-12 rounded-lg border border-slate-700"}`}
       >
-        <Gamepad2 className="w-5 h-5" />
-        <span className="text-[10px] font-medium text-slate-600 hidden [.h-28_&]:block">
+        <Gamepad2 className="w-6 h-6 opacity-40" />
+        <span className="text-[10px] font-medium text-slate-600 tracking-wide uppercase">
           No Image
         </span>
       </div>
