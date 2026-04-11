@@ -1,4 +1,5 @@
-import { CalendarDays, Gamepad2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CalendarDays, Gamepad2, Star } from "lucide-react";
 import type { TournamentRegistration } from "../../services/dashboard.service";
 import TournamentImage from "./TournamentImage";
 
@@ -6,16 +7,17 @@ type TournamentCardProps = {
   reg: TournamentRegistration;
 };
 
-export default function TournamentCard({ reg }: TournamentCardProps) {
-  const statusColors: Record<string, string> = {
-    registered: "bg-cyan-500/20 text-cyan-300",
-    checked_in: "bg-green-500/20 text-green-300",
-    pending_payment: "bg-amber-500/20 text-amber-300",
-    disqualified: "bg-red-500/20 text-red-300",
-    withdrawn: "bg-slate-500/20 text-slate-400",
-    cancelled: "bg-slate-500/20 text-slate-400",
-  };
+const statusStyles: Record<string, string> = {
+  registered:      "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
+  checked_in:      "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
+  pending_payment: "bg-amber-500/15 text-amber-300 border-amber-500/25",
+  disqualified:    "bg-red-500/15 text-red-300 border-red-500/25",
+  withdrawn:       "bg-slate-500/15 text-slate-400 border-slate-600/25",
+  cancelled:       "bg-slate-500/15 text-slate-400 border-slate-600/25",
+  completed:       "bg-indigo-500/15 text-indigo-300 border-indigo-500/25",
+};
 
+export default function TournamentCard({ reg }: TournamentCardProps) {
   const statusLabel = reg.status.replace(/_/g, " ");
   const dateStr = reg.tournamentSchedule.startDate
     ? new Date(reg.tournamentSchedule.startDate).toLocaleDateString("en-US", {
@@ -26,40 +28,44 @@ export default function TournamentCard({ reg }: TournamentCardProps) {
     : "TBD";
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 h-full">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <TournamentImage reg={reg} className="w-12 h-12 shrink-0" />
-          <div className="min-w-0">
-            <h4 className="text-sm font-semibold text-white truncate">
-              {reg.tournamentTitle}
-            </h4>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
-              <span className="flex items-center gap-1">
-                <CalendarDays className="w-3.5 h-3.5" />
-                {dateStr}
-              </span>
-              <span className="flex items-center gap-1">
-                <Gamepad2 className="w-3.5 h-3.5" />
-                {reg.gameName ?? reg.registrationType}
-              </span>
-            </div>
-          </div>
-        </div>
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full capitalize whitespace-nowrap ${
-            statusColors[reg.status] ?? "bg-slate-700 text-slate-300"
-          }`}
-        >
-          {statusLabel}
-        </span>
-      </div>
-      {reg.finalPlacement && (
-        <p className="text-xs text-cyan-300">
-          Placed #{reg.finalPlacement}
-          {reg.prizeWon ? ` - Won $${reg.prizeWon.toLocaleString()}` : ""}
+    <Link
+      to={`/auth/tournaments/${reg.tournamentId}`}
+      className="flex items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-900/50 p-3 hover:border-slate-700 hover:bg-slate-900/80 transition-all group"
+    >
+      <TournamentImage reg={reg} className="w-11 h-11 rounded-lg shrink-0 object-cover" />
+
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-white truncate group-hover:text-cyan-100 transition-colors">
+          {reg.tournamentTitle}
         </p>
-      )}
-    </div>
+        <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-500">
+          <span className="flex items-center gap-1">
+            <CalendarDays className="w-3 h-3" />
+            {dateStr}
+          </span>
+          {reg.gameName && (
+            <span className="flex items-center gap-1">
+              <Gamepad2 className="w-3 h-3" />
+              <span className="truncate max-w-[80px]">{reg.gameName}</span>
+            </span>
+          )}
+        </div>
+        {reg.finalPlacement != null && (
+          <p className="text-xs text-amber-300 mt-0.5 flex items-center gap-1">
+            <Star className="w-3 h-3" />
+            #{reg.finalPlacement}
+            {reg.prizeWon ? ` · Won $${reg.prizeWon.toLocaleString()}` : ""}
+          </p>
+        )}
+      </div>
+
+      <span
+        className={`text-[11px] px-2 py-0.5 rounded-full capitalize whitespace-nowrap border shrink-0 font-medium ${
+          statusStyles[reg.status] ?? "bg-slate-700 text-slate-300 border-slate-600"
+        }`}
+      >
+        {statusLabel}
+      </span>
+    </Link>
   );
 }
