@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from '../utils/api.utils';
-import { TOURNAMENT_ENDPOINTS, FINANCE_ENDPOINTS } from '../config/api.config';
+import { TOURNAMENT_ENDPOINTS, FINANCE_ENDPOINTS, NOTIFICATION_ENDPOINTS } from '../config/api.config';
 import { mapTournament, type Tournament } from './tournament.service';
 import { generateUniqueIdempotencyKey } from '../utils/idempotency.utils';
 
@@ -60,6 +60,29 @@ export interface CreateTournamentPayload {
   inGameIdRequired?: boolean;
   allowedRegions?: string[];
   verifiedEmailRequired?: boolean;
+}
+
+export interface PayoutRequest {
+  id: string;
+  amountGhs: number;
+  requestType: string;
+  momoNumber: string;
+  network: string;
+  accountName: string;
+  status: string;
+  notes?: string;
+  createdAt: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+}
+
+export interface RequestPayoutPayload {
+  amountGhs: number;
+  requestType: 'tournament_winnings' | 'wallet_withdrawal';
+  momoNumber: string;
+  network: 'MTN' | 'Vodafone' | 'AirtelTigo';
+  accountName: string;
+  notes?: string;
 }
 
 export interface WalletBalance {
@@ -839,5 +862,332 @@ export const organizerService = {
       const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to delete tournament';
       throw new Error(msg);
     }
+  },
+
+  // ─── Match Management (Organizer) ───────────────────────────────────────────
+
+  async getMatch(matchId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.MATCHES}/${matchId}`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch match';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  async startMatch(matchId: string): Promise<void> {
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_START}/${matchId}/start`, {});
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to start match';
+      throw new Error(msg);
+    }
+  },
+
+  async forfeitMatch(matchId: string, noShowUserId: string): Promise<void> {
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_FORFEIT}/${matchId}/forfeit`, {
+      noShowUserId,
+    });
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to forfeit match';
+      throw new Error(msg);
+    }
+  },
+
+  async cancelMatchById(matchId: string): Promise<void> {
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_CANCEL}/${matchId}/cancel`, {});
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to cancel match';
+      throw new Error(msg);
+    }
+  },
+
+  async resolveDispute(matchId: string, winnerId: string, resolution: string): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.MATCH_DISPUTE_RESOLVE}/${matchId}/dispute/resolve`,
+      { winnerId, resolution },
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to resolve dispute';
+      throw new Error(msg);
+    }
+  },
+
+  // ─── Tournament Results ──────────────────────────────────────────────────────
+
+  async getTournamentResults(
+    tournamentId: string,
+    options?: { includePrizes?: boolean; limit?: number },
+  ): Promise<Record<string, unknown>> {
+    const params = new URLSearchParams();
+    if (options?.includePrizes) params.set('includePrizes', 'true');
+    if (options?.limit !== undefined) params.set('limit', String(options.limit));
+    const query = params.toString() ? `?${params.toString()}` : '';
+
+    const response = await apiGet(
+      `${TOURNAMENT_ENDPOINTS.RESULTS}/${tournamentId}/results${query}`,
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch results';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  async submitTournamentResults(
+    tournamentId: string,
+    winners: Array<{ position: number; in_game_id: string }>,
+  ): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.RESULTS}/${tournamentId}/results`,
+      { winners },
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to submit results';
+      throw new Error(msg);
+    }
+  },
+
+  async verifyResults(tournamentId: string): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.RESULTS_VERIFY}/${tournamentId}/results/verify`,
+      {},
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to verify results';
+      throw new Error(msg);
+    }
+  },
+
+  // ─── Payouts ─────────────────────────────────────────────────────────────────
+
+  async requestPayout(payload: RequestPayoutPayload): Promise<void> {
+    const response = await apiPost(FINANCE_ENDPOINTS.PAYOUT_REQUEST, {
+      amount_ghs: payload.amountGhs,
+      request_type: payload.requestType,
+      momo_number: payload.momoNumber,
+      network: payload.network,
+      account_name: payload.accountName,
+      notes: payload.notes,
+      idempotency_key: generateUniqueIdempotencyKey(),
+    });
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to submit withdrawal request';
+      throw new Error(msg);
+    }
+  },
+
+  async getMyPayoutRequests(): Promise<PayoutRequest[]> {
+    const response = await apiGet(FINANCE_ENDPOINTS.PAYOUT_MY_REQUESTS, { skipCache: true });
+    if (!response.success) return [];
+
+    const data = response.data as Record<string, unknown>;
+    const list = Array.isArray(data)
+      ? (data as Record<string, unknown>[])
+      : ((data.requests ?? data.payouts ?? data.data ?? []) as Record<string, unknown>[]);
+
+    return list.map((raw) => ({
+      id: String(raw._id ?? raw.id ?? ''),
+      amountGhs: Number(raw.amount_ghs ?? (Number(raw.amount ?? 0) / 100)),
+      requestType: String(raw.request_type ?? ''),
+      momoNumber: String(raw.momo_number ?? ''),
+      network: String(raw.network ?? ''),
+      accountName: String(raw.account_name ?? ''),
+      status: String(raw.status ?? ''),
+      notes: raw.notes as string | undefined,
+      createdAt: String(raw.created_at ?? raw.createdAt ?? ''),
+      reviewedAt: raw.reviewed_at as string | undefined,
+      rejectionReason: raw.rejection_reason as string | undefined,
+    }));
+  },
+
+  async cancelPayoutRequest(id: string): Promise<void> {
+    const response = await apiDelete(`${FINANCE_ENDPOINTS.PAYOUT_DETAIL}/${id}`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to cancel withdrawal request';
+      throw new Error(msg);
+    }
+  },
+
+  // ─── Tournament Detail & Bracket ────────────────────────────────────────────
+
+  async getTournament(tournamentId: string): Promise<Tournament> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.TOURNAMENT_DETAIL}/${tournamentId}`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch tournament';
+      throw new Error(msg);
+    }
+    const data = response.data as Record<string, unknown>;
+    return mapTournament((data.tournament ?? data) as Record<string, unknown>);
+  },
+
+  async getBracket(tournamentId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.BRACKET}/${tournamentId}`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch bracket';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  async getCurrentRound(tournamentId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.BRACKET_CURRENT_ROUND}/${tournamentId}/current-round`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch current round';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  // ─── Check-in Status ────────────────────────────────────────────────────────
+
+  async getCheckInStatus(tournamentId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.CHECK_IN_STATUS}/${tournamentId}/check-in/status`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch check-in status';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  async getCheckedInPlayers(tournamentId: string): Promise<TournamentRegistrant[]> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.CHECKED_IN_PLAYERS}/${tournamentId}/check-in/players`);
+    if (!response.success) return [];
+    const data = response.data as Record<string, unknown>;
+    const list = (Array.isArray(data) ? data : (data.players ?? data.registrations ?? data.data ?? [])) as Record<string, unknown>[];
+    return list.map(mapRegistrant);
+  },
+
+  // ─── Match Sessions ──────────────────────────────────────────────────────────
+
+  async getMatchSession(matchId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.MATCH_SESSION}/${matchId}/session`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch match session';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  async getMatchSessionMessages(matchId: string): Promise<Record<string, unknown>[]> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.MATCH_SESSION_MESSAGES}/${matchId}/session/messages`);
+    if (!response.success) return [];
+    const data = response.data as Record<string, unknown>;
+    return (Array.isArray(data) ? data : (data.messages ?? data.data ?? [])) as Record<string, unknown>[];
+  },
+
+  async getMatchSessionEvidence(matchId: string): Promise<Record<string, unknown>[]> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.MATCH_SESSION_EVIDENCE}/${matchId}/session/evidence`);
+    if (!response.success) return [];
+    const data = response.data as Record<string, unknown>;
+    return (Array.isArray(data) ? data : (data.evidence ?? data.data ?? [])) as Record<string, unknown>[];
+  },
+
+  // ─── Finance: Transactions & Payout Detail ───────────────────────────────────
+
+  async getTransactionHistory(params: { page?: number; limit?: number; type?: string } = {}): Promise<Record<string, unknown>> {
+    const query = new URLSearchParams();
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.type) query.set('type', params.type);
+    const url = `${FINANCE_ENDPOINTS.TRANSACTIONS}?${query.toString()}`;
+    const response = await apiGet(url, { skipCache: true });
+    if (!response.success) {
+      const msg = resolveFinanceErrorMessage(
+        (response as { error?: { message?: string } }).error?.message,
+        'Failed to fetch transactions',
+      );
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  async getPayoutDetail(id: string): Promise<PayoutRequest | null> {
+    const response = await apiGet(`${FINANCE_ENDPOINTS.PAYOUT_DETAIL}/${id}`, { skipCache: true });
+    if (!response.success) return null;
+    const raw = (response.data as Record<string, unknown>).payout as Record<string, unknown>
+      ?? response.data as Record<string, unknown>;
+    return {
+      id: String(raw._id ?? raw.id ?? ''),
+      amountGhs: Number(raw.amount_ghs ?? (Number(raw.amount ?? 0) / 100)),
+      requestType: String(raw.request_type ?? ''),
+      momoNumber: String(raw.momo_number ?? ''),
+      network: String(raw.network ?? ''),
+      accountName: String(raw.account_name ?? ''),
+      status: String(raw.status ?? ''),
+      notes: raw.notes as string | undefined,
+      createdAt: String(raw.created_at ?? raw.createdAt ?? ''),
+      reviewedAt: raw.reviewed_at as string | undefined,
+      rejectionReason: raw.rejection_reason as string | undefined,
+    };
+  },
+
+  // ─── Validation ──────────────────────────────────────────────────────────────
+
+  async validateCanCancel(tournamentId: string): Promise<{ canCancel: boolean; reason?: string }> {
+    const response = await apiGet(
+      `${TOURNAMENT_ENDPOINTS.VALIDATION_CAN_CANCEL}/${tournamentId}/can-cancel`,
+    );
+    const data = (response.data ?? {}) as Record<string, unknown>;
+    return {
+      canCancel: Boolean(data.can_cancel ?? data.canCancel ?? response.success),
+      reason: data.reason as string | undefined,
+    };
+  },
+
+  async validateCanGenerateBracket(tournamentId: string): Promise<{ canGenerate: boolean; reason?: string }> {
+    const response = await apiGet(
+      `${TOURNAMENT_ENDPOINTS.VALIDATION_CAN_GENERATE_BRACKET}/${tournamentId}/can-generate-bracket`,
+    );
+    const data = (response.data ?? {}) as Record<string, unknown>;
+    return {
+      canGenerate: Boolean(data.can_generate ?? data.canGenerate ?? response.success),
+      reason: data.reason as string | undefined,
+    };
+  },
+
+  async validatePrizeDistribution(distribution: Array<{ position: number; percentage: number }>): Promise<{ valid: boolean; errors?: string[] }> {
+    const response = await apiPost(TOURNAMENT_ENDPOINTS.VALIDATION_PRIZE_DISTRIBUTION, { distribution });
+    const data = (response.data ?? {}) as Record<string, unknown>;
+    return {
+      valid: Boolean(data.valid ?? response.success),
+      errors: data.errors as string[] | undefined,
+    };
+  },
+
+  async validateSchedule(schedule: Record<string, unknown>): Promise<{ valid: boolean; errors?: string[] }> {
+    const response = await apiPost(TOURNAMENT_ENDPOINTS.VALIDATION_SCHEDULE, schedule);
+    const data = (response.data ?? {}) as Record<string, unknown>;
+    return {
+      valid: Boolean(data.valid ?? response.success),
+      errors: data.errors as string[] | undefined,
+    };
+  },
+
+  // ─── Notifications ───────────────────────────────────────────────────────────
+
+  async getNotifications(params: { page?: number; limit?: number; unreadOnly?: boolean } = {}): Promise<Record<string, unknown>> {
+    const query = new URLSearchParams();
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.unreadOnly) query.set('unread_only', 'true');
+    const url = `${NOTIFICATION_ENDPOINTS.LIST}?${query.toString()}`;
+    const response = await apiGet(url, { skipCache: true });
+    if (!response.success) return { notifications: [], total: 0 };
+    return response.data as Record<string, unknown>;
+  },
+
+  async getUnreadNotificationCount(): Promise<number> {
+    const response = await apiGet(NOTIFICATION_ENDPOINTS.UNREAD_COUNT, { skipCache: true });
+    if (!response.success) return 0;
+    const data = response.data as Record<string, unknown>;
+    return Number(data.count ?? data.unread_count ?? data.unreadCount ?? 0);
+  },
+
+  async markNotificationRead(notificationId: string): Promise<void> {
+    await apiPost(`${NOTIFICATION_ENDPOINTS.MARK_READ}/${notificationId}/read`, {});
+  },
+
+  async markAllNotificationsRead(): Promise<void> {
+    await apiPost(NOTIFICATION_ENDPOINTS.MARK_ALL_READ, {});
   },
 };
