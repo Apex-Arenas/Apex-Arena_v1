@@ -1,5 +1,6 @@
-import { apiGet, apiPost, apiDelete } from '../utils/api.utils';
-import { TOURNAMENT_ENDPOINTS } from '../config/api.config';
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from '../utils/api.utils';
+import { TOURNAMENT_ENDPOINTS, FINANCE_ENDPOINTS } from '../config/api.config';
+import { generateUniqueIdempotencyKey } from '../utils/idempotency.utils';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -528,5 +529,301 @@ export const tournamentService = {
       const msg = response.error?.message ?? 'Failed to dispute match result';
       throw new Error(msg);
     }
+  },
+
+  async markMatchReady(matchId: string): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.MATCH_READY}/${matchId}/ready`,
+      {},
+    );
+    if (!response.success) {
+      const msg = response.error?.message ?? 'Failed to mark ready';
+      throw new Error(msg);
+    }
+  },
+
+  // ─── Check-in ──────────────────────────────────────────────────────────────
+
+  async checkIn(tournamentId: string): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.CHECK_IN}/${tournamentId}/check-in`,
+      {},
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Check-in failed';
+      throw new Error(msg);
+    }
+  },
+
+  async getCheckInStatus(tournamentId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(
+      `${TOURNAMENT_ENDPOINTS.CHECK_IN_STATUS}/${tournamentId}/check-in/status`,
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch check-in status';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  // ─── Bracket & Results ─────────────────────────────────────────────────────
+
+  async getBracket(tournamentId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.BRACKET}/${tournamentId}`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch bracket';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  async getCurrentRound(tournamentId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(
+      `${TOURNAMENT_ENDPOINTS.BRACKET_CURRENT_ROUND}/${tournamentId}/current-round`,
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch current round';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  async getTournamentResults(tournamentId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.RESULTS}/${tournamentId}`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch results';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  // ─── Registration ──────────────────────────────────────────────────────────
+
+  async updateInGameId(registrationId: string, inGameId: string): Promise<void> {
+    const response = await apiPatch(
+      `${TOURNAMENT_ENDPOINTS.UPDATE_IN_GAME_ID}/${registrationId}/in-game-id`,
+      { in_game_id: inGameId },
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to update in-game ID';
+      throw new Error(msg);
+    }
+  },
+
+  // ─── Match Detail & Sessions ───────────────────────────────────────────────
+
+  async getMatchDetail(matchId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.MATCHES}/${matchId}`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch match';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  async getMatchSession(matchId: string): Promise<Record<string, unknown>> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.MATCH_SESSION}/${matchId}/session`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch match session';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
+  },
+
+  async getMatchSessionMessages(matchId: string): Promise<Record<string, unknown>[]> {
+    const response = await apiGet(
+      `${TOURNAMENT_ENDPOINTS.MATCH_SESSION_MESSAGES}/${matchId}/session/messages`,
+    );
+    if (!response.success) return [];
+    const data = response.data as Record<string, unknown>;
+    return (Array.isArray(data) ? data : (data.messages ?? data.data ?? [])) as Record<string, unknown>[];
+  },
+
+  async sendMatchSessionMessage(matchId: string, content: string): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.MATCH_SESSION_MESSAGES}/${matchId}/session/messages`,
+      { content },
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to send message';
+      throw new Error(msg);
+    }
+  },
+
+  async submitMatchEvidence(matchId: string, evidence: string[]): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.MATCH_SESSION_EVIDENCE}/${matchId}/session/evidence`,
+      { evidence },
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to submit evidence';
+      throw new Error(msg);
+    }
+  },
+
+  // ─── Game Profiles ─────────────────────────────────────────────────────────
+
+  async getGameProfiles(): Promise<Record<string, unknown>[]> {
+    const response = await apiGet(TOURNAMENT_ENDPOINTS.GAME_PROFILES);
+    if (!response.success) return [];
+    const data = response.data as Record<string, unknown>;
+    return (Array.isArray(data) ? data : (data.profiles ?? data.game_profiles ?? data.data ?? [])) as Record<string, unknown>[];
+  },
+
+  async getGameProfile(gameId: string): Promise<Record<string, unknown> | null> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.GAME_PROFILE_DETAIL}/${gameId}`);
+    if (!response.success) return null;
+    const data = response.data as Record<string, unknown>;
+    return (data.profile ?? data) as Record<string, unknown>;
+  },
+
+  async upsertGameProfile(
+    gameId: string,
+    payload: { inGameId: string; skillLevel?: string },
+  ): Promise<void> {
+    const response = await apiPut(
+      `${TOURNAMENT_ENDPOINTS.GAME_PROFILE_DETAIL}/${gameId}`,
+      { in_game_id: payload.inGameId, skill_level: payload.skillLevel },
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to save game profile';
+      throw new Error(msg);
+    }
+  },
+
+  async deleteGameProfile(gameId: string): Promise<void> {
+    const response = await apiDelete(`${TOURNAMENT_ENDPOINTS.GAME_PROFILE_DETAIL}/${gameId}`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to delete game profile';
+      throw new Error(msg);
+    }
+  },
+
+  // ─── Game Requests ─────────────────────────────────────────────────────────
+
+  async getGameRequests(filters: { status?: string; page?: number; limit?: number } = {}): Promise<Record<string, unknown>[]> {
+    const query = new URLSearchParams();
+    if (filters.status) query.set('status', filters.status);
+    if (filters.page) query.set('page', String(filters.page));
+    if (filters.limit) query.set('limit', String(filters.limit));
+    const url = query.toString()
+      ? `${TOURNAMENT_ENDPOINTS.GAME_REQUESTS}?${query}`
+      : TOURNAMENT_ENDPOINTS.GAME_REQUESTS;
+    const response = await apiGet(url);
+    if (!response.success) return [];
+    const data = response.data as Record<string, unknown>;
+    return (Array.isArray(data) ? data : (data.requests ?? data.data ?? [])) as Record<string, unknown>[];
+  },
+
+  async submitGameRequest(payload: {
+    gameName: string;
+    genre?: string;
+    platform?: string[];
+    description?: string;
+  }): Promise<void> {
+    const response = await apiPost(TOURNAMENT_ENDPOINTS.GAME_REQUESTS, {
+      game_name: payload.gameName,
+      genre: payload.genre,
+      platform: payload.platform,
+      description: payload.description,
+    });
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to submit game request';
+      throw new Error(msg);
+    }
+  },
+
+  async upvoteGameRequest(requestId: string): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.GAME_REQUEST_UPVOTE}/${requestId}/upvote`,
+      {},
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to upvote';
+      throw new Error(msg);
+    }
+  },
+
+  // ─── Finance (Player Wallet) ───────────────────────────────────────────────
+
+  async getWalletBalance(): Promise<{
+    availableBalance: number;
+    pendingBalance: number;
+    totalBalance: number;
+    currency: string;
+  }> {
+    const response = await apiGet(FINANCE_ENDPOINTS.WALLET);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch wallet';
+      throw new Error(msg);
+    }
+    const data = response.data as Record<string, unknown>;
+    return {
+      availableBalance: Number(data.available_balance ?? 0),
+      pendingBalance: Number(data.pending_balance ?? 0),
+      totalBalance: Number(data.total_balance ?? 0),
+      currency: String(data.currency ?? 'GHS'),
+    };
+  },
+
+  async initiateTopUp(amountGhs: number): Promise<{ authorizationUrl?: string; reference?: string }> {
+    const callbackUrl = `${window.location.origin}/payment/callback`;
+    const response = await apiPost(FINANCE_ENDPOINTS.DEPOSIT, {
+      amount_ghs: amountGhs,
+      callback_url: callbackUrl,
+      idempotency_key: generateUniqueIdempotencyKey(),
+    });
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to initiate top-up';
+      throw new Error(msg);
+    }
+    const data = response.data as Record<string, unknown>;
+    return {
+      authorizationUrl: data.authorization_url as string | undefined,
+      reference: data.reference as string | undefined,
+    };
+  },
+
+  async getMatchSessionHistory(matchId: string): Promise<Record<string, unknown>[]> {
+    const response = await apiGet(
+      `${TOURNAMENT_ENDPOINTS.MATCH_SESSION_HISTORY}/${matchId}/session/history`,
+    );
+    if (!response.success) return [];
+    const data = response.data as Record<string, unknown>;
+    return (Array.isArray(data) ? data : (data.history ?? data.events ?? data.data ?? [])) as Record<string, unknown>[];
+  },
+
+  async archiveMatchSession(matchId: string): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.MATCH_SESSION_ARCHIVE}/${matchId}/session/archive`,
+      {},
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to archive session';
+      throw new Error(msg);
+    }
+  },
+
+  async getGameRequestDetail(requestId: string): Promise<Record<string, unknown> | null> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.GAME_REQUEST_DETAIL}/${requestId}`);
+    if (!response.success) return null;
+    const data = response.data as Record<string, unknown>;
+    return (data.request ?? data) as Record<string, unknown>;
+  },
+
+  async getTransactionHistory(params: { page?: number; limit?: number; type?: string } = {}): Promise<Record<string, unknown>> {
+    const query = new URLSearchParams();
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.type) query.set('type', params.type);
+    const url = query.toString()
+      ? `${FINANCE_ENDPOINTS.TRANSACTIONS}?${query}`
+      : FINANCE_ENDPOINTS.TRANSACTIONS;
+    const response = await apiGet(url, { skipCache: true });
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch transactions';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
   },
 };
