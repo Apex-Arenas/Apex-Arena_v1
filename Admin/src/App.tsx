@@ -7,6 +7,12 @@ import UserManagement from "./pages/admin/UserManagement";
 import GamesManagement from "./pages/admin/GamesManagement";
 import OrganizerVerifications from "./pages/admin/OrganizerVerifications";
 import AdminProfile from "./pages/admin/AdminProfile";
+import PayoutsManagement from "./pages/admin/PayoutsManagement";
+import EscrowManagement from "./pages/admin/EscrowManagement";
+import SchedulerManagement from "./pages/admin/SchedulerManagement";
+import AuditLogs from "./pages/admin/AuditLogs";
+import AdminManagement from "./pages/admin/AdminManagement";
+import GameRequests from "./pages/admin/GameRequests";
 
 const App = () => {
   return (
@@ -22,6 +28,12 @@ const App = () => {
           <Route path="games" element={<GamesManagement />} />
           <Route path="verifications" element={<OrganizerVerifications />} />
           <Route path="profile" element={<AdminProfile />} />
+          <Route path="payouts" element={<PayoutsManagement />} />
+          <Route path="escrow" element={<EscrowManagement />} />
+          <Route path="scheduler" element={<SchedulerManagement />} />
+          <Route path="audit-logs" element={<AuditLogs />} />
+          <Route path="admins" element={<AdminManagement />} />
+          <Route path="game-requests" element={<GameRequests />} />
         </Route>
       </Route>
 
