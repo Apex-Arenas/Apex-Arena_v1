@@ -6,7 +6,7 @@ type JoinedTournamentDetailsCardProps = {
   reg: TournamentRegistration;
 };
 
-function formatTournamentDate(value?: string) {
+function fmt(value?: string) {
   if (!value) return "TBD";
   return new Date(value).toLocaleDateString("en-US", {
     month: "short",
@@ -15,114 +15,113 @@ function formatTournamentDate(value?: string) {
   });
 }
 
+const regStatusStyles: Record<string, string> = {
+  registered:      "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
+  checked_in:      "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
+  pending_payment: "bg-amber-500/15 text-amber-300 border-amber-500/25",
+  disqualified:    "bg-red-500/15 text-red-300 border-red-500/25",
+  withdrawn:       "bg-slate-500/15 text-slate-400 border-slate-600/25",
+  cancelled:       "bg-slate-500/15 text-slate-400 border-slate-600/25",
+};
+
+const tourStatusStyles: Record<string, string> = {
+  draft:             "bg-slate-600/15 text-slate-400 border-slate-600/25",
+  awaiting_deposit:  "bg-amber-500/15 text-amber-300 border-amber-500/25",
+  published:         "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
+  open:              "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
+  locked:            "bg-violet-500/15 text-violet-300 border-violet-500/25",
+  ongoing:           "bg-blue-500/15 text-blue-300 border-blue-500/25",
+  awaiting_results:  "bg-yellow-500/15 text-yellow-300 border-yellow-500/25",
+  verifying_results: "bg-purple-500/15 text-purple-300 border-purple-500/25",
+  completed:         "bg-indigo-500/15 text-indigo-300 border-indigo-500/25",
+  cancelled:         "bg-slate-500/15 text-slate-400 border-slate-600/25",
+};
+
 export default function JoinedTournamentDetailsCard({
   reg,
 }: JoinedTournamentDetailsCardProps) {
-  const registrationStatusColors: Record<string, string> = {
-    registered: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-    checked_in: "bg-green-500/20 text-green-300 border-green-500/30",
-    pending_payment: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-    disqualified: "bg-red-500/20 text-red-300 border-red-500/30",
-    withdrawn: "bg-slate-500/20 text-slate-400 border-slate-600/30",
-    cancelled: "bg-slate-500/20 text-slate-400 border-slate-600/30",
-  };
-
-  const tournamentStatusColors: Record<string, string> = {
-    draft: "bg-slate-600/20 text-slate-300 border-slate-600/30",
-    awaiting_deposit: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-    published: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-    open: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-    ongoing: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-    awaiting_results: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-    verifying_results: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-    completed: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-    cancelled: "bg-slate-500/20 text-slate-400 border-slate-600/30",
-  };
-
-  const registrationStatus = reg.status.replace(/_/g, " ");
-  const tournamentStatus = reg.tournamentStatus
+  const regLabel = reg.status.replace(/_/g, " ");
+  const tourLabel = reg.tournamentStatus
     ? reg.tournamentStatus.replace(/_/g, " ")
-    : "Unknown";
+    : null;
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 h-full">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-start gap-3 min-w-0">
-          <TournamentImage reg={reg} className="w-12 h-12 shrink-0" />
-          <div className="min-w-0">
-            <h4 className="text-sm font-semibold text-white truncate">
-              {reg.tournamentTitle}
-            </h4>
-            <p className="text-xs text-slate-400 mt-1">
-              Joined {formatTournamentDate(reg.createdAt)}
-            </p>
-            <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-              {reg.gameName ?? "Game not set"}
-            </p>
-          </div>
+    <div className="rounded-xl border border-slate-800 bg-slate-900/70 overflow-hidden group hover:border-slate-700 transition-all">
+      {/* Banner image */}
+      <div className="relative h-28 bg-slate-800 overflow-hidden">
+        <TournamentImage
+          reg={reg}
+          className="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-[1.03] transition-all duration-500"
+        />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent" />
+
+        {/* Status pills on image */}
+        <div className="absolute bottom-2.5 left-3 flex flex-wrap gap-1.5">
+          <span
+            className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-medium border backdrop-blur-sm ${
+              regStatusStyles[reg.status] ??
+              "bg-slate-700/80 text-slate-300 border-slate-600"
+            }`}
+          >
+            {regLabel}
+          </span>
+          {tourLabel && (
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-medium border backdrop-blur-sm ${
+                tourStatusStyles[reg.tournamentStatus] ??
+                "bg-slate-700/80 text-slate-300 border-slate-600"
+              }`}
+            >
+              {tourLabel}
+            </span>
+          )}
         </div>
+
+        {/* View Details */}
         <Link
           to={`/auth/tournaments/${reg.tournamentId}`}
-          className="text-xs px-2.5 py-1 rounded-md border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 transition-colors whitespace-nowrap"
+          className="absolute top-2.5 right-2.5 text-[11px] px-2.5 py-1 rounded-lg bg-slate-900/70 backdrop-blur-sm border border-slate-700/60 text-cyan-300 hover:bg-slate-800/80 hover:border-cyan-500/40 transition-all font-medium"
         >
           View Details
         </Link>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-3">
-        <span
-          className={`text-[11px] px-2 py-0.5 rounded-full capitalize border ${
-            registrationStatusColors[reg.status] ??
-            "bg-slate-700 text-slate-300 border-slate-600"
-          }`}
-        >
-          Registration: {registrationStatus}
-        </span>
-        <span
-          className={`text-[11px] px-2 py-0.5 rounded-full capitalize border ${
-            tournamentStatusColors[reg.tournamentStatus] ??
-            "bg-slate-700 text-slate-300 border-slate-600"
-          }`}
-        >
-          Tournament: {tournamentStatus}
-        </span>
-      </div>
+      {/* Content */}
+      <div className="p-4">
+        <h4 className="text-sm font-semibold text-white truncate mb-0.5">
+          {reg.tournamentTitle}
+        </h4>
+        <p className="text-[11px] text-slate-500 mb-3">
+          {reg.gameName ?? "Game not set"}&nbsp;·&nbsp;Joined {fmt(reg.createdAt)}
+        </p>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-        <div className="text-slate-400">Start Date</div>
-        <div className="text-slate-200 text-right">
-          {formatTournamentDate(reg.tournamentSchedule.startDate)}
-        </div>
-
-        <div className="text-slate-400">Check-In</div>
-        <div className="text-slate-200 text-right">
-          {formatTournamentDate(reg.tournamentSchedule.checkInStart)}
-        </div>
-
-        <div className="text-slate-400">Entry Type</div>
-        <div className="text-slate-200 text-right capitalize">
-          {reg.registrationType}
-        </div>
-
-        <div className="text-slate-400">In-Game ID</div>
-        <div
-          className="text-slate-200 text-right truncate"
-          title={reg.inGameId || "Not set"}
-        >
-          {reg.inGameId || "Not set"}
-        </div>
-
-        {reg.teamName ? (
-          <>
-            <div className="text-slate-400">Team Name</div>
-            <div
-              className="text-slate-200 text-right truncate"
-              title={reg.teamName}
-            >
-              {reg.teamName}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-xs">
+          <div>
+            <p className="text-slate-500 mb-0.5">Start Date</p>
+            <p className="text-slate-200 font-medium">{fmt(reg.tournamentSchedule.startDate)}</p>
+          </div>
+          <div>
+            <p className="text-slate-500 mb-0.5">Check-In</p>
+            <p className="text-slate-200 font-medium">{fmt(reg.tournamentSchedule.checkInStart)}</p>
+          </div>
+          <div>
+            <p className="text-slate-500 mb-0.5">Entry Type</p>
+            <p className="text-slate-200 font-medium capitalize">{reg.registrationType}</p>
+          </div>
+          <div>
+            <p className="text-slate-500 mb-0.5">In-Game ID</p>
+            <p className="text-cyan-300 font-medium truncate" title={reg.inGameId ?? "Not set"}>
+              {reg.inGameId ?? "—"}
+            </p>
+          </div>
+          {reg.teamName && (
+            <div className="col-span-2">
+              <p className="text-slate-500 mb-0.5">Team</p>
+              <p className="text-slate-200 font-medium truncate">{reg.teamName}</p>
             </div>
-          </>
-        ) : null}
+          )}
+        </div>
       </div>
     </div>
   );
