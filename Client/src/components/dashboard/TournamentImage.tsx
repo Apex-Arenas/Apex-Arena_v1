@@ -18,9 +18,12 @@ export default function TournamentImage({
   if (!imageUrl || hasImageError) {
     return (
       <div
-        className={`rounded-lg border border-slate-700 bg-slate-800/70 flex items-center justify-center text-slate-500 ${className ?? "w-12 h-12"}`}
+        className={`rounded-lg border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 flex flex-col items-center justify-center gap-1.5 text-slate-600 ${className ?? "w-12 h-12"}`}
       >
-        <Gamepad2 className="w-4 h-4" />
+        <Gamepad2 className="w-5 h-5" />
+        <span className="text-[10px] font-medium text-slate-600 hidden [.h-28_&]:block">
+          No Image
+        </span>
       </div>
     );
   }
@@ -29,7 +32,7 @@ export default function TournamentImage({
     <img
       src={imageUrl}
       alt={reg.tournamentTitle}
-      className={`rounded-lg border border-slate-700 object-cover ${className ?? "w-12 h-12"}`}
+      className={`object-cover ${className ?? "w-12 h-12 rounded-lg border border-slate-700"}`}
       onError={() => setHasImageError(true)}
     />
   );

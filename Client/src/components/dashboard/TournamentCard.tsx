@@ -32,7 +32,7 @@ export default function TournamentCard({ reg }: TournamentCardProps) {
       to={`/auth/tournaments/${reg.tournamentId}`}
       className="flex items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-900/50 p-3 hover:border-slate-700 hover:bg-slate-900/80 transition-all group"
     >
-      <TournamentImage reg={reg} className="w-11 h-11 rounded-lg shrink-0 object-cover" />
+      <TournamentImage reg={reg} className="w-11 h-11 rounded-lg border border-slate-700 shrink-0 object-cover" />
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-white truncate group-hover:text-cyan-100 transition-colors">

@@ -51,10 +51,10 @@ export default function JoinedTournamentDetailsCard({
       <div className="relative h-28 bg-slate-800 overflow-hidden">
         <TournamentImage
           reg={reg}
-          className="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-[1.03] transition-all duration-500"
+          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
         />
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent" />
+        {/* Gradient overlay — only bottom fade so title/badges are readable */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/10 to-transparent" />
 
         {/* Status pills on image */}
         <div className="absolute bottom-2.5 left-3 flex flex-wrap gap-1.5">
