@@ -48,13 +48,13 @@ export default function JoinedTournamentDetailsCard({
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/70 overflow-hidden group hover:border-slate-700 transition-all">
       {/* Banner image */}
-      <div className="relative h-40 bg-slate-800 overflow-hidden">
+      <div className="relative h-40 bg-gradient-to-br from-cyan-950/80 via-slate-800 to-indigo-950/80 overflow-hidden">
         <TournamentImage
           reg={reg}
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+          className="absolute inset-0 w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-500"
         />
-        {/* Gradient overlay — only bottom fade so title/badges are readable */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/10 to-transparent" />
+        {/* Bottom fade so status pills and text stay readable */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
 
         {/* Status pills on image */}
         <div className="absolute bottom-2.5 left-3 flex flex-wrap gap-1.5">
