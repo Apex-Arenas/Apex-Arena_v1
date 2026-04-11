@@ -9,6 +9,12 @@ import {
   ChevronRight,
   BadgeCheck,
   UserCircle,
+  Wallet,
+  Lock,
+  Clock,
+  FileText,
+  ShieldCheck,
+  Puzzle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAdminAuth } from '../../lib/admin-auth-context';
@@ -18,6 +24,12 @@ const navItems = [
   { to: '/admin/users', icon: Users, label: 'Users' },
   { to: '/admin/verifications', icon: BadgeCheck, label: 'Verifications' },
   { to: '/admin/games', icon: Gamepad2, label: 'Games' },
+  { to: '/admin/game-requests', icon: Puzzle, label: 'Game Requests' },
+  { to: '/admin/payouts', icon: Wallet, label: 'Payouts' },
+  { to: '/admin/escrow', icon: Lock, label: 'Escrow' },
+  { to: '/admin/scheduler', icon: Clock, label: 'Scheduler' },
+  { to: '/admin/audit-logs', icon: FileText, label: 'Audit Logs' },
+  { to: '/admin/admins', icon: ShieldCheck, label: 'Admins' },
   { to: '/admin/profile', icon: UserCircle, label: 'Profile' },
 ] as const;
 
