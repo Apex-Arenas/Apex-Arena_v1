@@ -215,6 +215,7 @@ function mapManagedUser(raw: Record<string, unknown>): ManagedUser {
     ),
     isActive: Boolean(raw.is_active ?? raw.isActive ?? true),
     isBanned: Boolean(raw.is_banned ?? raw.isBanned ?? false),
+    isLocked: Boolean(raw.is_locked ?? raw.isLocked ?? false),
     banReason: (raw.ban_reason ?? raw.banReason) as string | undefined,
     lastLogin: (raw.last_login ?? raw.lastLogin) as string | undefined,
     createdAt: String(raw.created_at ?? raw.createdAt ?? ''),
