@@ -130,6 +130,7 @@ export interface FullMatch {
   player2IsReady: boolean;
   winnerId?: string;
   resultReportedBy?: string;
+  resultConfirmationDeadline?: string;
   isDisputed: boolean;
   scheduledAt?: string;
   screenshotUrl?: string;
@@ -1081,6 +1082,7 @@ export const tournamentService = {
       player2IsReady: Boolean(p2.is_ready),
       winnerId: m.winner_id as string | undefined,
       resultReportedBy: m.result_reported_by as string | undefined,
+      resultConfirmationDeadline: m.result_confirmation_deadline as string | undefined,
       isDisputed: Boolean((m.dispute as Record<string, unknown> | undefined)?.is_disputed ?? false),
       scheduledAt: (m.schedule as Record<string, unknown> | undefined)?.scheduled_time as string | undefined,
       screenshotUrl: ((m.proof as Record<string, unknown> | undefined)?.screenshots as string[] | undefined)?.[0],
@@ -1138,6 +1140,14 @@ export const tournamentService = {
     const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_DISPUTE}/${matchId}/dispute`, body);
     if (!response.success) {
       const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to dispute result';
+      throw new Error(msg);
+    }
+  },
+
+  async autoConfirmMatch(matchId: string): Promise<void> {
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCHES}/${matchId}/auto-confirm`, {});
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to auto-confirm';
       throw new Error(msg);
     }
   },

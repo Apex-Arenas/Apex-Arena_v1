@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Loader2, CheckCircle2, AlertTriangle, Swords, Clock,
-  Shield, Trophy, CheckCheck, Flag,
+  Shield, Trophy, CheckCheck, Flag, Timer,
 } from 'lucide-react';
 import { tournamentService } from '../../services/tournament.service';
 import type { FullMatch } from '../../services/tournament.service';
@@ -12,6 +12,45 @@ interface Props {
   currentUserId: string;
   onClose: () => void;
   onActionComplete: () => void;
+}
+
+// ─── Countdown hook ──────────────────────────────────────────────────────────
+
+function useCountdown(deadline: string | undefined) {
+  const getRemaining = useCallback(() => {
+    if (!deadline) return null;
+    const ms = new Date(deadline).getTime() - Date.now();
+    return ms > 0 ? Math.ceil(ms / 1000) : 0;
+  }, [deadline]);
+
+  const [seconds, setSeconds] = useState<number | null>(getRemaining);
+
+  useEffect(() => {
+    setSeconds(getRemaining());
+    if (!deadline) return;
+    const id = setInterval(() => {
+      const rem = getRemaining();
+      setSeconds(rem);
+      if (rem === 0) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [deadline, getRemaining]);
+
+  return seconds;
+}
+
+function CountdownBadge({ seconds, label }: { seconds: number | null; label: string }) {
+  if (seconds === null) return null;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  const isUrgent = seconds <= 60;
+  return (
+    <div className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
+      ${isUrgent ? 'bg-red-900/40 border border-red-700/50 text-red-300' : 'bg-slate-800/60 border border-slate-700 text-slate-300'}`}>
+      <Timer className={`w-3.5 h-3.5 ${isUrgent ? 'text-red-400' : 'text-cyan-400'}`} />
+      {label} {mins}:{String(secs).padStart(2, '0')}
+    </div>
+  );
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -68,6 +107,7 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoConfirmedRef = useRef(false);
 
   // Submit result state
   const [selectedWinnerId, setSelectedWinnerId] = useState<string | null>(null);
@@ -80,6 +120,8 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
   const [disputeReason, setDisputeReason] = useState('');
   const [evidenceUrl, setEvidenceUrl] = useState('');
 
+  const countdown = useCountdown(match?.resultConfirmationDeadline);
+
   async function load() {
     setLoading(true);
     setError(null);
@@ -90,6 +132,25 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
   }
 
   useEffect(() => { load(); }, [matchId]);
+
+  // Poll every 15s while a result is pending confirmation (so submitter sees when opponent confirms)
+  useEffect(() => {
+    if (!match?.resultReportedBy) return;
+    if (match.status === 'completed' || match.status === 'disputed') return;
+    const id = setInterval(() => { load(); }, 15_000);
+    return () => clearInterval(id);
+  }, [match?.resultReportedBy, match?.status]);
+
+  // Auto-confirm when countdown hits exactly 0
+  useEffect(() => {
+    if (countdown !== 0 || autoConfirmedRef.current) return;
+    if (!match?.resultReportedBy) return;
+    if (match.status === 'completed' || match.status === 'disputed') return;
+    autoConfirmedRef.current = true;
+    tournamentService.autoConfirmMatch(matchId)
+      .then(() => { onActionComplete(); onClose(); })
+      .catch(() => { load(); }); // refresh state if it fails (e.g. already confirmed)
+  }, [countdown]);
 
   async function doAction(action: () => Promise<void>) {
     setSubmitting(true);
@@ -226,7 +287,7 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
       );
     }
 
-    // ── ONGOING ───────────────────────────────────────────────────────────
+    // ── ONGOING / SCHEDULED / PENDING ─────────────────────────────────────
     if (match.status === 'ongoing' || match.status === 'scheduled' || match.status === 'pending') {
       // Non-participant view
       if (!iParticipant) {
@@ -238,17 +299,39 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
         );
       }
 
-      // Opponent submitted — confirm or dispute
+      // ── Opponent submitted — confirm or dispute ────────────────────────
       if (opponentSubmitted && !showDisputeForm) {
         const opponentSaysIWon = reportedWinner === currentUserId;
         return (
           <div className="space-y-4">
+            {/* Result summary */}
             <div className={`rounded-xl p-3 border text-center text-sm
               ${opponentSaysIWon
                 ? 'border-emerald-600/40 bg-emerald-950/20 text-emerald-300'
                 : 'border-amber-600/40 bg-amber-950/20 text-amber-300'}`}>
               {opponentName} reported: <span className="font-bold">{reportedWinnerName} won</span>
             </div>
+
+            {/* Submitted scores */}
+            {(match.player1Score > 0 || match.player2Score > 0) && (
+              <div className="flex items-center justify-center gap-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                <span className="text-xs text-slate-400">{match.player1Name}</span>
+                <span className="text-xl font-bold text-white tabular-nums">
+                  {match.player1Score} – {match.player2Score}
+                </span>
+                <span className="text-xs text-slate-400">{match.player2Name}</span>
+              </div>
+            )}
+
+            {/* Countdown */}
+            <div className="flex justify-center">
+              {countdown !== null && countdown > 0 ? (
+                <CountdownBadge seconds={countdown} label="Auto-confirms in" />
+              ) : countdown === 0 ? (
+                <div className="text-xs text-slate-400 text-center">Auto-confirming…</div>
+              ) : null}
+            </div>
+
             <div className="flex gap-3">
               <button
                 onClick={() => doAction(() => tournamentService.confirmMatchResult(matchId))}
@@ -271,7 +354,7 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
         );
       }
 
-      // Dispute form
+      // ── Dispute form ──────────────────────────────────────────────────
       if (showDisputeForm) {
         return (
           <div className="space-y-3">
@@ -326,20 +409,39 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
         );
       }
 
-      // I submitted — waiting for opponent
+      // ── I submitted — waiting for opponent ────────────────────────────
       if (iSubmitted) {
         return (
-          <div className="flex flex-col items-center gap-3 py-4 text-center">
-            <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
-            <p className="text-sm font-semibold text-white">Result Submitted</p>
-            <p className="text-xs text-slate-400">
-              Waiting for <span className="text-slate-200">{opponentName}</span> to confirm or dispute.
-            </p>
+          <div className="space-y-4">
+            {/* Submitted scores */}
+            <div className="flex items-center justify-center gap-3 py-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
+              <div className="text-center">
+                <p className="text-[10px] text-slate-500 mb-1">{match.player1Name}</p>
+                <span className="text-2xl font-bold text-white tabular-nums">{match.player1Score}</span>
+              </div>
+              <span className="text-slate-600 font-bold">–</span>
+              <div className="text-center">
+                <p className="text-[10px] text-slate-500 mb-1">{match.player2Name}</p>
+                <span className="text-2xl font-bold text-white tabular-nums">{match.player2Score}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 text-center">
+              <p className="text-sm font-semibold text-white">Scores Submitted</p>
+              <p className="text-xs text-slate-400">
+                Waiting for <span className="text-slate-200">{opponentName}</span> to confirm or dispute.
+              </p>
+              {countdown !== null && countdown > 0 ? (
+                <CountdownBadge seconds={countdown} label="Auto-confirms in" />
+              ) : countdown === 0 ? (
+                <div className="text-xs text-cyan-400">Auto-confirming…</div>
+              ) : null}
+            </div>
           </div>
         );
       }
 
-      // Submit result form
+      // ── Submit result form ────────────────────────────────────────────
       return (
         <div className="space-y-4">
           <p className="text-xs text-slate-400 text-center">Select the winner of this match</p>
