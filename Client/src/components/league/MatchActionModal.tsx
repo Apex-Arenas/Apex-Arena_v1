@@ -10,6 +10,7 @@ import ImageUploadDropzone from '../ImageUploadDropzone';
 interface Props {
   matchId: string;
   currentUserId: string;
+  currentMatchweek?: number; // if provided, used to block submission for inactive matchweeks
   onClose: () => void;
   onActionComplete: () => void;
 }
@@ -104,7 +105,7 @@ function PlayerCard({
 
 // ─── Main Modal ──────────────────────────────────────────────────────────────
 
-export function MatchActionModal({ matchId, currentUserId, onClose, onActionComplete }: Props) {
+export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onClose, onActionComplete }: Props) {
   const [match, setMatch] = useState<FullMatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -122,6 +123,8 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
   const [showDisputeForm, setShowDisputeForm] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
   const [evidenceUrl, setEvidenceUrl] = useState('');
+
+  const scoresEqual = score1 !== '' && score2 !== '' && Number(score1) === Number(score2);
 
   const countdown = useCountdown(match?.resultConfirmationDeadline);
 
@@ -143,6 +146,11 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
     const id = setInterval(() => { load(); }, 15_000);
     return () => clearInterval(id);
   }, [match?.resultReportedBy, match?.status]);
+
+  // Auto-clear draw selection if scores change to be unequal
+  useEffect(() => {
+    if (isDraw && !scoresEqual) setIsDraw(false);
+  }, [score1, score2]);
 
   // Auto-confirm when countdown hits exactly 0
   useEffect(() => {
@@ -455,6 +463,25 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
         );
       }
 
+      // ── Matchweek not yet activated ───────────────────────────────────
+      const matchweekNotActive =
+        currentMatchweek !== undefined &&
+        match.matchweek !== undefined &&
+        match.matchweek > currentMatchweek;
+
+      if (matchweekNotActive) {
+        return (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <Clock className="w-10 h-10 text-slate-500" />
+            <p className="text-sm font-semibold text-white">Matchweek Not Active</p>
+            <p className="text-xs text-slate-400 max-w-xs">
+              The organizer hasn't advanced to Week {match.matchweek} yet. Results can only be
+              submitted once the organizer activates this matchweek.
+            </p>
+          </div>
+        );
+      }
+
       // ── Submit result form ────────────────────────────────────────────
       return (
         <div className="space-y-4">
@@ -483,13 +510,20 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
           <button
             type="button"
             onClick={() => { setIsDraw(true); setSelectedWinnerId(null); }}
+            disabled={!scoresEqual}
+            title={!scoresEqual ? 'Enter equal scores to mark as a draw (e.g. 1–1, 2–2)' : undefined}
             className={`w-full py-2 rounded-xl border text-sm font-semibold transition-all ${
               isDraw
                 ? 'border-cyan-500 bg-cyan-950/40 text-cyan-300'
-                : 'border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300'
+                : scoresEqual
+                  ? 'border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300'
+                  : 'border-slate-800 text-slate-700 cursor-not-allowed opacity-50'
             }`}
           >
             {isDraw ? '⚖️ Draw Selected' : 'It was a Draw'}
+            {!scoresEqual && score1 !== '' && score2 !== '' && (
+              <span className="ml-2 text-[10px] font-normal">(scores must be equal)</span>
+            )}
           </button>
 
           {/* Scores */}
