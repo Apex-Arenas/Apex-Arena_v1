@@ -52,7 +52,7 @@ export function LeagueTable({ table, highlightUserId }: LeagueTableProps) {
 
   return (
     <div className="w-full overflow-x-auto rounded-xl border border-slate-800">
-      <table className="w-full text-sm min-w-[640px]">
+      <table className="w-full text-sm min-w-160">
         <thead>
           <tr className="bg-slate-900/80 text-slate-400 uppercase text-[11px] tracking-wider">
             <th className="pl-4 pr-2 py-3 text-left w-8">#</th>
@@ -97,7 +97,7 @@ export function LeagueTable({ table, highlightUserId }: LeagueTableProps) {
                         className="w-7 h-7 rounded-full object-cover border border-slate-700"
                       />
                     ) : (
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-800 to-indigo-800 flex items-center justify-center text-white text-xs font-bold border border-slate-700">
+                      <div className="w-7 h-7 rounded-full bg-linear-to-br from-cyan-800 to-indigo-800 flex items-center justify-center text-white text-xs font-bold border border-slate-700">
                         {row.displayName.charAt(0).toUpperCase()}
                       </div>
                     )}
