@@ -114,6 +114,27 @@ export interface LeagueOverview {
   currentWeekMatches: LeagueMatch[];
 }
 
+export interface FullMatch {
+  matchId: string;
+  matchweek?: number;
+  status: string;
+  player1Id: string;
+  player1Name: string;
+  player1Score: number;
+  player1Result: string;
+  player1IsReady: boolean;
+  player2Id: string;
+  player2Name: string;
+  player2Score: number;
+  player2Result: string;
+  player2IsReady: boolean;
+  winnerId?: string;
+  resultReportedBy?: string;
+  isDisputed: boolean;
+  scheduledAt?: string;
+  screenshotUrl?: string;
+}
+
 export interface TournamentFilters {
   page?: number;
   limit?: number;
@@ -371,22 +392,26 @@ export function mapTournament(
 
 function mapLeagueMatches(list: Record<string, unknown>[]): LeagueMatch[] {
   return list.map((m) => {
-    const p1 = (m.player1 ?? m.participant1 ?? {}) as Record<string, unknown>;
-    const p2 = (m.player2 ?? m.participant2 ?? {}) as Record<string, unknown>;
+    const parts = (Array.isArray(m.participants) ? m.participants : []) as Record<string, unknown>[];
+    const p1 = (parts[0] ?? {}) as Record<string, unknown>;
+    const p2 = (parts[1] ?? {}) as Record<string, unknown>;
+    const scheduledTime =
+      (m.schedule as Record<string, unknown> | undefined)?.scheduled_time ??
+      m.scheduled_at ?? m.scheduledAt;
     return {
-      matchId: String(m._id ?? m.id ?? m.match_id ?? ''),
+      matchId: String(m._id ?? m.id ?? ''),
       matchweek: Number(m.matchweek ?? 0),
-      player1Id: String(p1._id ?? p1.id ?? m.player1_id ?? m.participant1_id ?? ''),
-      player1Name: String(p1.username ?? p1.display_name ?? p1.name ?? m.player1_name ?? ''),
-      player1Avatar: (p1.avatar_url ?? m.player1_avatar) as string | undefined,
-      player2Id: String(p2._id ?? p2.id ?? m.player2_id ?? m.participant2_id ?? ''),
-      player2Name: String(p2.username ?? p2.display_name ?? p2.name ?? m.player2_name ?? ''),
-      player2Avatar: (p2.avatar_url ?? m.player2_avatar) as string | undefined,
+      player1Id: String(p1.user_id ?? p1.team_id ?? p1._id ?? ''),
+      player1Name: String(p1.in_game_id ?? p1.display_name ?? p1.username ?? ''),
+      player1Avatar: p1.avatar_url as string | undefined,
+      player2Id: String(p2.user_id ?? p2.team_id ?? p2._id ?? ''),
+      player2Name: String(p2.in_game_id ?? p2.display_name ?? p2.username ?? ''),
+      player2Avatar: p2.avatar_url as string | undefined,
       status: String(m.status ?? 'scheduled'),
-      score1: m.score1 !== undefined ? Number(m.score1) : undefined,
-      score2: m.score2 !== undefined ? Number(m.score2) : undefined,
+      score1: p1.score !== undefined ? Number(p1.score) : undefined,
+      score2: p2.score !== undefined ? Number(p2.score) : undefined,
       winnerId: m.winner_id as string | undefined,
-      scheduledAt: m.scheduled_at as string | undefined,
+      scheduledAt: scheduledTime as string | undefined,
     };
   });
 }
@@ -933,22 +958,22 @@ export const tournamentService = {
     const data = response.data as Record<string, unknown>;
     const list = (Array.isArray(data) ? data : (data.table ?? [])) as Record<string, unknown>[];
     return list.map((r) => ({
-      userId: r.user_id as string | undefined,
-      teamId: r.team_id as string | undefined,
-      displayName: String(r.display_name ?? ''),
-      inGameId: r.in_game_id as string | undefined,
-      avatarUrl: r.avatar_url as string | undefined,
+      userId: (r.userId ?? r.user_id) as string | undefined,
+      teamId: (r.teamId ?? r.team_id) as string | undefined,
+      displayName: String(r.displayName ?? r.display_name ?? ''),
+      inGameId: (r.inGameId ?? r.in_game_id) as string | undefined,
+      avatarUrl: (r.avatarUrl ?? r.avatar_url) as string | undefined,
       position: Number(r.position ?? 0),
       played: Number(r.played ?? 0),
       won: Number(r.won ?? 0),
       drawn: Number(r.drawn ?? 0),
       lost: Number(r.lost ?? 0),
-      goalsFor: Number(r.goals_for ?? 0),
-      goalsAgainst: Number(r.goals_against ?? 0),
-      goalDifference: Number(r.goal_difference ?? 0),
+      goalsFor: Number(r.goalsFor ?? r.goals_for ?? 0),
+      goalsAgainst: Number(r.goalsAgainst ?? r.goals_against ?? 0),
+      goalDifference: Number(r.goalDifference ?? r.goal_difference ?? 0),
       points: Number(r.points ?? 0),
       form: Array.isArray(r.form) ? (r.form as string[]) : [],
-      positionChange: Number(r.position_change ?? 0),
+      positionChange: Number(r.positionChange ?? r.position_change ?? 0),
     }));
   },
 
@@ -958,7 +983,7 @@ export const tournamentService = {
     const data = response.data as Record<string, unknown>;
     const list = (Array.isArray(data) ? data : (data.matchweeks ?? [])) as Record<string, unknown>[];
     return list.map((mw) => ({
-      week: Number(mw.week ?? 0),
+      week: Number(mw.matchweek ?? mw.week ?? 0),
       matches: mapLeagueMatches((mw.matches ?? []) as Record<string, unknown>[]),
     }));
   },
@@ -984,22 +1009,22 @@ export const tournamentService = {
       totalMatchweeks: Number(data.total_matchweeks ?? 0),
       fixturesGenerated: Boolean(data.fixtures_generated ?? false),
       table: tableRaw.map((r) => ({
-        userId: r.user_id as string | undefined,
-        teamId: r.team_id as string | undefined,
-        displayName: String(r.display_name ?? ''),
-        inGameId: r.in_game_id as string | undefined,
-        avatarUrl: r.avatar_url as string | undefined,
+        userId: (r.userId ?? r.user_id) as string | undefined,
+        teamId: (r.teamId ?? r.team_id) as string | undefined,
+        displayName: String(r.displayName ?? r.display_name ?? ''),
+        inGameId: (r.inGameId ?? r.in_game_id) as string | undefined,
+        avatarUrl: (r.avatarUrl ?? r.avatar_url) as string | undefined,
         position: Number(r.position ?? 0),
         played: Number(r.played ?? 0),
         won: Number(r.won ?? 0),
         drawn: Number(r.drawn ?? 0),
         lost: Number(r.lost ?? 0),
-        goalsFor: Number(r.goals_for ?? 0),
-        goalsAgainst: Number(r.goals_against ?? 0),
-        goalDifference: Number(r.goal_difference ?? 0),
+        goalsFor: Number(r.goalsFor ?? r.goals_for ?? 0),
+        goalsAgainst: Number(r.goalsAgainst ?? r.goals_against ?? 0),
+        goalDifference: Number(r.goalDifference ?? r.goal_difference ?? 0),
         points: Number(r.points ?? 0),
         form: Array.isArray(r.form) ? (r.form as string[]) : [],
-        positionChange: Number(r.position_change ?? 0),
+        positionChange: Number(r.positionChange ?? r.position_change ?? 0),
       })),
       currentWeekMatches: mapLeagueMatches((data.current_week_matches ?? data.currentWeekMatches ?? []) as Record<string, unknown>[]),
     };
@@ -1021,5 +1046,91 @@ export const tournamentService = {
     }
     const data = response.data as Record<string, unknown>;
     return Number(data.currentMatchweek ?? data.current_matchweek ?? 0);
+  },
+
+  // ─── Match Actions ─────────────────────────────────────────────────────────
+
+  async getMatch(matchId: string): Promise<FullMatch | null> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.MATCHES}/${matchId}`, { skipCache: true });
+    if (!response.success) return null;
+    const m = (response.data as Record<string, unknown>);
+    const parts = (Array.isArray(m.participants) ? m.participants : []) as Record<string, unknown>[];
+    const p1 = (parts[0] ?? {}) as Record<string, unknown>;
+    const p2 = (parts[1] ?? {}) as Record<string, unknown>;
+    return {
+      matchId: String(m._id ?? m.id ?? ''),
+      matchweek: m.matchweek !== undefined ? Number(m.matchweek) : undefined,
+      status: String(m.status ?? 'pending'),
+      player1Id: String(p1.user_id ?? p1.team_id ?? ''),
+      player1Name: String(p1.in_game_id ?? p1.display_name ?? p1.username ?? ''),
+      player1Score: Number(p1.score ?? 0),
+      player1Result: String(p1.result ?? 'pending'),
+      player1IsReady: Boolean(p1.is_ready),
+      player2Id: String(p2.user_id ?? p2.team_id ?? ''),
+      player2Name: String(p2.in_game_id ?? p2.display_name ?? p2.username ?? ''),
+      player2Score: Number(p2.score ?? 0),
+      player2Result: String(p2.result ?? 'pending'),
+      player2IsReady: Boolean(p2.is_ready),
+      winnerId: m.winner_id as string | undefined,
+      resultReportedBy: m.result_reported_by as string | undefined,
+      isDisputed: Boolean((m.dispute as Record<string, unknown> | undefined)?.is_disputed ?? false),
+      scheduledAt: (m.schedule as Record<string, unknown> | undefined)?.scheduled_time as string | undefined,
+      screenshotUrl: ((m.proof as Record<string, unknown> | undefined)?.screenshots as string[] | undefined)?.[0],
+    };
+  },
+
+  async markReady(matchId: string): Promise<void> {
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_READY}/${matchId}/ready`, {});
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to mark ready';
+      throw new Error(msg);
+    }
+  },
+
+  async submitMatchResult(
+    matchId: string,
+    winnerId: string,
+    proof?: { screenshots?: string[]; videoUrl?: string },
+    scores?: { player1: number; player2: number },
+  ): Promise<void> {
+    const body: Record<string, unknown> = { winnerId };
+    if (proof) {
+      body.proof = {
+        ...(proof.screenshots?.length ? { screenshots: proof.screenshots } : {}),
+        ...(proof.videoUrl ? { video_url: proof.videoUrl } : {}),
+      };
+    }
+    if (scores) body.scores = scores;
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_RESULT}/${matchId}/result`, body);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to submit result';
+      throw new Error(msg);
+    }
+  },
+
+  async confirmMatchResult(matchId: string): Promise<void> {
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_CONFIRM}/${matchId}/confirm`, {});
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to confirm result';
+      throw new Error(msg);
+    }
+  },
+
+  async resolveMatchDispute(matchId: string, winnerId: string, resolution: string): Promise<void> {
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_DISPUTE_RESOLVE}/${matchId}/dispute/resolve`, { winnerId, resolution });
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to resolve dispute';
+      throw new Error(msg);
+    }
+  },
+
+  async disputeMatchResult(matchId: string, reason: string, evidence?: string[]): Promise<void> {
+    const body: Record<string, unknown> = { reason };
+    if (evidence?.length) body.evidence = evidence;
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_DISPUTE}/${matchId}/dispute`, body);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to dispute result';
+      throw new Error(msg);
+    }
   },
 };
