@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   X, Loader2, CheckCircle2, AlertTriangle, Swords, Clock,
   Shield, Trophy, CheckCheck, Flag, Timer,
@@ -17,24 +17,26 @@ interface Props {
 // ─── Countdown hook ──────────────────────────────────────────────────────────
 
 function useCountdown(deadline: string | undefined) {
-  const getRemaining = useCallback(() => {
+  const remaining = () => {
     if (!deadline) return null;
     const ms = new Date(deadline).getTime() - Date.now();
     return ms > 0 ? Math.ceil(ms / 1000) : 0;
-  }, [deadline]);
+  };
 
-  const [seconds, setSeconds] = useState<number | null>(getRemaining);
+  const [seconds, setSeconds] = useState<number | null>(null);
 
   useEffect(() => {
-    setSeconds(getRemaining());
+    // Update immediately when deadline changes
+    setSeconds(remaining());
     if (!deadline) return;
     const id = setInterval(() => {
-      const rem = getRemaining();
+      const rem = remaining();
       setSeconds(rem);
       if (rem === 0) clearInterval(id);
     }, 1000);
     return () => clearInterval(id);
-  }, [deadline, getRemaining]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deadline]);
 
   return seconds;
 }
@@ -111,6 +113,7 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
 
   // Submit result state
   const [selectedWinnerId, setSelectedWinnerId] = useState<string | null>(null);
+  const [isDraw, setIsDraw] = useState(false);
   const [score1, setScore1] = useState('');
   const [score2, setScore2] = useState('');
   const [screenshotUrl, setScreenshotUrl] = useState('');
@@ -301,15 +304,19 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
 
       // ── Opponent submitted — confirm or dispute ────────────────────────
       if (opponentSubmitted && !showDisputeForm) {
+        const isReportedDraw = !reportedWinner;
         const opponentSaysIWon = reportedWinner === currentUserId;
         return (
           <div className="space-y-4">
             {/* Result summary */}
             <div className={`rounded-xl p-3 border text-center text-sm
-              ${opponentSaysIWon
-                ? 'border-emerald-600/40 bg-emerald-950/20 text-emerald-300'
-                : 'border-amber-600/40 bg-amber-950/20 text-amber-300'}`}>
-              {opponentName} reported: <span className="font-bold">{reportedWinnerName} won</span>
+              ${isReportedDraw
+                ? 'border-slate-600/40 bg-slate-800/40 text-slate-300'
+                : opponentSaysIWon
+                  ? 'border-emerald-600/40 bg-emerald-950/20 text-emerald-300'
+                  : 'border-amber-600/40 bg-amber-950/20 text-amber-300'}`}>
+              {opponentName} reported:{' '}
+              <span className="font-bold">{isReportedDraw ? 'Draw' : `${reportedWinnerName} won`}</span>
             </div>
 
             {/* Submitted scores */}
@@ -411,23 +418,30 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
 
       // ── I submitted — waiting for opponent ────────────────────────────
       if (iSubmitted) {
+        const submittedAsDraw = !match.winnerId && !!match.resultReportedBy;
         return (
           <div className="space-y-4">
-            {/* Submitted scores */}
+            {/* Submitted scores / result */}
             <div className="flex items-center justify-center gap-3 py-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
-              <div className="text-center">
-                <p className="text-[10px] text-slate-500 mb-1">{match.player1Name}</p>
-                <span className="text-2xl font-bold text-white tabular-nums">{match.player1Score}</span>
-              </div>
-              <span className="text-slate-600 font-bold">–</span>
-              <div className="text-center">
-                <p className="text-[10px] text-slate-500 mb-1">{match.player2Name}</p>
-                <span className="text-2xl font-bold text-white tabular-nums">{match.player2Score}</span>
-              </div>
+              {submittedAsDraw ? (
+                <span className="text-sm font-bold text-slate-300">⚖️ Draw</span>
+              ) : (
+                <>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-500 mb-1">{match.player1Name}</p>
+                    <span className="text-2xl font-bold text-white tabular-nums">{match.player1Score}</span>
+                  </div>
+                  <span className="text-slate-600 font-bold">–</span>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-500 mb-1">{match.player2Name}</p>
+                    <span className="text-2xl font-bold text-white tabular-nums">{match.player2Score}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col items-center gap-2 text-center">
-              <p className="text-sm font-semibold text-white">Scores Submitted</p>
+              <p className="text-sm font-semibold text-white">Result Submitted</p>
               <p className="text-xs text-slate-400">
                 Waiting for <span className="text-slate-200">{opponentName}</span> to confirm or dispute.
               </p>
@@ -444,13 +458,14 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
       // ── Submit result form ────────────────────────────────────────────
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 text-center">Select the winner of this match</p>
+          <p className="text-xs text-slate-400 text-center">Select the winner — or mark as a draw</p>
           <div className="flex gap-3">
             <PlayerCard
               name={match.player1Name}
               highlight={isP1}
-              selected={selectedWinnerId === match.player1Id}
-              onClick={() => setSelectedWinnerId(match.player1Id)}
+              selected={!isDraw && selectedWinnerId === match.player1Id}
+              dimmed={isDraw}
+              onClick={() => { setIsDraw(false); setSelectedWinnerId(match.player1Id); }}
             />
             <div className="flex items-center justify-center shrink-0">
               <span className="text-slate-600 font-bold text-sm">VS</span>
@@ -458,10 +473,24 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
             <PlayerCard
               name={match.player2Name}
               highlight={isP2}
-              selected={selectedWinnerId === match.player2Id}
-              onClick={() => setSelectedWinnerId(match.player2Id)}
+              selected={!isDraw && selectedWinnerId === match.player2Id}
+              dimmed={isDraw}
+              onClick={() => { setIsDraw(false); setSelectedWinnerId(match.player2Id); }}
             />
           </div>
+
+          {/* Draw button */}
+          <button
+            type="button"
+            onClick={() => { setIsDraw(true); setSelectedWinnerId(null); }}
+            className={`w-full py-2 rounded-xl border text-sm font-semibold transition-all ${
+              isDraw
+                ? 'border-cyan-500 bg-cyan-950/40 text-cyan-300'
+                : 'border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {isDraw ? '⚖️ Draw Selected' : 'It was a Draw'}
+          </button>
 
           {/* Scores */}
           <div className="space-y-1">
@@ -512,13 +541,13 @@ export function MatchActionModal({ matchId, currentUserId, onClose, onActionComp
               doAction(() =>
                 tournamentService.submitMatchResult(
                   matchId,
-                  selectedWinnerId!,
+                  isDraw ? null : selectedWinnerId!,
                   { screenshots: [screenshotUrl] },
                   { player1: Number(score1), player2: Number(score2) },
                 )
               )
             }
-            disabled={submitting || !selectedWinnerId || !screenshotUrl || score1 === '' || score2 === ''}
+            disabled={submitting || (!isDraw && !selectedWinnerId) || !screenshotUrl || score1 === '' || score2 === ''}
             className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}

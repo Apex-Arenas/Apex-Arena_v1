@@ -1099,11 +1099,11 @@ export const tournamentService = {
 
   async submitMatchResult(
     matchId: string,
-    winnerId: string,
+    winnerId: string | null, // null = draw
     proof?: { screenshots?: string[]; videoUrl?: string },
     scores?: { player1: number; player2: number },
   ): Promise<void> {
-    const body: Record<string, unknown> = { winnerId };
+    const body: Record<string, unknown> = winnerId ? { winnerId } : { isDraw: true };
     if (proof) {
       body.proof = {
         ...(proof.screenshots?.length ? { screenshots: proof.screenshots } : {}),
