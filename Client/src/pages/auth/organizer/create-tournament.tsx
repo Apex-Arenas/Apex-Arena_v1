@@ -17,6 +17,7 @@ import {
 import { apiGet } from "../../../utils/api.utils";
 import { TOURNAMENT_ENDPOINTS } from "../../../config/api.config";
 import ImageUploadDropzone from "../../../components/ImageUploadDropzone";
+import { DateTimePicker } from "../../../components/DateTimePicker";
 
 // ─── Small UI helpers ────────────────────────────────────────────────────────
 
@@ -51,9 +52,12 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-400 mb-1.5">
+      <label className="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1.5">
         {label}
-        {required && <span className="text-red-400 ml-0.5">*</span>}
+        {required
+          ? <span className="text-red-400">*</span>
+          : <span className="text-slate-600 text-[10px] font-normal">optional</span>
+        }
       </label>
       {children}
     </div>
@@ -774,7 +778,7 @@ const CreateTournament = () => {
   };
 
   return (
-    <div className="px-6 py-6 max-w-3xl mx-auto space-y-6">
+    <div className="px-6 py-8 max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
@@ -899,7 +903,7 @@ const CreateTournament = () => {
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe your tournament (rules, format, prizes, etc.)"
+                placeholder="Describe your tournament..."
                 rows={3}
                 maxLength={2000}
                 className={`${inputCls} resize-none`}
@@ -921,17 +925,6 @@ const CreateTournament = () => {
                   ))}
                 </select>
 
-                {isLoadingSelectedGame && gameId && (
-                  <p className="mt-2 text-xs text-slate-500">
-                    Loading game details...
-                  </p>
-                )}
-
-                {!isLoadingSelectedGame && selectedGameDetails && (
-                  <p className="mt-2 text-xs text-slate-400">
-                    Selected game ID: {selectedGameDetails.id}
-                  </p>
-                )}
               </Field>
 
               <Field label="Tournament Type" required>
@@ -961,9 +954,6 @@ const CreateTournament = () => {
                   </select>
                 </Field>
               )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Format" required>
                 <select
                   value={format}
@@ -979,7 +969,9 @@ const CreateTournament = () => {
                   )}
                 </select>
               </Field>
+            </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Visibility">
                 <select
                   value={visibility}
@@ -991,19 +983,17 @@ const CreateTournament = () => {
                   <option value="invite_only">Invite Only</option>
                 </select>
               </Field>
-            </div>
 
-            <Field label="Region">
-              <input
-                type="text"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                placeholder="e.g. West Africa, Ghana, Global"
-                className={inputCls}
-              />
-            </Field>
+              <Field label="Region">
+                <input
+                  type="text"
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  placeholder="e.g. Ghana, Global"
+                  className={inputCls}
+                />
+              </Field>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Timezone">
                 <input
                   type="text"
@@ -1072,6 +1062,63 @@ const CreateTournament = () => {
               </Field>
             )}
 
+          </SectionCard>
+
+          {/* Schedule */}
+          <SectionCard title="Schedule" icon={CalendarDays}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Registration Opens" required>
+                <DateTimePicker
+                  value={registrationStart}
+                  onChange={setRegistrationStart}
+                  placeholder="Pick date & time"
+                />
+              </Field>
+              <Field label="Registration Closes" required>
+                <DateTimePicker
+                  value={registrationEnd}
+                  onChange={setRegistrationEnd}
+                  placeholder="Pick date & time"
+                  minDate={registrationStart ? new Date(registrationStart) : undefined}
+                />
+              </Field>
+              <Field label="Tournament Starts" required>
+                <DateTimePicker
+                  value={tournamentStart}
+                  onChange={setTournamentStart}
+                  placeholder="Pick date & time"
+                  minDate={registrationEnd ? new Date(registrationEnd) : undefined}
+                />
+              </Field>
+
+              <Field label="Tournament Ends">
+                <DateTimePicker
+                  value={tournamentEnd}
+                  onChange={setTournamentEnd}
+                  placeholder="Pick date & time"
+                  minDate={tournamentStart ? new Date(tournamentStart) : undefined}
+                />
+              </Field>
+
+              <Field label="Check-In Opens">
+                <DateTimePicker
+                  value={checkInStart}
+                  onChange={setCheckInStart}
+                  placeholder="Pick date & time"
+                  minDate={registrationEnd ? new Date(registrationEnd) : undefined}
+                />
+              </Field>
+
+              <Field label="Check-In Closes">
+                <DateTimePicker
+                  value={checkInEnd}
+                  onChange={setCheckInEnd}
+                  placeholder="Pick date & time"
+                  minDate={checkInStart ? new Date(checkInStart) : undefined}
+                />
+              </Field>
+            </div>
+
             <label className="inline-flex items-center gap-2 text-sm text-slate-300">
               <input
                 type="checkbox"
@@ -1081,60 +1128,6 @@ const CreateTournament = () => {
               />
               Enable waitlist when tournament is full
             </label>
-          </SectionCard>
-
-          {/* Schedule */}
-          <SectionCard title="Schedule" icon={CalendarDays}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Registration Opens" required>
-                <input
-                  type="datetime-local"
-                  value={registrationStart}
-                  onChange={(e) => setRegistrationStart(e.target.value)}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Registration Closes" required>
-                <input
-                  type="datetime-local"
-                  value={registrationEnd}
-                  onChange={(e) => setRegistrationEnd(e.target.value)}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Tournament Starts" required>
-                <input
-                  type="datetime-local"
-                  value={tournamentStart}
-                  onChange={(e) => setTournamentStart(e.target.value)}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Tournament Ends">
-                <input
-                  type="datetime-local"
-                  value={tournamentEnd}
-                  onChange={(e) => setTournamentEnd(e.target.value)}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Check-In Opens">
-                <input
-                  type="datetime-local"
-                  value={checkInStart}
-                  onChange={(e) => setCheckInStart(e.target.value)}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Check-In Closes">
-                <input
-                  type="datetime-local"
-                  value={checkInEnd}
-                  onChange={(e) => setCheckInEnd(e.target.value)}
-                  className={inputCls}
-                />
-              </Field>
-            </div>
           </SectionCard>
 
           {/* Entry & Prize */}
@@ -1238,92 +1231,18 @@ const CreateTournament = () => {
             )}
           </SectionCard>
 
-          {/* Rules */}
+          {/* Rules (optional) */}
           <SectionCard title="Rules & Info" icon={Globe}>
             <Field label="Rules">
               <textarea
                 value={rules}
                 onChange={(e) => setRules(e.target.value)}
-                placeholder="Tournament rules, code of conduct, map pool, etc."
+                placeholder="Tournament rules, code of conduct, etc."
                 rows={4}
                 maxLength={5000}
                 className={`${inputCls} resize-none`}
               />
             </Field>
-
-            <Field label="Map Pool (comma-separated)">
-              <input
-                type="text"
-                value={mapPool}
-                onChange={(e) => setMapPool(e.target.value)}
-                placeholder="Miramar, Erangel, Vikendi"
-                className={inputCls}
-              />
-            </Field>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="inline-flex items-center gap-2 text-sm text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={antiCheatRequired}
-                  onChange={(e) => setAntiCheatRequired(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-cyan-500"
-                />
-                Anti-cheat required
-              </label>
-
-              <label className="inline-flex items-center gap-2 text-sm text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={streamRequired}
-                  onChange={(e) => setStreamRequired(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-cyan-500"
-                />
-                Stream required
-              </label>
-
-              <label className="inline-flex items-center gap-2 text-sm text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={inGameIdRequired}
-                  onChange={(e) => setInGameIdRequired(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-cyan-500"
-                />
-                In-game ID required
-              </label>
-
-              <label className="inline-flex items-center gap-2 text-sm text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={verifiedEmailRequired}
-                  onChange={(e) => setVerifiedEmailRequired(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-cyan-500"
-                />
-                Verified email required
-              </label>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Default Best-Of">
-                <input
-                  type="number"
-                  value={defaultBestOf}
-                  onChange={(e) => setDefaultBestOf(e.target.value)}
-                  min={1}
-                  className={inputCls}
-                />
-              </Field>
-
-              <Field label="Allowed Regions (comma-separated)">
-                <input
-                  type="text"
-                  value={allowedRegions}
-                  onChange={(e) => setAllowedRegions(e.target.value)}
-                  placeholder="GH, NG, KE"
-                  className={inputCls}
-                />
-              </Field>
-            </div>
           </SectionCard>
 
           {/* Submit */}
