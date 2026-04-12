@@ -10,6 +10,117 @@
   font-family: "Space Grotesk", sans-serif;
 }
 
+/* ── react-day-picker v9 dark theme ── */
+.dtp-popover .rdp-root {
+  --rdp-accent-color: #06b6d4;
+  --rdp-accent-background-color: rgba(6,182,212,0.15);
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-day_button-height: 34px;
+  --rdp-day_button-width: 34px;
+  --rdp-day_button-border-radius: 8px;
+  --rdp-selected-border: none;
+  --rdp-today-color: #06b6d4;
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 13px;
+}
+.dtp-popover .rdp-month_caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 8px;
+}
+.dtp-popover .rdp-caption_label,
+.dtp-popover .rdp-month_caption_label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+.dtp-popover .rdp-nav {
+  display: flex;
+  gap: 4px;
+}
+.dtp-popover .rdp-button_previous,
+.dtp-popover .rdp-button_next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.dtp-popover .rdp-button_previous:hover,
+.dtp-popover .rdp-button_next:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.dtp-popover .rdp-weekdays { display: flex; }
+.dtp-popover .rdp-weekday {
+  width: 36px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+  padding-bottom: 4px;
+}
+.dtp-popover .rdp-week { display: flex; }
+.dtp-popover .rdp-day { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+.dtp-popover .rdp-day_button {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dtp-popover .rdp-day_button:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.dtp-popover .rdp-selected .rdp-day_button { background: #06b6d4 !important; color: #0f172a !important; font-weight: 700; }
+.dtp-popover .rdp-today .rdp-day_button { color: #06b6d4; font-weight: 700; }
+.dtp-popover .rdp-today.rdp-selected .rdp-day_button { color: #0f172a !important; }
+.dtp-popover .rdp-outside .rdp-day_button { color: #334155; }
+.dtp-popover .rdp-disabled .rdp-day_button { color: #1e293b; cursor: not-allowed; }
+.dtp-popover .rdp-day_button:focus-visible { outline: 2px solid #06b6d4; outline-offset: 1px; }
+
+/* ── range slider ── */
+.dtp-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 99px;
+  background: #1e293b;
+  outline: none;
+  cursor: pointer;
+}
+.dtp-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #06b6d4;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(6,182,212,0.2);
+  transition: box-shadow 0.15s;
+}
+.dtp-slider::-webkit-slider-thumb:hover { box-shadow: 0 0 0 5px rgba(6,182,212,0.3); }
+.dtp-slider::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #06b6d4;
+  cursor: pointer;
+  border: none;
+}
+
 html {
   background-color: #020617;
 }
