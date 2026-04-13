@@ -25,24 +25,18 @@ import {
 import { apiGet, apiPost } from "../../../utils/api.utils";
 import { TOURNAMENT_ENDPOINTS } from "../../../config/api.config";
 import { useAuth } from "../../../lib/auth-context";
-import { uploadImageMedia } from "../../../services/media-upload.service";
 import {
   BRACKET_VISIBLE_STATUSES,
   BracketView,
-  DisputeResultModal,
   extractBracketRounds,
-  extractEntityId,
   getOpponentLabel,
-  getParticipantEntityId,
-  getParticipantLabel,
   matchIncludesCurrentPlayer,
   RegisterModal,
-  SubmitResultModal,
   WithdrawModal,
-  type BracketMatch,
   type BracketRound,
 } from "../../../components/tournament-detail";
 import { LeagueView } from "../../../components/league/LeagueView";
+import { MatchActionModal } from "../../../components/league/MatchActionModal";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -117,23 +111,7 @@ const TournamentDetail = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawReason, setWithdrawReason] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isConfirmingMatch, setIsConfirmingMatch] = useState<string | null>(null);
-  const [isMarkingReady, setIsMarkingReady] = useState<string | null>(null);
-  const [activeSubmitMatch, setActiveSubmitMatch] =
-    useState<BracketMatch | null>(null);
-  const [submitWinnerId, setSubmitWinnerId] = useState("");
-  const [submitVideoUrl, setSubmitVideoUrl] = useState("");
-  const [submitScreenshotFile, setSubmitScreenshotFile] = useState<File | null>(
-    null,
-  );
-  const [isSubmittingResult, setIsSubmittingResult] = useState(false);
-  const [activeDisputeMatch, setActiveDisputeMatch] =
-    useState<BracketMatch | null>(null);
-  const [disputeReason, setDisputeReason] = useState("");
-  const [disputeScreenshotFile, setDisputeScreenshotFile] =
-    useState<File | null>(null);
-  const [disputeEvidenceUrl, setDisputeEvidenceUrl] = useState("");
-  const [isSubmittingDispute, setIsSubmittingDispute] = useState(false);
+  const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
 
   const hasFetched = useRef(false);
 
@@ -237,6 +215,7 @@ const TournamentDetail = () => {
     const shouldPoll =
       tournament.status === "open" &&
       Boolean(
+        (checkInStatus?.checkInWindow as { isOpen?: boolean } | undefined)?.isOpen ??
         checkInStatus?.is_check_in_open ??
         checkInStatus?.check_in_open ??
         false,
@@ -299,224 +278,6 @@ const TournamentDetail = () => {
     }
   };
 
-  const ensureMatchSessionExists = useCallback(async (matchId: string) => {
-    await apiGet(`${TOURNAMENT_ENDPOINTS.MATCH_SESSION}/${matchId}/session`, {
-      skipCache: true,
-    });
-  }, []);
-
-  const uploadMatchEvidence = useCallback(
-    async (
-      matchId: string,
-      file: File,
-      description: string,
-    ): Promise<string> => {
-      const uploadedUrl = await uploadImageMedia(
-        file,
-        `match-proof/${matchId}`,
-      );
-
-      try {
-        await ensureMatchSessionExists(matchId);
-        await apiPost(
-          `${TOURNAMENT_ENDPOINTS.MATCH_SESSION_EVIDENCE}/${matchId}/session/evidence`,
-          {
-            fileUrl: uploadedUrl,
-            fileType: "image",
-            description,
-          },
-        );
-      } catch {
-        // Evidence endpoint is best-effort. Result submission should still proceed.
-      }
-
-      return uploadedUrl;
-    },
-    [ensureMatchSessionExists],
-  );
-
-  const openSubmitResultModal = useCallback((match: BracketMatch) => {
-    const participants = (match.participants ?? []).filter(
-      (participant) => getParticipantEntityId(participant).length > 0,
-    );
-    const firstWinner = getParticipantEntityId(participants[0]);
-
-    setActiveSubmitMatch(match);
-    setSubmitWinnerId(firstWinner);
-    setSubmitVideoUrl("");
-    setSubmitScreenshotFile(null);
-  }, []);
-
-  const closeSubmitResultModal = useCallback(() => {
-    setActiveSubmitMatch(null);
-    setSubmitWinnerId("");
-    setSubmitVideoUrl("");
-    setSubmitScreenshotFile(null);
-  }, []);
-
-  const handleSubmitMatchResult = useCallback(async () => {
-    if (!activeSubmitMatch) return;
-
-    const matchId = activeSubmitMatch._id ?? activeSubmitMatch.id;
-    if (!matchId || !submitWinnerId) {
-      setErrorMsg("Please select a winner before submitting.");
-      return;
-    }
-
-    setIsSubmittingResult(true);
-    setErrorMsg(null);
-
-    try {
-      const screenshots: string[] = [];
-
-      if (submitScreenshotFile) {
-        const proofUrl = await uploadMatchEvidence(
-          matchId,
-          submitScreenshotFile,
-          "Result proof screenshot",
-        );
-        screenshots.push(proofUrl);
-      }
-
-      await tournamentService.submitMatchResult(matchId, {
-        winnerId: submitWinnerId,
-        proof: {
-          screenshots,
-          videoUrl: submitVideoUrl.trim() || undefined,
-        },
-      });
-
-      closeSubmitResultModal();
-      setSuccessMsg("Result submitted. Waiting for opponent confirmation.");
-      await handleRefresh();
-      setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err) {
-      setErrorMsg(
-        err instanceof Error ? err.message : "Failed to submit match result.",
-      );
-    } finally {
-      setIsSubmittingResult(false);
-    }
-  }, [
-    activeSubmitMatch,
-    closeSubmitResultModal,
-    handleRefresh,
-    submitScreenshotFile,
-    submitVideoUrl,
-    submitWinnerId,
-    uploadMatchEvidence,
-  ]);
-
-  const handleConfirmMatchResult = useCallback(
-    async (matchId: string) => {
-      setIsConfirmingMatch(matchId);
-      setErrorMsg(null);
-
-      try {
-        await tournamentService.confirmMatchResult(matchId);
-        setSuccessMsg("Result confirmed. Bracket has been updated.");
-        await handleRefresh();
-        setTimeout(() => setSuccessMsg(null), 5000);
-      } catch (err) {
-        setErrorMsg(
-          err instanceof Error
-            ? err.message
-            : "Failed to confirm match result.",
-        );
-      } finally {
-        setIsConfirmingMatch(null);
-      }
-    },
-    [handleRefresh],
-  );
-
-  const handleMarkReady = useCallback(
-    async (matchId: string) => {
-      setIsMarkingReady(matchId);
-      setErrorMsg(null);
-      try {
-        await tournamentService.markMatchReady(matchId);
-        setSuccessMsg("You are marked as ready for this match.");
-        await handleRefresh();
-        setTimeout(() => setSuccessMsg(null), 5000);
-      } catch (err) {
-        setErrorMsg(
-          err instanceof Error ? err.message : "Failed to mark ready.",
-        );
-      } finally {
-        setIsMarkingReady(null);
-      }
-    },
-    [handleRefresh],
-  );
-
-  const openDisputeModal = useCallback((match: BracketMatch) => {
-    setActiveDisputeMatch(match);
-    setDisputeReason("");
-    setDisputeScreenshotFile(null);
-    setDisputeEvidenceUrl("");
-  }, []);
-
-  const closeDisputeModal = useCallback(() => {
-    setActiveDisputeMatch(null);
-    setDisputeReason("");
-    setDisputeScreenshotFile(null);
-    setDisputeEvidenceUrl("");
-  }, []);
-
-  const handleSubmitDispute = useCallback(async () => {
-    if (!activeDisputeMatch) return;
-
-    const matchId = activeDisputeMatch._id ?? activeDisputeMatch.id;
-    if (!matchId || disputeReason.trim().length < 5) {
-      setErrorMsg("Please provide a brief dispute reason.");
-      return;
-    }
-
-    setIsSubmittingDispute(true);
-    setErrorMsg(null);
-
-    try {
-      const evidence: string[] = [];
-
-      if (disputeScreenshotFile) {
-        const evidenceUrl = await uploadMatchEvidence(
-          matchId,
-          disputeScreenshotFile,
-          "Dispute evidence screenshot",
-        );
-        evidence.push(evidenceUrl);
-      }
-
-      if (disputeEvidenceUrl.trim().length > 0) {
-        evidence.push(disputeEvidenceUrl.trim());
-      }
-
-      await tournamentService.disputeMatchResult(matchId, {
-        reason: disputeReason.trim(),
-        evidence,
-      });
-
-      closeDisputeModal();
-      setSuccessMsg("Dispute submitted. Organizer review is required.");
-      await handleRefresh();
-      setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err) {
-      setErrorMsg(
-        err instanceof Error ? err.message : "Failed to submit dispute.",
-      );
-    } finally {
-      setIsSubmittingDispute(false);
-    }
-  }, [
-    activeDisputeMatch,
-    closeDisputeModal,
-    disputeEvidenceUrl,
-    disputeReason,
-    disputeScreenshotFile,
-    handleRefresh,
-    uploadMatchEvidence,
-  ]);
 
   if (isLoading) {
     return (
@@ -549,14 +310,33 @@ const TournamentDetail = () => {
   const canWithdraw =
     myRegistration !== null && ACTIVE_STATUSES.has(myRegistration.status);
 
-  const checkInOpen = Boolean(
+  const checkInWindow = checkInStatus?.checkInWindow as
+    | { start?: string; end?: string; isOpen?: boolean }
+    | undefined;
+
+  const checkInStart =
+    checkInWindow?.start ??
+    (checkInStatus?.check_in_start as string | undefined) ??
+    tournament.schedule.checkInStart;
+  const checkInEnd =
+    checkInWindow?.end ??
+    (checkInStatus?.check_in_end as string | undefined) ??
+    tournament.schedule.checkInEnd;
+
+  const checkInOpenFromApi = Boolean(
+    checkInWindow?.isOpen ??
     checkInStatus?.is_check_in_open ??
     checkInStatus?.check_in_open ??
     checkInStatus?.isOpen ??
     false,
   );
-  const checkInStart = checkInStatus?.check_in_start as string | undefined;
-  const checkInEnd = checkInStatus?.check_in_end as string | undefined;
+  const now = Date.now();
+  const checkInOpenFromSchedule = Boolean(
+    checkInStart && checkInEnd &&
+    now >= new Date(checkInStart).getTime() &&
+    now <= new Date(checkInEnd).getTime(),
+  );
+  const checkInOpen = checkInOpenFromApi || checkInOpenFromSchedule;
 
   const isLeague = tournament.tournamentType === 'league';
   const showBracketSection = !isLeague && BRACKET_VISIBLE_STATUSES.has(tournament.status);
@@ -1085,90 +865,38 @@ const TournamentDetail = () => {
               <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
             </div>
           ) : (
-            <BracketView rounds={bracketRounds} />
+            <BracketView
+              rounds={bracketRounds}
+              onMatchClick={isRegistered ? (id) => setActiveMatchId(id) : undefined}
+            />
           )}
         </section>
       )}
 
-      {/* My Match Voting */}
+      {/* My Matches */}
       {isRegistered && showBracketSection && (
         <section className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-5">
           <h2 className="font-display text-base font-semibold text-white mb-3 flex items-center gap-2">
             <Gamepad2 className="w-4 h-4 text-cyan-400" />
-            My Match Voting
+            My Matches
           </h2>
 
           {myMatches.length === 0 ? (
             <p className="text-sm text-slate-400">
-              No active matches for your registration yet. Your voting actions
-              will appear here when your bracket match is ready.
+              No active matches for your registration yet. Your matches will
+              appear here when your bracket match is ready.
             </p>
           ) : (
             <div className="space-y-3">
               {myMatches.map((match, index) => {
                 const matchId = match._id ?? match.id ?? "";
-                const reporterId = extractEntityId(match.result_reported_by);
-                const confirmerId = extractEntityId(match.result_confirmed_by);
-                const winnerId = extractEntityId(match.winner_id);
-                const disputeActive = Boolean(
-                  match.dispute?.is_disputed && !match.dispute?.resolved,
-                );
-                const isCompleted = match.status === "completed";
-                const iReported = Boolean(
-                  currentUserId && reporterId === currentUserId,
-                );
-                const isConfirmLoading = isConfirmingMatch === matchId;
-                const isReadyLoading = isMarkingReady === matchId;
-
-                const myParticipant = (match.participants ?? []).find(
-                  (p) => currentUserId && getParticipantEntityId(p) === currentUserId,
-                );
-                const alreadyReady = Boolean(myParticipant?.is_ready);
-                const canMarkReady =
-                  Boolean(matchId) &&
-                  match.status === "ready_check" &&
-                  !alreadyReady;
-
-                const canSubmitResult =
-                  Boolean(matchId) &&
-                  !reporterId &&
-                  !disputeActive &&
-                  !isCompleted &&
-                  ["scheduled", "ready_check", "ongoing"].includes(
-                    match.status ?? "",
-                  );
-
-                const canConfirmResult =
-                  Boolean(matchId) &&
-                  Boolean(reporterId) &&
-                  !disputeActive &&
-                  !isCompleted &&
-                  Boolean(currentUserId) &&
-                  reporterId !== currentUserId;
-
-                const canDisputeResult = canConfirmResult;
-
-                const winnerParticipant = (match.participants ?? []).find(
-                  (participant) =>
-                    getParticipantEntityId(participant) === winnerId,
-                );
-
-                const statusText = disputeActive
-                  ? "Result disputed - waiting for organizer resolution"
-                  : isCompleted
-                    ? "Match completed"
-                    : reporterId && confirmerId
-                      ? "Result confirmed"
-                      : iReported
-                        ? "Awaiting opponent confirmation"
-                        : reporterId
-                          ? "Opponent submitted a result"
-                          : "Result not submitted yet";
-
                 return (
-                  <div
+                  <button
                     key={matchId || index}
-                    className="rounded-xl border border-slate-700 bg-slate-900/70 p-4 space-y-3"
+                    type="button"
+                    onClick={() => matchId && setActiveMatchId(matchId)}
+                    disabled={!matchId}
+                    className="w-full text-left rounded-xl border border-slate-700 bg-slate-900/70 p-4 hover:border-slate-500 transition-colors disabled:opacity-50"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
@@ -1185,84 +913,7 @@ const TournamentDetail = () => {
                         {match.status ?? "pending"}
                       </span>
                     </div>
-
-                    <div className="text-xs text-slate-400 space-y-1">
-                      <p>{statusText}</p>
-                      {winnerParticipant && (
-                        <p className="text-cyan-300">
-                          Submitted winner:{" "}
-                          {getParticipantLabel(winnerParticipant)}
-                        </p>
-                      )}
-                      {match.dispute?.is_disputed &&
-                        match.dispute?.dispute_reason && (
-                          <p className="text-amber-300">
-                            Dispute reason: {match.dispute.dispute_reason}
-                          </p>
-                        )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {canMarkReady && (
-                        <button
-                          onClick={() => void handleMarkReady(matchId)}
-                          disabled={isReadyLoading}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-indigo-500 text-white hover:bg-indigo-400 disabled:opacity-60 transition-colors"
-                        >
-                          {isReadyLoading ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          )}
-                          {isReadyLoading ? "Marking..." : "Mark Ready"}
-                        </button>
-                      )}
-                      {alreadyReady && match.status === "ready_check" && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          Ready
-                        </span>
-                      )}
-
-                      {canSubmitResult && (
-                        <button
-                          onClick={() => openSubmitResultModal(match)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-cyan-500 text-slate-950 hover:bg-cyan-400 transition-colors"
-                        >
-                          Submit Result
-                        </button>
-                      )}
-
-                      {canConfirmResult && (
-                        <button
-                          onClick={() => {
-                            void handleConfirmMatchResult(matchId);
-                          }}
-                          disabled={isConfirmLoading}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-green-500 text-slate-950 hover:bg-green-400 disabled:opacity-60 transition-colors"
-                        >
-                          {isConfirmLoading ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          )}
-                          {isConfirmLoading
-                            ? "Confirming..."
-                            : "Confirm Result"}
-                        </button>
-                      )}
-
-                      {canDisputeResult && (
-                        <button
-                          onClick={() => openDisputeModal(match)}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
-                        >
-                          <AlertCircle className="w-3.5 h-3.5" />
-                          Dispute Result
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -1281,33 +932,17 @@ const TournamentDetail = () => {
         />
       )}
 
-      <SubmitResultModal
-        match={activeSubmitMatch}
-        winnerId={submitWinnerId}
-        onWinnerChange={setSubmitWinnerId}
-        videoUrl={submitVideoUrl}
-        onVideoUrlChange={setSubmitVideoUrl}
-        onScreenshotChange={setSubmitScreenshotFile}
-        isSubmitting={isSubmittingResult}
-        onClose={closeSubmitResultModal}
-        onSubmit={() => {
-          void handleSubmitMatchResult();
-        }}
-      />
-
-      <DisputeResultModal
-        match={activeDisputeMatch}
-        reason={disputeReason}
-        onReasonChange={setDisputeReason}
-        evidenceUrl={disputeEvidenceUrl}
-        onEvidenceUrlChange={setDisputeEvidenceUrl}
-        onScreenshotChange={setDisputeScreenshotFile}
-        isSubmitting={isSubmittingDispute}
-        onClose={closeDisputeModal}
-        onSubmit={() => {
-          void handleSubmitDispute();
-        }}
-      />
+      {activeMatchId && currentUserId && (
+        <MatchActionModal
+          matchId={activeMatchId}
+          currentUserId={currentUserId}
+          onClose={() => setActiveMatchId(null)}
+          onActionComplete={() => {
+            setActiveMatchId(null);
+            void handleRefresh();
+          }}
+        />
+      )}
 
       <WithdrawModal
         open={showWithdrawModal}
