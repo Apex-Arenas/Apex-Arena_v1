@@ -463,6 +463,22 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
         );
       }
 
+      // ── TBD participant — opponent not yet assigned ───────────────────
+      const hasTbd = !match.player1Id || !match.player2Id ||
+        match.player1Name === 'TBD' || match.player2Name === 'TBD';
+
+      if (hasTbd) {
+        return (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <Clock className="w-10 h-10 text-slate-500" />
+            <p className="text-sm font-semibold text-white">Waiting for Opponent</p>
+            <p className="text-xs text-slate-400 max-w-xs">
+              Your opponent hasn't been assigned yet. Results can only be submitted once both players are confirmed.
+            </p>
+          </div>
+        );
+      }
+
       // ── Matchweek not yet activated ───────────────────────────────────
       const matchweekNotActive =
         currentMatchweek !== undefined &&
