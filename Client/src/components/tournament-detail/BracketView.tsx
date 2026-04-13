@@ -100,7 +100,13 @@ function getRoundTitle(
   return `Round ${roundNumber}`;
 }
 
-export default function BracketView({ rounds }: { rounds: BracketRound[] }) {
+export default function BracketView({
+  rounds,
+  onMatchClick,
+}: {
+  rounds: BracketRound[];
+  onMatchClick?: (matchId: string) => void;
+}) {
   if (rounds.length === 0) {
     return (
       <p className="text-sm text-slate-400 text-center py-6">
@@ -159,11 +165,14 @@ export default function BracketView({ rounds }: { rounds: BracketRound[] }) {
                       match.scheduled_at ??
                       match.scheduled_time ??
                       match.schedule?.scheduled_time;
+                    const matchId = match._id ?? match.id;
+                    const isClickable = Boolean(onMatchClick && matchId);
 
                     return (
                       <div
-                        key={match._id ?? match.id ?? mi}
-                        className="rounded-xl border border-slate-700/80 bg-linear-to-br from-slate-800/80 via-slate-900/80 to-slate-900/95 shadow-[0_8px_24px_rgba(2,6,23,0.35)] overflow-hidden"
+                        key={matchId ?? mi}
+                        onClick={() => isClickable && onMatchClick!(matchId!)}
+                        className={`rounded-xl border border-slate-700/80 bg-linear-to-br from-slate-800/80 via-slate-900/80 to-slate-900/95 shadow-[0_8px_24px_rgba(2,6,23,0.35)] overflow-hidden ${isClickable ? "cursor-pointer hover:border-slate-500/80 transition-colors" : ""}`}
                         style={{ minHeight: `${BRACKET_CARD_HEIGHT}px` }}
                       >
                         <div
