@@ -878,7 +878,7 @@ export const adminService = {
   async reviewGameRequest(requestId: string, action: 'approve' | 'reject', notes?: string): Promise<boolean> {
     const body: Record<string, unknown> = { action };
     if (notes) body.admin_notes = notes;
-    const response = await apiPatch(
+    const response = await apiPost(
       `${TOURNAMENT_ENDPOINTS.GAME_REQUEST_ADMIN_REVIEW}/${requestId}/review`,
       body,
       adminHeaders(),
@@ -887,7 +887,7 @@ export const adminService = {
   },
 
   async markGameRequestDuplicate(requestId: string, duplicateOfId: string): Promise<boolean> {
-    const response = await apiPatch(
+    const response = await apiPost(
       `${TOURNAMENT_ENDPOINTS.GAME_REQUEST_ADMIN_MARK_DUPLICATE}/${requestId}/mark-duplicate`,
       { duplicate_of: duplicateOfId },
       adminHeaders(),
