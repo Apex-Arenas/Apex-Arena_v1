@@ -1,457 +1,521 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { cubicBezier, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
-  Trophy,
-  Shield,
-  Zap,
-  Users,
-  Globe,
-  Smartphone,
-  Award,
-  CheckCircle,
-  Sparkles,
-  Cpu,
-  Radar,
-  ArrowRight,
-  Wallet,
-  Crown,
+  Shield, Cpu, Smartphone, Users, Globe, Award,
+  Trophy, Zap, ArrowRight, ChevronRight,
+  Gamepad2, ArrowUpRight,
 } from "lucide-react";
+import { tournamentService, type Tournament } from "../../services/tournament.service";
+
+// ─── data ────────────────────────────────────────────────────────────────────
+
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+const FEATURES = [
+  { icon: Shield,     color: "text-cyan-400",   bg: "bg-cyan-400/10",   title: "Escrow-locked prizes",  desc: "Every prize pool is secured before a bracket goes live. Zero payout drama, ever." },
+  { icon: Cpu,        color: "text-indigo-400", bg: "bg-indigo-400/10", title: "Dispute resolution",    desc: "Verified mods, clear rules, match-evidence workflows — decisions in under 24 h." },
+  { icon: Smartphone, color: "text-emerald-400",bg: "bg-emerald-400/10",title: "Mobile money payouts",  desc: "MTN MoMo, Vodafone Cash, AirtelTigo. Winners get paid the moment results confirm." },
+  { icon: Users,      color: "text-violet-400", bg: "bg-violet-400/10", title: "Player careers",        desc: "Profiles, stats, highlights, and a ranking that actually travels across operators." },
+  { icon: Globe,      color: "text-sky-400",    bg: "bg-sky-400/10",    title: "Hybrid tournaments",    desc: "Online, LAN, hybrid — one bracket tool across Mobile Legends, CODM, FIFA, PUBG." },
+  { icon: Award,      color: "text-amber-400",  bg: "bg-amber-400/10",  title: "Built for organizers",  desc: "Brackets, check-ins, streaming overlays, and prize distribution in a single cockpit." },
+];
+
+const STEPS = [
+  { n: "01", title: "Create your handle",    desc: "Set up your account in minutes. Lock in the IGN that'll carry your legacy." },
+  { n: "02", title: "Pick a verified arena", desc: "Join tournaments with secured prize pools, clear rules, and trusted operators." },
+  { n: "03", title: "Compete with proof",    desc: "Play, submit results with evidence, and keep every match on the record." },
+  { n: "04", title: "Cash out instantly",    desc: "Automatic Mobile Money payouts the moment your win is verified." },
+];
+
+// ─── Game image fallbacks (used when tournament has no thumbnail) ─────────────
+const GAME_IMG: Record<string, string> = {
+  "mobile legends": "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200&auto=format&fit=crop",
+  "call of duty":   "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=1200&auto=format&fit=crop",
+  "pubg":           "https://images.unsplash.com/photo-1593305841991-05c297ba4575?q=80&w=1200&auto=format&fit=crop",
+  "ea fc":          "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1200&auto=format&fit=crop",
+  "fifa":           "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1200&auto=format&fit=crop",
+  "free fire":      "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1200&auto=format&fit=crop",
+  "tekken":         "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=1200&auto=format&fit=crop",
+};
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200&auto=format&fit=crop";
+
+function getTournamentImg(t: Tournament): string {
+  if (t.thumbnailUrl) return t.thumbnailUrl;
+  if (t.bannerUrl) return t.bannerUrl;
+  const name = (t.game?.name ?? "").toLowerCase();
+  for (const [key, url] of Object.entries(GAME_IMG)) {
+    if (name.includes(key)) return url;
+  }
+  return FALLBACK_IMG;
+}
+
+function formatGhs(minorUnits: number): string {
+  return `GHS ${(minorUnits / 100).toLocaleString("en-GH", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
+// Featured trio shown as a mosaic
+const FEATURED_TRIO = [
+  { title: "EA FC 26",       tag: "Football · 1v1",    img: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1200&auto=format&fit=crop", prize: "GHS 1,000+", span: "col-span-2 row-span-2" },
+  { title: "Mortal Kombat",  tag: "Fighter · 1v1",     img: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=800&auto=format&fit=crop",  prize: "GHS 800+",   span: "col-span-1 row-span-1" },
+  { title: "DLS 26",         tag: "Mobile Football",   img: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=800&auto=format&fit=crop",  prize: "GHS 500+",   span: "col-span-1 row-span-1" },
+];
+
+const GAMES = [
+  { title: "Mobile Legends", tag: "5v5 MOBA",     img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop",  prize: "GHS 500+" },
+  { title: "Call of Duty",   tag: "FPS",           img: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=800&auto=format&fit=crop", prize: "GHS 2,000+" },
+  { title: "PUBG Mobile",    tag: "Battle Royale", img: "https://images.unsplash.com/photo-1593305841991-05c297ba4575?q=80&w=800&auto=format&fit=crop", prize: "GHS 1,200+" },
+  { title: "Free Fire",      tag: "BR · Squads",   img: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=800&auto=format&fit=crop",  prize: "GHS 1,500+" },
+];
+
+const TESTIMONIALS = [
+  { quote: "Got paid in under 10 minutes after the final. Actually wild.", name: "Phoenix GG",   role: "MLBB · 3× tournament winner", avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?q=80&w=200&auto=format&fit=crop" },
+  { quote: "Finally a platform where the prize is real before you hit register.", name: "Ada Boateng", role: "CODM · Team Captain",        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop" },
+  { quote: "We've run 40+ brackets on Apex. Best organizer tools in the region.", name: "Nana Asante", role: "Organizer · Accra Esports",   avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" },
+];
+
+const STATUS_CHIP: Record<string, { cls: string; label: string }> = {
+  live:      { cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25", label: "Live"   },
+  ongoing:   { cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25", label: "Live"   },
+  started:   { cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25", label: "Live"   },
+  open:      { cls: "bg-cyan-500/15    text-cyan-300    border-cyan-500/25",    label: "Open"   },
+  published: { cls: "bg-cyan-500/15    text-cyan-300    border-cyan-500/25",    label: "Open"   },
+  locked:    { cls: "bg-violet-500/15  text-violet-300  border-violet-500/25",  label: "Locked" },
+};
+
+// ─── Landing ─────────────────────────────────────────────────────────────────
+
+const ACTIVE_STATUSES = new Set(["open", "published", "ongoing", "started", "live", "locked"]);
 
 const Landing = () => {
   const reduceMotion = useReducedMotion();
+  const [featured, setFeatured] = useState<Tournament[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
 
-  const easeOut = cubicBezier(0.22, 1, 0.36, 1);
+  // Plain function — does NOT call any hooks, safe to call anywhere in JSX
+  const fade = (delay = 0) => {
+    if (reduceMotion) return {};
+    return {
+      initial: { opacity: 0, y: 20 },
+      whileInView: { opacity: 1, y: 0 },
+      viewport: { once: true, amount: 0.12 },
+      transition: { duration: 0.55, ease: EASE, delay },
+    };
+  };
 
-  const features = [
-    {
-      icon: <Shield className="w-6 h-6" />,
-      title: "Escrow-locked prizes",
-      description:
-        "Every prize is secured before a bracket goes live. Zero payout drama.",
-    },
-    {
-      icon: <Cpu className="w-6 h-6" />,
-      title: "Integrity workflow",
-      description:
-        "Clear rules, verified brackets, and transparent results tracking.",
-    },
-    {
-      icon: <Smartphone className="w-6 h-6" />,
-      title: "Mobile money ready",
-      description:
-        "MTN, Vodafone, AirtelTigo integrations for instant GHS payouts.",
-    },
-    {
-      icon: <Users className="w-6 h-6" />,
-      title: "Player career stack",
-      description:
-        "Profiles, stats, and highlights that help players get discovered.",
-    },
-    {
-      icon: <Globe className="w-6 h-6" />,
-      title: "Hybrid tournaments",
-      description:
-        "Online, offline, and hybrid formats supported in one workflow.",
-    },
-    {
-      icon: <Award className="w-6 h-6" />,
-      title: "Organizer control",
-      description:
-        "Brackets, streaming, payments, and prize distribution in one place.",
-    },
-  ];
-
-  const steps = [
-    {
-      number: "01",
-      title: "Create your handle",
-      description: "Set up your account in minutes and lock in your identity.",
-    },
-    {
-      number: "02",
-      title: "Pick a verified arena",
-      description: "Join tournaments with secured prize pools and clear rules.",
-    },
-    {
-      number: "03",
-      title: "Compete with proof",
-      description: "Play, submit results, and keep outcomes accountable.",
-    },
-    {
-      number: "04",
-      title: "Cash out instantly",
-      description: "Automatic Mobile Money payouts when you win.",
-    },
-  ];
-
-  const stats = [
-    { label: "Prize security", value: "100%", sub: "Escrow guaranteed" },
-    { label: "Payment risk", value: "0%", sub: "Protected payouts" },
-    { label: "Platform fee", value: "10%", sub: "Lowest in region" },
-    { label: "Escrow fee", value: "1%", sub: "Transparent charges" },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    tournamentService.getTournaments({ limit: 10 })
+      .then(({ tournaments }) => {
+        if (cancelled) return;
+        // Sort: live/ongoing first, then open, then others
+        const order = { ongoing: 0, started: 0, live: 0, open: 1, published: 1, locked: 2 };
+        const active = tournaments
+          .filter((t) => ACTIVE_STATUSES.has(t.status) && t.visibility === "public")
+          .sort((a, b) => (order[a.status as keyof typeof order] ?? 9) - (order[b.status as keyof typeof order] ?? 9))
+          .slice(0, 3);
+        setFeatured(active);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setFeaturedLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-transparent text-white">
-      <style>{`
-        .grid-bg { background-image: radial-gradient(circle at 1px 1px, rgba(148,163,184,0.15) 1px, transparent 0); background-size: 32px 32px; }
-        .glow-orb { filter: blur(40px); opacity: 0.35; }
-        .float-slow { animation: float 9s ease-in-out infinite; }
-        .float-fast { animation: float 6s ease-in-out infinite; }
-        .scanline { background: linear-gradient(90deg, transparent, rgba(56,189,248,0.3), transparent); animation: sweep 6s linear infinite; }
-        .shine { background-size: 200% 200%; animation: gradientShift 10s ease infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-18px); } }
-        @keyframes sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-        @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-      `}</style>
+    <div className="text-white overflow-x-hidden">
 
-      {/* Hero */}
-      <motion.section
-        className="relative overflow-hidden"
-        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
-        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
-      >
-        <div className="absolute inset-0 bg-linear-to-b from-slate-950 via-slate-900 to-slate-950" />
-        <div className="absolute inset-0 grid-bg opacity-60" />
-        <div className="absolute -top-20 -left-10 w-72 h-72 rounded-full bg-cyan-400 glow-orb float-slow" />
-        <div className="absolute top-10 right-0 w-96 h-96 rounded-full bg-indigo-500 glow-orb float-fast" />
+      {/* ── Hero ────────────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-slate-950">
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 60% at -15% 0%, rgba(6,182,212,0.18), transparent)" }} />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 60% 60% at 115% 30%, rgba(99,102,241,0.18), transparent)" }} />
+        <div className="absolute inset-0" style={{ backgroundImage: "linear-gradient(rgba(148,163,184,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.035) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-          <div className="grid lg:grid-cols-1 gap-12 items-center">
-            <div className="font-body">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-cyan-200 text-sm">
-                <Sparkles className="w-4 h-4" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 lg:pt-24 lg:pb-24">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+
+            {/* Left — text */}
+            <div>
+              <motion.span {...fade(0)} className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-1.5 text-cyan-200 text-sm font-medium">
+                <Zap className="w-3.5 h-3.5" />
                 Next-gen esports infrastructure for West Africa
-              </div>
-              <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mt-6">
+              </motion.span>
+
+              <motion.h1 {...fade(0.05)} className="font-display text-5xl sm:text-6xl lg:text-6xl font-bold tracking-tight leading-[1.06] mt-6">
                 Build your legacy in a
-                <span className="block text-transparent bg-clip-text bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400">
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-cyan-300">
                   verified tournament arena
                 </span>
-              </h1>
-              <p className="text-lg text-slate-300 mt-6 max-w-xl">
-                Apex Arenas locks prize pools in escrow, verifies results with
-                trusted workflows, and pays winners instantly. Compete with
-                confidence, every time.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 mt-8">
+              </motion.h1>
+
+              <motion.p {...fade(0.1)} className="text-base text-slate-400 mt-4 leading-relaxed max-w-md">
+                Prize pools in escrow. Instant Mobile Money payouts. Real results, every match.
+              </motion.p>
+
+              <motion.div {...fade(0.15)} className="flex flex-col sm:flex-row gap-3 mt-7">
                 <Link
                   to="/signup"
-                  className="inline-flex items-center justify-center px-8 py-3 text-base font-semibold text-slate-950 bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 rounded-lg hover:shadow-lg hover:shadow-cyan-500/30 transition-all"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-xl hover:shadow-orange-500/25 hover:-translate-y-px transition-all duration-200"
                 >
-                  Start competing free
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  Start competing free <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
                   to="/login"
-                  className="inline-flex items-center justify-center px-8 py-3 text-base font-semibold text-cyan-200 border border-cyan-400/40 rounded-lg hover:bg-cyan-400/10 transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl border border-slate-700 text-slate-300 text-sm font-medium hover:border-slate-500 hover:text-white hover:bg-slate-800/40 transition-all duration-200"
                 >
                   Browse tournaments
                 </Link>
-              </div>
-              <div className="mt-10 flex flex-wrap gap-6 text-sm text-slate-300">
-                <div className="flex items-center gap-2">
-                  <Wallet className="w-4 h-4 text-cyan-300" />
-                  Escrow-backed payouts
-                </div>
-                <div className="flex items-center gap-2">
-                  <Radar className="w-4 h-4 text-indigo-300" />
-                  Dispute resolution support
-                </div>
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-amber-300" />
-                  Verified tournament operators
-                </div>
-              </div>
+              </motion.div>
             </div>
+
+            {/* Right — platform screenshot */}
+            <motion.div {...fade(0.15)} className="hidden lg:block relative">
+              {/* Glow behind screenshot */}
+              <div className="absolute -inset-4 rounded-3xl bg-cyan-500/10 blur-2xl pointer-events-none" />
+              <div className="absolute -inset-4 rounded-3xl bg-indigo-500/8 blur-3xl pointer-events-none" />
+              {/* Screenshot frame */}
+              <div className="relative rounded-2xl overflow-hidden border border-slate-700/70 shadow-2xl shadow-black/70 ring-1 ring-white/5">
+                {/* Fake browser bar */}
+                <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-800/90 border-b border-slate-700/60">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
+                  <div className="ml-2 flex-1 h-5 rounded bg-slate-700/60 flex items-center px-2">
+                    <span className="text-[10px] text-slate-500">apex-arenas.com</span>
+                  </div>
+                </div>
+                <img
+                  src="https://images.unsplash.com/photo-1560253023-3ec5d502959f?q=80&w=1200&auto=format&fit=crop"
+                  alt="Esports players competing at Apex Arenas"
+                  className="w-full object-cover object-center aspect-video"
+                />
+              </div>
+            </motion.div>
+
           </div>
         </div>
-      </motion.section>
+      </section>
 
-      {/* Signal Strip */}
-      <motion.section
-        className="border-y border-slate-800 bg-transparent"
-        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
-        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center font-body">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4"
-                initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                viewport={
-                  reduceMotion ? undefined : { once: true, amount: 0.35 }
-                }
-                transition={
-                  reduceMotion
-                    ? undefined
-                    : { duration: 0.55, ease: easeOut, delay: index * 0.06 }
-                }
-                whileHover={
-                  reduceMotion
-                    ? undefined
-                    : { y: -2, transition: { duration: 0.18, ease: "easeOut" } }
-                }
-              >
-                <div className="text-3xl font-display font-bold text-cyan-200">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-slate-300 mt-1">{stat.label}</div>
-                <div className="text-xs text-slate-500">{stat.sub}</div>
+      {/* ── Stats strip ─────────────────────────────────────────────────────── */}
+      <section className="bg-slate-950 pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 rounded-2xl border border-slate-800/80 overflow-hidden divide-x divide-y md:divide-y-0 divide-slate-800/60">
+            {[
+              { value: "100%",    label: "Prize security", sub: "Escrow guaranteed",   color: "text-cyan-300"   },
+              { value: "0%",      label: "Payment risk",   sub: "Protected payouts",   color: "text-emerald-300" },
+              { value: "10%",     label: "Platform fee",   sub: "Lowest in region",    color: "text-amber-300"  },
+              { value: "1%",      label: "Escrow fee",     sub: "Transparent charges", color: "text-violet-300" },
+            ].map((s, i) => (
+              <motion.div key={s.label} {...fade(i * 0.06)} className="bg-slate-900/70 px-6 py-7 text-center">
+                <p className={`font-display text-3xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-sm text-slate-200 mt-1 font-medium">{s.label}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{s.sub}</p>
               </motion.div>
             ))}
           </div>
         </div>
-      </motion.section>
+      </section>
 
-      {/* Features */}
-      <motion.section
-        className="py-20 bg-transparent"
-        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
-        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
-      >
+      {/* ── Featured tournaments ─────────────────────────────────────────────── */}
+      <section className="bg-slate-950 py-20 border-t border-slate-800/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center font-body mb-12">
-            <p className="text-cyan-300 text-sm tracking-widest uppercase">
-              Core systems
-            </p>
-            <h2 className="font-display text-4xl font-bold mt-3">
-              Built for Ghana's esports ecosystem
-            </h2>
-            <p className="text-slate-300 mt-4 max-w-2xl mx-auto">
-              We engineered a tournament stack that protects players, empowers
-              organizers, and guarantees payouts.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 font-body">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                className="group rounded-2xl border border-slate-800 bg-linear-to-br from-slate-900 to-slate-950 p-6 hover:border-cyan-400/60 transition-all"
-                initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                viewport={
-                  reduceMotion ? undefined : { once: true, amount: 0.25 }
-                }
-                transition={
-                  reduceMotion
-                    ? undefined
-                    : { duration: 0.6, ease: easeOut, delay: index * 0.05 }
-                }
-                whileHover={
-                  reduceMotion
-                    ? undefined
-                    : { y: -2, transition: { duration: 0.18, ease: "easeOut" } }
-                }
-              >
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-400/10 text-cyan-300 mb-4 group-hover:bg-cyan-400/20">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-semibold text-white">
-                  {feature.title}
-                </h3>
-                <p className="text-slate-300 mt-3">{feature.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Flow */}
-      <motion.section
-        className="py-20 bg-transparent"
-        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
-        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-[0.7fr_1.3fr] gap-12 items-start">
-            <div className="font-body">
-              <p className="text-indigo-300 text-sm tracking-widest uppercase">
-                Arena flow
-              </p>
-              <h2 className="font-display text-4xl font-bold mt-3">
-                From sign up to payout in four steps
-              </h2>
-              <p className="text-slate-300 mt-4">
-                A streamlined pipeline that keeps tournaments fair and payments
-                instant.
-              </p>
-              <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-                <div className="flex items-center gap-3 text-cyan-200">
-                  <Trophy className="w-5 h-5" />
-                  <span className="font-semibold">Apex Integrity Shield</span>
-                </div>
-                <p className="text-sm text-slate-400 mt-3">
-                  We monitor brackets, disputes, and payout health in real time.
-                </p>
-              </div>
+          <motion.div {...fade()} className="flex items-end justify-between flex-wrap gap-6 mb-10">
+            <div>
+              <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-3">Featured this week</p>
+              <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">Brackets dropping now</h2>
             </div>
-            <div className="space-y-4 font-body">
-              {steps.map((step, index) => (
-                <motion.div
-                  key={step.number}
-                  className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 hover:border-indigo-400/60 transition-all"
-                  initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-                  whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                  viewport={
-                    reduceMotion ? undefined : { once: true, amount: 0.3 }
-                  }
-                  transition={
-                    reduceMotion
-                      ? undefined
-                      : { duration: 0.6, ease: easeOut, delay: index * 0.05 }
-                  }
-                  whileHover={
-                    reduceMotion
-                      ? undefined
-                      : {
-                          y: -2,
-                          transition: { duration: 0.18, ease: "easeOut" },
-                        }
-                  }
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="font-display text-2xl font-bold text-indigo-300">
-                      {step.number}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-white">
-                        {step.title}
-                      </h3>
-                      <p className="text-slate-300 mt-2">{step.description}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </motion.section>
+            <Link to="/auth/player/join-tournament" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors">
+              View all <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
 
-      {/* Organizers */}
-      <motion.section
-        className="py-20 bg-transparent"
-        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
-        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-800 bg-linear-to-r from-slate-900 via-slate-950 to-slate-900 p-8 lg:p-12">
-            <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-10 items-center">
-              <div className="font-body">
-                <p className="text-cyan-300 text-sm tracking-widest uppercase">
-                  For organizers
-                </p>
-                <h2 className="font-display text-4xl font-bold mt-3">
-                  Run tournaments with pro-grade trust
-                </h2>
-                <p className="text-slate-300 mt-4">
-                  Secure escrow, automated registration, streaming tools, and
-                  verified players. Everything you need to host with confidence.
-                </p>
-                <ul className="mt-6 space-y-3 text-slate-300">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-cyan-300" />
-                    Mandatory prize escrow builds trust
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-cyan-300" />
-                    90% of entry fees go to you
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-cyan-300" />
-                    Access verified player database
-                  </li>
-                </ul>
-              </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 font-body">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-linear-to-br from-amber-300 to-orange-400 flex items-center justify-center text-slate-950">
-                    <Crown className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-xs">Organizer tier</p>
-                    <p className="text-lg font-semibold">Prime Operator</p>
+          <div className="grid md:grid-cols-3 gap-5">
+            {featuredLoading ? (
+              // Skeleton placeholders while loading
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 animate-pulse">
+                  <div className="h-44 bg-slate-800" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-3 bg-slate-800 rounded w-3/4" />
+                    <div className="h-3 bg-slate-800 rounded w-1/2" />
                   </div>
                 </div>
-                <div className="mt-6 space-y-3 text-sm text-slate-300">
-                  <div className="flex items-center justify-between">
-                    <span>Escrow coverage</span>
-                    <span className="text-cyan-200">100%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Average payout time</span>
-                    <span className="text-cyan-200">Instant</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Support</span>
-                    <span className="text-cyan-200">24/7</span>
-                  </div>
-                </div>
+              ))
+            ) : featured.length > 0 ? (
+              featured.map((t, i) => {
+                const chip = STATUS_CHIP[t.status];
+                const img = getTournamentImg(t);
+                return (
+                  <motion.div key={t.id} {...fade(i * 0.06)}>
+                    <Link
+                      to="/login"
+                      className="group block rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 hover:border-cyan-500/40 transition-all"
+                    >
+                      <div className="relative h-44 overflow-hidden">
+                        <img src={img} alt={t.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+                        {chip && (
+                          <div className="absolute top-3 left-3">
+                            <span className={`text-[11px] px-2 py-1 rounded-full border font-semibold backdrop-blur-sm ${chip.cls}`}>
+                              {chip.label}
+                            </span>
+                          </div>
+                        )}
+                        {t.prizePool && t.prizePool > 0 && (
+                          <div className="absolute top-3 right-3 rounded-lg bg-slate-950/80 backdrop-blur-sm border border-slate-700/60 px-2.5 py-1 text-[11px] font-semibold text-amber-300 flex items-center gap-1">
+                            <Trophy className="w-3 h-3" /> {formatGhs(t.prizePool)}
+                          </div>
+                        )}
+                        <div className="absolute bottom-3 left-3 right-3">
+                          {t.game?.name && (
+                            <p className="text-[11px] text-cyan-300 font-medium flex items-center gap-1.5">
+                              <Gamepad2 className="w-3 h-3" /> {t.game.name}
+                            </p>
+                          )}
+                          <h3 className="font-display text-xl font-bold text-white mt-0.5 leading-tight line-clamp-2">{t.title}</h3>
+                        </div>
+                      </div>
+                      <div className="p-4 flex items-center justify-between text-xs">
+                        <span className="text-slate-400 flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5" /> {t.currentCount}/{t.maxParticipants} registered
+                        </span>
+                        <span className="text-slate-400">
+                          Entry · <span className="text-white font-semibold">{t.isFree ? "Free" : formatGhs(t.entryFee)}</span>
+                        </span>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })
+            ) : (
+              // No active tournaments — prompt to check back
+              <div className="md:col-span-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-12 text-center">
+                <Trophy className="w-10 h-10 mx-auto text-slate-700 mb-4" />
+                <p className="font-display text-xl font-bold text-white">New brackets dropping soon</p>
+                <p className="text-sm text-slate-500 mt-2">Sign up to get notified when new tournaments go live.</p>
                 <Link
                   to="/signup"
-                  className="mt-6 inline-flex w-full items-center justify-center rounded-lg bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 px-6 py-3 font-semibold text-slate-950 hover:shadow-lg hover:shadow-cyan-500/30 transition-all"
+                  className="inline-flex items-center gap-2 mt-6 px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/20 transition-all"
                 >
-                  Become an organizer
-                  <Users className="ml-2 w-5 h-5" />
+                  Create account <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
-            </div>
+            )}
           </div>
         </div>
-      </motion.section>
+      </section>
 
-      {/* CTA */}
-      <motion.section
-        className="py-20 bg-slate-950"
-        initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-        viewport={reduceMotion ? undefined : { once: true, amount: 0.2 }}
-        transition={reduceMotion ? undefined : { duration: 0.6, ease: easeOut }}
-      >
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center font-body">
-          <div className="rounded-3xl border border-slate-800 bg-linear-to-r from-slate-900 via-slate-950 to-slate-900 p-10 lg:p-14">
-            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-400/10 px-4 py-2 text-cyan-200 text-sm">
-              <Zap className="w-4 h-4" />
-              Join Ghana's most trusted esports platform
+      {/* ── Games showcase ───────────────────────────────────────────────────── */}
+      <section className="bg-slate-950 py-20 border-t border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...fade()} className="flex items-end justify-between flex-wrap gap-6 mb-10">
+            <div>
+              <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-3">Supported titles</p>
+              <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">Compete in every title that matters</h2>
+              <p className="text-slate-400 text-lg mt-4 max-w-xl">From 5v5 MOBA to 1v1 fighters — if it's competitive in West Africa, there's a bracket here.</p>
             </div>
-            <h2 className="font-display text-4xl font-bold mt-6">
-              Ready to compete with confidence?
+            <Link to="/signup" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors shrink-0">
+              View all titles <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+
+          {/* ── Featured trio mosaic ── */}
+          <motion.div {...fade(0.05)} className="grid grid-cols-3 grid-rows-2 gap-2 h-[420px] mb-3 rounded-2xl overflow-hidden border border-slate-800/80">
+            {/* FC 26 — large left (spans 2 cols × 2 rows) */}
+            <div className="col-span-2 row-span-2 group relative overflow-hidden cursor-pointer">
+              <img
+                src={FEATURED_TRIO[0].img}
+                alt={FEATURED_TRIO[0].title}
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-slate-950/40" />
+              <div className="absolute bottom-5 left-5">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-cyan-300 bg-cyan-500/15 border border-cyan-500/25 px-2 py-0.5 rounded-full mb-2">
+                  {FEATURED_TRIO[0].tag}
+                </span>
+                <h3 className="font-display text-3xl font-bold text-white">{FEATURED_TRIO[0].title}</h3>
+                <p className="text-amber-300 text-sm font-semibold mt-1 flex items-center gap-1">
+                  <Trophy className="w-3.5 h-3.5" /> Prize pool from {FEATURED_TRIO[0].prize}
+                </p>
+              </div>
+              <div className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-950/60 backdrop-blur-sm border border-slate-700/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <ArrowUpRight className="w-4 h-4 text-white" />
+              </div>
+            </div>
+
+            {/* Mortal Kombat — top right */}
+            <div className="col-span-1 row-span-1 group relative overflow-hidden cursor-pointer">
+              <img
+                src={FEATURED_TRIO[1].img}
+                alt={FEATURED_TRIO[1].title}
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
+              <div className="absolute bottom-3 left-3 right-3">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-orange-300">{FEATURED_TRIO[1].tag}</p>
+                <h4 className="font-display text-base font-bold text-white leading-tight">{FEATURED_TRIO[1].title}</h4>
+                <p className="text-[10px] text-amber-300 font-semibold">{FEATURED_TRIO[1].prize}</p>
+              </div>
+            </div>
+
+            {/* DLS 26 — bottom right */}
+            <div className="col-span-1 row-span-1 group relative overflow-hidden cursor-pointer">
+              <img
+                src={FEATURED_TRIO[2].img}
+                alt={FEATURED_TRIO[2].title}
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
+              <div className="absolute bottom-3 left-3 right-3">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-cyan-300">{FEATURED_TRIO[2].tag}</p>
+                <h4 className="font-display text-base font-bold text-white leading-tight">{FEATURED_TRIO[2].title}</h4>
+                <p className="text-[10px] text-amber-300 font-semibold">{FEATURED_TRIO[2].prize}</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ── More games portrait row ── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+            {GAMES.map((g, i) => (
+              <motion.div key={g.title} {...fade(i * 0.05)}
+                className="group relative rounded-xl overflow-hidden border border-slate-800 bg-slate-900 cursor-pointer"
+                style={{ aspectRatio: "3/4" }}
+              >
+                <img src={g.img} alt={g.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-3.5">
+                  <p className="text-[10px] text-cyan-300 font-medium uppercase tracking-wider">{g.tag}</p>
+                  <p className="font-display text-sm font-bold text-white leading-tight mt-0.5">{g.title}</p>
+                  <p className="text-[10px] text-amber-300 mt-1 font-semibold">{g.prize}</p>
+                </div>
+                <div className="absolute top-2.5 right-2.5 w-7 h-7 rounded-lg bg-slate-950/70 backdrop-blur-sm border border-slate-700/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ArrowUpRight className="w-3.5 h-3.5 text-white" />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features ─────────────────────────────────────────────────────────── */}
+      <section className="bg-slate-950 py-20 border-t border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...fade()} className="max-w-2xl mb-12">
+            <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-3">Why Apex Arenas</p>
+            <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">
+              Built for players who{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-sky-400">
+                expect to get paid
+              </span>
             </h2>
-            <p className="text-slate-300 mt-4 max-w-2xl mx-auto">
-              No more empty promises. Escrow-backed prizes, verified
-              tournaments, and instant payouts for winners.
+            <p className="text-slate-400 text-lg mt-4">
+              Every corner of the product is engineered for trust — not because it's a tagline, but because it's the only way competitive play works.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+          </motion.div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FEATURES.map((f, i) => (
+              <motion.div key={f.title} {...fade(i * 0.05)}
+                className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-6 hover:border-cyan-500/30 hover:bg-slate-900 transition-all"
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-5 ${f.bg} ${f.color}`}>
+                  <f.icon className="w-5 h-5" />
+                </div>
+                <h3 className="font-display text-xl font-bold text-white">{f.title}</h3>
+                <p className="text-sm text-slate-400 mt-2 leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works ─────────────────────────────────────────────────────── */}
+      <section className="bg-slate-950 py-20 border-t border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...fade()} className="flex items-end justify-between flex-wrap gap-6 mb-12">
+            <div>
+              <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-3">How it works</p>
+              <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">Four steps, zero drama</h2>
+            </div>
+            <Link to="/signup" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors">
+              Get started <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {STEPS.map((s, i) => (
+              <motion.div key={s.n} {...fade(i * 0.07)}
+                className="relative rounded-2xl border border-slate-800/80 bg-slate-900/60 p-6 overflow-hidden"
+              >
+                <p className="font-display text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-cyan-500/40 to-transparent">{s.n}</p>
+                <h3 className="font-display text-lg font-bold text-white mt-2">{s.title}</h3>
+                <p className="text-sm text-slate-400 mt-2 leading-relaxed">{s.desc}</p>
+                {i < STEPS.length - 1 && (
+                  <ChevronRight className="hidden lg:block absolute top-10 -right-2 w-5 h-5 text-slate-700" />
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Testimonials ─────────────────────────────────────────────────────── */}
+      <section className="bg-slate-950 py-20 border-t border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...fade()} className="max-w-2xl mb-12">
+            <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-3">From the arena</p>
+            <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">Trusted by the scene</h2>
+          </motion.div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {TESTIMONIALS.map((t, i) => (
+              <motion.div key={t.name} {...fade(i * 0.07)}
+                className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"
+              >
+                <Trophy className="w-5 h-5 text-cyan-400/60" />
+                <p className="text-slate-200 mt-4 leading-relaxed text-sm">"{t.quote}"</p>
+                <div className="flex items-center gap-3 mt-6 pt-5 border-t border-slate-800">
+                  <img src={t.avatar} alt={t.name} className="w-10 h-10 rounded-full object-cover border border-slate-700 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">{t.name}</p>
+                    <p className="text-xs text-slate-500">{t.role}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ──────────────────────────────────────────────────────────────── */}
+      <section className="bg-slate-950 py-24 border-t border-slate-800/60">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...fade()}
+            className="relative rounded-3xl border border-cyan-500/25 overflow-hidden p-10 md:p-14 text-center"
+            style={{ background: "radial-gradient(ellipse 70% 100% at 50% 0%, rgba(6,182,212,0.15), transparent), #0f172a" }}
+          >
+            <Trophy className="w-10 h-10 mx-auto text-amber-400" />
+            <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight mt-4">
+              The next bracket is waiting
+            </h2>
+            <p className="text-slate-300 mt-4 max-w-xl mx-auto">
+              Sign up free, verify your handle, and you're ready to compete within minutes.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-3 mt-8">
               <Link
                 to="/signup"
-                className="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold text-slate-950 bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 rounded-lg hover:shadow-xl hover:shadow-cyan-500/30 transition-all"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-base font-bold hover:shadow-2xl hover:shadow-orange-500/25 hover:-translate-y-px transition-all duration-200"
               >
-                Create free account
-                <Trophy className="ml-2 w-5 h-5" />
+                Start competing free <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold text-cyan-200 border border-cyan-400/40 rounded-lg hover:bg-cyan-400/10 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl border border-slate-700 text-slate-300 text-base font-medium hover:border-slate-500 hover:text-white hover:bg-slate-800/40 transition-all duration-200"
               >
-                Sign in
+                I already have an account
               </Link>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </motion.section>
+      </section>
+
     </div>
   );
 };
