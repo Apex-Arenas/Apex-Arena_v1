@@ -128,7 +128,8 @@ export const TOURNAMENT_ENDPOINTS = {
   MATCH_CONFIRM: `${API_BASE_URLS.TOURNAMENT}/matches`,                   // + /:matchId/confirm
   MATCH_DISPUTE: `${API_BASE_URLS.TOURNAMENT}/matches`,                   // + /:matchId/dispute
   MATCH_DISPUTE_RESOLVE: `${API_BASE_URLS.TOURNAMENT}/matches`,           // + /:matchId/dispute/resolve
-  MATCH_ADMIN_OVERRIDE: `${API_BASE_URLS.TOURNAMENT}/matches/admin`,      // + /:matchId/override
+  MATCH_ADMIN_OVERRIDE: `${API_BASE_URLS.TOURNAMENT}/matches/admin`,      // + /matches/:matchId/override
+  MATCH_ADMIN_DISPUTES: `${API_BASE_URLS.TOURNAMENT}/matches/admin/disputes`, // GET list of disputed matches
   MATCH_START: `${API_BASE_URLS.TOURNAMENT}/matches`,                     // + /:matchId/start
   MATCH_READY: `${API_BASE_URLS.TOURNAMENT}/matches`,                     // + /:matchId/ready
   MATCH_FORFEIT: `${API_BASE_URLS.TOURNAMENT}/matches`,                   // + /:matchId/forfeit
