@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Mail, Lock, Eye, EyeOff, Trophy } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "../../lib/auth-context";
@@ -188,17 +188,26 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-transparent text-white py-12 px-4">
+    <div className="relative min-h-screen bg-slate-950 flex items-center justify-center py-12 px-4 overflow-hidden">
+      {/* Background glows */}
+      <div className="absolute inset-0 pointer-events-none" style={{background:"radial-gradient(ellipse 60% 50% at -10% 0%, rgba(249,115,22,0.12), transparent)"}} />
+      <div className="absolute inset-0 pointer-events-none" style={{background:"radial-gradient(ellipse 50% 60% at 110% 100%, rgba(139,92,246,0.10), transparent)"}} />
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: "linear-gradient(rgba(148,163,184,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.03) 1px, transparent 1px)",
+        backgroundSize: "48px 48px",
+      }} />
+
+      <div className="relative w-full max-w-md">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md bg-slate-900/60 rounded-3xl shadow-2xl p-8 border border-slate-800 font-body"
+        className="rounded-2xl border border-slate-800 bg-slate-900/75 backdrop-blur-sm shadow-2xl shadow-black/50 p-8 font-body"
         autoComplete="off"
       >
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 w-10 h-10 rounded-lg flex items-center justify-center text-slate-950">
-              <Trophy className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-lg overflow-hidden bg-white p-0.5 shrink-0">
+              <img src="/apex-logo.png" alt="Apex Arenas" className="w-full h-full object-contain" />
             </div>
             <span className="font-display font-bold text-lg text-white">
               APEX ARENAS
@@ -299,7 +308,7 @@ const Login = () => {
         <motion.button
           type="submit"
           disabled={isLoading}
-          className="mt-8 w-full py-3 rounded-lg bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 text-slate-950 font-semibold text-lg shadow hover:shadow-lg hover:shadow-cyan-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-8 w-full py-3 rounded-lg bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 font-semibold text-base shadow hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           whileHover={reduceMotion || isLoading ? undefined : { y: -1 }}
           whileTap={reduceMotion || isLoading ? undefined : { scale: 0.98 }}
         >
@@ -353,7 +362,7 @@ const Login = () => {
             <motion.button
               type="submit"
               disabled={isLoading || !linkPassword}
-              className="w-full py-3 rounded-lg bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 text-slate-950 font-semibold shadow hover:shadow-lg hover:shadow-cyan-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 rounded-lg bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 font-semibold shadow hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={reduceMotion || isLoading ? undefined : { y: -1 }}
               whileTap={reduceMotion || isLoading ? undefined : { scale: 0.98 }}
             >
@@ -375,6 +384,7 @@ const Login = () => {
           </p>
         </div>
       </form>
+      </div>
     </div>
   );
 };
