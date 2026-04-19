@@ -34,7 +34,7 @@ function PlayerCard({
       <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border
         ${selected ? 'bg-cyan-500 text-slate-950 border-cyan-400'
           : isWinner ? 'bg-emerald-800 text-white border-emerald-600'
-          : 'bg-gradient-to-br from-cyan-800 to-indigo-800 text-white border-slate-600'}`}>
+          : 'bg-linear-to-br from-cyan-800 to-indigo-800 text-white border-slate-600'}`}>
         {name.charAt(0).toUpperCase()}
       </div>
       <span className={`text-xs font-semibold truncate w-full text-center
@@ -214,10 +214,10 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
       );
     }
 
-    // ── DEFAULT (pending / scheduled / ongoing / ready_check) ─────────────
+    // ── DEFAULT (pending / scheduled / ongoing) ──────────────────────────
     const statusIcons: Record<string, React.ReactNode> = {
       ongoing: <Swords className="w-8 h-8 text-cyan-400" />,
-      ready_check: <Clock className="w-8 h-8 text-amber-400" />,
+      ready_check: <Swords className="w-8 h-8 text-cyan-400" />, // legacy — treated as ongoing
       scheduled: <Clock className="w-8 h-8 text-slate-500" />,
       pending: <Clock className="w-8 h-8 text-slate-500" />,
     };
