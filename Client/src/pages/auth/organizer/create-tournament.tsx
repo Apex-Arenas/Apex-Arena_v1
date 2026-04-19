@@ -127,9 +127,8 @@ const CreateTournament = () => {
   const hasHydratedTournament = useRef(false);
 
   const [games, setGames] = useState<GameOption[]>([]);
-  const [selectedGameDetails, setSelectedGameDetails] =
-    useState<GameDetails | null>(null);
-  const [isLoadingSelectedGame, setIsLoadingSelectedGame] = useState(false);
+  const [, setSelectedGameDetails] = useState<GameDetails | null>(null);
+  const [, setIsLoadingSelectedGame] = useState(false);
   const [isLoadingTournament, setIsLoadingTournament] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,6 +172,8 @@ const CreateTournament = () => {
   const [inGameIdRequired, setInGameIdRequired] = useState(true);
   const [allowedRegions, setAllowedRegions] = useState("");
   const [verifiedEmailRequired, setVerifiedEmailRequired] = useState(true);
+  const [matchDeadline, setMatchDeadline] = useState<'none' | '24h' | '48h' | '168h' | 'custom'>('none');
+  const [matchDeadlineCustomDate, setMatchDeadlineCustomDate] = useState('');
 
   const normalizedTournamentStatus = (tournamentStatus ?? "").toLowerCase();
   const isLimitedEditMode =
@@ -412,6 +413,23 @@ const CreateTournament = () => {
         setVerifiedEmailRequired(
           Boolean(requirements.verified_email_required ?? true),
         );
+
+        const timeoutsData =
+          (tournament.timeouts as Record<string, unknown> | undefined) ?? {};
+        const deadlineHours = timeoutsData.match_deadline_hours as number | null | undefined;
+        const deadlineDate = timeoutsData.match_deadline_date as string | null | undefined;
+        if (deadlineDate) {
+          setMatchDeadline('custom');
+          setMatchDeadlineCustomDate(toDateTimeLocalValue(deadlineDate));
+        } else if (deadlineHours === 24) {
+          setMatchDeadline('24h');
+        } else if (deadlineHours === 48) {
+          setMatchDeadline('48h');
+        } else if (deadlineHours === 168) {
+          setMatchDeadline('168h');
+        } else {
+          setMatchDeadline('none');
+        }
       })
       .catch((err) => {
         setError(
@@ -735,6 +753,15 @@ const CreateTournament = () => {
         leagueSettings: tournamentType === 'league'
           ? { legs: Number(leagueLegs) }
           : undefined,
+        matchDeadlineHours:
+          matchDeadline === '24h' ? 24 :
+          matchDeadline === '48h' ? 48 :
+          matchDeadline === '168h' ? 168 :
+          null,
+        matchDeadlineDate:
+          matchDeadline === 'custom' && matchDeadlineCustomDate
+            ? toIsoString(matchDeadlineCustomDate)
+            : null,
       };
 
       if (isEditMode && tournamentId) {
@@ -1128,6 +1155,45 @@ const CreateTournament = () => {
               />
               Enable waitlist when tournament is full
             </label>
+
+            <div className="pt-1 border-t border-slate-800">
+              <Field label="Match Play Deadline">
+                <select
+                  value={matchDeadline}
+                  onChange={(e) => {
+                    setMatchDeadline(e.target.value as typeof matchDeadline);
+                    setMatchDeadlineCustomDate('');
+                  }}
+                  className={selectCls}
+                >
+                  <option value="none">No Deadline</option>
+                  <option value="24h">24 Hours</option>
+                  <option value="48h">2 Days</option>
+                  <option value="168h">1 Week</option>
+                  <option value="custom">Custom Date</option>
+                </select>
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  {matchDeadline === 'none'
+                    ? 'Players can play their match at any time.'
+                    : matchDeadline === 'custom'
+                    ? 'All matches must be played before the chosen date.'
+                    : `Each match must be played within ${matchDeadline === '24h' ? '24 hours' : matchDeadline === '48h' ? '2 days' : '1 week'} of its scheduled time.`}
+                </p>
+              </Field>
+
+              {matchDeadline === 'custom' && (
+                <div className="mt-3">
+                  <Field label="Deadline Date & Time" required>
+                    <DateTimePicker
+                      value={matchDeadlineCustomDate}
+                      onChange={setMatchDeadlineCustomDate}
+                      placeholder="Pick deadline date & time"
+                      minDate={tournamentStart ? new Date(tournamentStart) : undefined}
+                    />
+                  </Field>
+                </div>
+              )}
+            </div>
           </SectionCard>
 
           {/* Entry & Prize */}
