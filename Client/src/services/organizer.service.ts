@@ -66,6 +66,8 @@ export interface CreateTournamentPayload {
     pointsPerDraw?: number;
     pointsPerLoss?: number;
   };
+  matchDeadlineHours?: number | null;  // 24, 48, 168, or null = no deadline
+  matchDeadlineDate?: string | null;   // ISO string for custom date deadline
 }
 
 export interface PayoutRequest {
@@ -457,6 +459,12 @@ export const organizerService = {
         points_per_loss: payload.leagueSettings.pointsPerLoss ?? 0,
       };
     }
+    if (payload.matchDeadlineHours !== undefined || payload.matchDeadlineDate !== undefined) {
+      body.timeouts = {
+        match_deadline_hours: payload.matchDeadlineHours ?? null,
+        match_deadline_date: payload.matchDeadlineDate ?? null,
+      };
+    }
 
     const response = await apiPost(TOURNAMENT_ENDPOINTS.TOURNAMENTS, body);
     if (!response.success) {
@@ -597,6 +605,13 @@ export const organizerService = {
     if (updates.contactEmail !== undefined) {
       body.communication = {
         contact_email: updates.contactEmail,
+      };
+    }
+
+    if (updates.matchDeadlineHours !== undefined || updates.matchDeadlineDate !== undefined) {
+      body.timeouts = {
+        match_deadline_hours: updates.matchDeadlineHours ?? null,
+        match_deadline_date: updates.matchDeadlineDate ?? null,
       };
     }
 
@@ -1141,7 +1156,7 @@ export const organizerService = {
     const response = await apiGet(
       `${TOURNAMENT_ENDPOINTS.VALIDATION_CAN_CANCEL}/${tournamentId}/can-cancel`,
     );
-    const data = (response.data ?? {}) as Record<string, unknown>;
+    const data = (response.success ? response.data : {}) as Record<string, unknown>;
     return {
       canCancel: Boolean(data.can_cancel ?? data.canCancel ?? response.success),
       reason: data.reason as string | undefined,
@@ -1152,7 +1167,7 @@ export const organizerService = {
     const response = await apiGet(
       `${TOURNAMENT_ENDPOINTS.VALIDATION_CAN_GENERATE_BRACKET}/${tournamentId}/can-generate-bracket`,
     );
-    const data = (response.data ?? {}) as Record<string, unknown>;
+    const data = (response.success ? response.data : {}) as Record<string, unknown>;
     return {
       canGenerate: Boolean(data.can_generate ?? data.canGenerate ?? response.success),
       reason: data.reason as string | undefined,
@@ -1161,7 +1176,7 @@ export const organizerService = {
 
   async validatePrizeDistribution(distribution: Array<{ position: number; percentage: number }>): Promise<{ valid: boolean; errors?: string[] }> {
     const response = await apiPost(TOURNAMENT_ENDPOINTS.VALIDATION_PRIZE_DISTRIBUTION, { distribution });
-    const data = (response.data ?? {}) as Record<string, unknown>;
+    const data = (response.success ? response.data : {}) as Record<string, unknown>;
     return {
       valid: Boolean(data.valid ?? response.success),
       errors: data.errors as string[] | undefined,
@@ -1170,7 +1185,7 @@ export const organizerService = {
 
   async validateSchedule(schedule: Record<string, unknown>): Promise<{ valid: boolean; errors?: string[] }> {
     const response = await apiPost(TOURNAMENT_ENDPOINTS.VALIDATION_SCHEDULE, schedule);
-    const data = (response.data ?? {}) as Record<string, unknown>;
+    const data = (response.success ? response.data : {}) as Record<string, unknown>;
     return {
       valid: Boolean(data.valid ?? response.success),
       errors: data.errors as string[] | undefined,
