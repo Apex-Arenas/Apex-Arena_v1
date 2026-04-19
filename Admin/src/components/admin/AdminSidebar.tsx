@@ -2,7 +2,6 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
-  Shield,
   Gamepad2,
   LogOut,
   ChevronLeft,
@@ -16,6 +15,7 @@ import {
   ShieldCheck,
   Puzzle,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAdminAuth } from '../../lib/admin-auth-context';
@@ -26,6 +26,7 @@ const navItems = [
   { to: '/admin/verifications', icon: BadgeCheck, label: 'Verifications' },
   { to: '/admin/games', icon: Gamepad2, label: 'Games' },
   { to: '/admin/game-requests', icon: Puzzle, label: 'Game Requests' },
+  { to: '/admin/disputes', icon: AlertTriangle, label: 'Disputes' },
   { to: '/admin/payouts', icon: Wallet, label: 'Payouts' },
   { to: '/admin/escrow', icon: Lock, label: 'Escrow' },
   { to: '/admin/scheduler', icon: Clock, label: 'Scheduler' },
@@ -60,8 +61,8 @@ const AdminSidebar = ({ mobileOpen, onMobileClose }: AdminSidebarProps) => {
       {/* Logo */}
       <div className="flex items-center justify-between px-4 py-5 border-b border-slate-800 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="bg-linear-to-r from-amber-400 via-orange-400 to-red-400 w-9 h-9 rounded-lg flex items-center justify-center text-slate-950 shrink-0">
-            <Shield className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-lg overflow-hidden bg-white p-0.5 shrink-0">
+            <img src="/apex-logo.png" alt="Apex Arenas" className="w-full h-full object-contain" />
           </div>
           {(!collapsed || isMobile) && (
             <div className="flex flex-col">
