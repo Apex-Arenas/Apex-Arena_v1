@@ -24,6 +24,12 @@ import TournamentManage from "./pages/auth/organizer/tournament-manage";
 import BecomeOrganizer from "./pages/auth/player/become-organizer";
 import TournamentDetail from "./pages/auth/player/tournament-detail";
 import TransactionsPage from "./pages/auth/transactions";
+import LeaderboardPage from "./pages/auth/LeaderboardPage";
+import SettingsPage from "./pages/auth/SettingsPage";
+import FriendsPage from "./pages/auth/FriendsPage";
+import NotificationsPage from "./pages/auth/NotificationsPage";
+import AnalyticsPage from "./pages/auth/organizer/AnalyticsPage";
+import PayoutsPage from "./pages/auth/organizer/PayoutsPage";
 
 // Admin
 
@@ -63,6 +69,11 @@ const App = () => {
         <Route element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="wallet" element={<TransactionsPage />} />
+          <Route path="leaderboard" element={<LeaderboardPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="friends" element={<FriendsPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
 
           {/* Player-only routes */}
           <Route element={<RoleRoute role="player" />}>
@@ -92,6 +103,8 @@ const App = () => {
               path="organizer/tournaments/:tournamentId"
               element={<TournamentManage />}
             />
+            <Route path="organizer/analytics" element={<AnalyticsPage />} />
+            <Route path="organizer/payouts" element={<PayoutsPage />} />
           </Route>
         </Route>
       </Route>
