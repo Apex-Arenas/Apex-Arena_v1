@@ -12,6 +12,9 @@ import {
   X,
   Plus,
   Trash2,
+  Trophy,
+  BarChart2,
+  Calendar,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import { authService } from "../../services/auth.service";
@@ -22,6 +25,7 @@ import type {
   UpdateProfilePayload,
   UserGameProfile,
 } from "../../types/auth.types";
+import { tournamentService, type MyTournamentRegistration } from "../../services/tournament.service";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -228,6 +232,9 @@ const ProfilePage = () => {
     msg: string;
   } | null>(null);
 
+  const [registrations, setRegistrations] = useState<MyTournamentRegistration[]>([]);
+  const [statsLoading, setStatsLoading] = useState(false);
+
   const hasFetched = useRef(false);
 
   const mapSavedGameProfile = useCallback(
@@ -387,6 +394,12 @@ const ProfilePage = () => {
     hasFetched.current = true;
 
     const load = async () => {
+      setStatsLoading(true);
+      tournamentService.getMyRegistrations().then((regs) => {
+        setRegistrations(regs);
+        setStatsLoading(false);
+      }).catch(() => setStatsLoading(false));
+
       try {
         const [profileRes, gamesRes] = await Promise.all([
           apiGet(AUTH_ENDPOINTS.PROFILE, {
@@ -1018,6 +1031,100 @@ const ProfilePage = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Stats & Tournament History */}
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+        <SectionTitle>
+          <BarChart2 className="w-4 h-4 text-cyan-400" />
+          Stats & Tournament History
+        </SectionTitle>
+
+        {statsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="h-5 w-5 rounded-full border-2 border-cyan-500/40 border-t-cyan-400 animate-spin" />
+          </div>
+        ) : registrations.length === 0 ? (
+          <div className="text-center py-8 text-slate-500">
+            <Trophy className="w-8 h-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">No tournament history yet. Join a tournament to get started!</p>
+          </div>
+        ) : (
+          <>
+            {/* Quick stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                {
+                  label: "Joined",
+                  value: registrations.length,
+                  color: "text-cyan-300",
+                },
+                {
+                  label: "Completed",
+                  value: registrations.filter((r) => r.tournamentStatus === "completed").length,
+                  color: "text-emerald-300",
+                },
+                {
+                  label: "Ongoing",
+                  value: registrations.filter((r) => ["ongoing", "in_progress", "active"].includes(r.tournamentStatus ?? "")).length,
+                  color: "text-amber-300",
+                },
+                {
+                  label: "Checked In",
+                  value: registrations.filter((r) => r.checkedIn).length,
+                  color: "text-indigo-300",
+                },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="rounded-lg border border-slate-800 bg-slate-800/40 px-3 py-2.5 text-center">
+                  <p className={`text-xl font-bold font-display ${color}`}>{value}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Tournament list */}
+            <div className="space-y-2 pt-1">
+              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Recent Tournaments</h3>
+              {registrations.slice(0, 8).map((reg) => {
+                const statusColors: Record<string, string> = {
+                  completed:   "text-emerald-300",
+                  active:      "text-cyan-300",
+                  ongoing:     "text-cyan-300",
+                  in_progress: "text-cyan-300",
+                  cancelled:   "text-slate-400",
+                  pending:     "text-amber-300",
+                  registered:  "text-indigo-300",
+                };
+                const statusColor = statusColors[reg.tournamentStatus ?? ""] ?? "text-slate-400";
+
+                return (
+                  <div key={reg.registrationId} className="rounded-lg border border-slate-800 bg-slate-950/40 px-3 py-2.5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Trophy className="w-4 h-4 text-slate-600 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm text-slate-200 font-medium truncate">{reg.tournamentTitle}</p>
+                        {reg.tournamentGameName && (
+                          <p className="text-xs text-slate-500 truncate">{reg.tournamentGameName}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className={`text-xs font-medium capitalize ${statusColor}`}>
+                        {reg.tournamentStatus?.replace(/_/g, " ") ?? "unknown"}
+                      </p>
+                      {reg.tournamentStart && (
+                        <p className="text-[11px] text-slate-500 flex items-center gap-1 justify-end mt-0.5">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(reg.tournamentStart).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Save Button */}
