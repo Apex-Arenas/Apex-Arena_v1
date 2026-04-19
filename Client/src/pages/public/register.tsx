@@ -7,13 +7,18 @@ import {
   Eye,
   EyeOff,
   Check,
-  Trophy,
+  Loader2,
+  X,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "../../lib/auth-context";
 import { useGoogleAuth } from "../../lib/use-google-auth";
 import { ApiRequestError } from "../../services/auth.service";
+import { apiGet } from "../../utils/api.utils";
+import { AUTH_ENDPOINTS } from "../../config/api.config";
+
+type FieldStatus = "idle" | "checking" | "available" | "taken";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -39,7 +44,53 @@ const Register = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<FieldStatus>("idle");
+  const [emailStatus, setEmailStatus] = useState<FieldStatus>("idle");
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
+
+  // Debounced username availability check
+  useEffect(() => {
+    const username = form.username.trim();
+    if (!username || !/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+      setUsernameStatus("idle");
+      return;
+    }
+    setUsernameStatus("checking");
+    const id = setTimeout(async () => {
+      try {
+        const res = await apiGet(`${AUTH_ENDPOINTS.CHECK_USERNAME}?username=${encodeURIComponent(username)}`, { skipAuth: true });
+        const data = (res.success ? res.data : {}) as Record<string, unknown>;
+        const rawAvail = data.available ?? data.is_available;
+        const available = rawAvail !== undefined ? Boolean(rawAvail) : data.exists !== undefined ? !Boolean(data.exists) : res.success;
+        setUsernameStatus(available ? "available" : "taken");
+      } catch {
+        setUsernameStatus("idle");
+      }
+    }, 500);
+    return () => clearTimeout(id);
+  }, [form.username]);
+
+  // Debounced email availability check
+  useEffect(() => {
+    const email = form.email.trim();
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      setEmailStatus("idle");
+      return;
+    }
+    setEmailStatus("checking");
+    const id = setTimeout(async () => {
+      try {
+        const res = await apiGet(`${AUTH_ENDPOINTS.CHECK_EMAIL}?email=${encodeURIComponent(email)}`, { skipAuth: true });
+        const data = (res.success ? res.data : {}) as Record<string, unknown>;
+        const rawAvail = data.available ?? data.is_available;
+        const available = rawAvail !== undefined ? Boolean(rawAvail) : data.exists !== undefined ? !Boolean(data.exists) : res.success;
+        setEmailStatus(available ? "available" : "taken");
+      } catch {
+        setEmailStatus("idle");
+      }
+    }, 500);
+    return () => clearTimeout(id);
+  }, [form.email]);
 
   const handleGoogleToken = useCallback(
     async (idToken: string) => {
@@ -217,15 +268,22 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-transparent text-white flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl rounded-3xl border border-slate-800 bg-slate-900/50 shadow-2xl overflow-hidden">
+    <div className="relative min-h-screen bg-slate-950 text-white flex items-center justify-center p-4 overflow-hidden">
+      {/* Background glows */}
+      <div className="absolute inset-0 pointer-events-none" style={{background:"radial-gradient(ellipse 60% 50% at -10% 0%, rgba(249,115,22,0.12), transparent)"}} />
+      <div className="absolute inset-0 pointer-events-none" style={{background:"radial-gradient(ellipse 50% 60% at 110% 100%, rgba(139,92,246,0.10), transparent)"}} />
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: "linear-gradient(rgba(148,163,184,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.03) 1px, transparent 1px)",
+        backgroundSize: "48px 48px",
+      }} />
+      <div className="relative w-full max-w-6xl rounded-2xl border border-slate-800 bg-slate-900/75 backdrop-blur-sm shadow-2xl shadow-black/50 overflow-hidden">
         <div className="md:flex">
           {/* Left side - Form */}
           <div className="md:w-3/5 p-8 lg:p-10 font-body">
             <div className="flex items-center justify-center mb-8">
               <div className="flex items-center space-x-2">
-                <div className="bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 w-10 h-10 rounded-lg flex items-center justify-center text-slate-950">
-                  <Trophy className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-lg overflow-hidden bg-white p-0.5 shrink-0">
+                  <img src="/apex-logo.png" alt="Apex Arenas" className="w-full h-full object-contain" />
                 </div>
                 <span className="font-display font-bold text-xl text-white">
                   APEX ARENAS
@@ -306,15 +364,30 @@ const Register = () => {
                     name="username"
                     value={form.username}
                     onChange={handleChange}
-                    className={`pl-10 pr-3 py-3 w-full rounded-lg border ${
-                      errors.username ? "border-red-500" : "border-slate-700"
+                    className={`pl-10 pr-10 py-3 w-full rounded-lg border ${
+                      errors.username || usernameStatus === "taken"
+                        ? "border-red-500"
+                        : usernameStatus === "available"
+                          ? "border-emerald-500"
+                          : "border-slate-700"
                     } bg-slate-950/60 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent`}
                     placeholder="your_username"
                     autoComplete="username"
                   />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {usernameStatus === "checking" && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
+                    {usernameStatus === "available" && <Check className="w-4 h-4 text-emerald-400" />}
+                    {usernameStatus === "taken" && <X className="w-4 h-4 text-red-400" />}
+                  </div>
                 </div>
                 {errors.username && (
                   <p className="text-red-400 text-xs mt-1">{errors.username}</p>
+                )}
+                {!errors.username && usernameStatus === "taken" && (
+                  <p className="text-red-400 text-xs mt-1">Username is already taken.</p>
+                )}
+                {!errors.username && usernameStatus === "available" && (
+                  <p className="text-emerald-400 text-xs mt-1">Username is available.</p>
                 )}
               </div>
 
@@ -330,14 +403,29 @@ const Register = () => {
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    className={`pl-10 pr-3 py-3 w-full rounded-lg border ${
-                      errors.email ? "border-red-500" : "border-slate-700"
+                    className={`pl-10 pr-10 py-3 w-full rounded-lg border ${
+                      errors.email || emailStatus === "taken"
+                        ? "border-red-500"
+                        : emailStatus === "available"
+                          ? "border-emerald-500"
+                          : "border-slate-700"
                     } bg-slate-950/60 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent`}
                     placeholder="you@example.com"
                   />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {emailStatus === "checking" && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
+                    {emailStatus === "available" && <Check className="w-4 h-4 text-emerald-400" />}
+                    {emailStatus === "taken" && <X className="w-4 h-4 text-red-400" />}
+                  </div>
                 </div>
                 {errors.email && (
                   <p className="text-red-400 text-xs mt-1">{errors.email}</p>
+                )}
+                {!errors.email && emailStatus === "taken" && (
+                  <p className="text-red-400 text-xs mt-1">An account with this email already exists.</p>
+                )}
+                {!errors.email && emailStatus === "available" && (
+                  <p className="text-emerald-400 text-xs mt-1">Email is available.</p>
                 )}
               </div>
 
@@ -486,7 +574,7 @@ const Register = () => {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className="mt-6 w-full py-3 px-4 rounded-lg bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 text-slate-950 font-semibold hover:shadow-lg hover:shadow-cyan-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-6 w-full py-3 px-4 rounded-lg bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 font-semibold hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 whileHover={reduceMotion || isLoading ? undefined : { y: -1 }}
                 whileTap={
                   reduceMotion || isLoading ? undefined : { scale: 0.98 }
