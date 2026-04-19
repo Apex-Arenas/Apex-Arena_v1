@@ -98,6 +98,7 @@ export interface LeagueMatch {
   score2?: number;
   winnerId?: string;
   scheduledAt?: string;
+  playDeadline?: string;
 }
 
 export interface LeagueMatchweek {
@@ -133,6 +134,7 @@ export interface FullMatch {
   resultConfirmationDeadline?: string;
   isDisputed: boolean;
   scheduledAt?: string;
+  playDeadline?: string;
   screenshotUrl?: string;
 }
 
@@ -399,6 +401,7 @@ function mapLeagueMatches(list: Record<string, unknown>[]): LeagueMatch[] {
       score2: p2.score !== undefined ? Number(p2.score) : undefined,
       winnerId: m.winner_id as string | undefined,
       scheduledAt: scheduledTime as string | undefined,
+      playDeadline: m.play_deadline as string | undefined,
     };
   });
 }
@@ -1004,6 +1007,7 @@ export const tournamentService = {
       resultConfirmationDeadline: m.result_confirmation_deadline as string | undefined,
       isDisputed: Boolean((m.dispute as Record<string, unknown> | undefined)?.is_disputed ?? false),
       scheduledAt: (m.schedule as Record<string, unknown> | undefined)?.scheduled_time as string | undefined,
+      playDeadline: m.play_deadline as string | undefined,
       screenshotUrl: ((m.proof as Record<string, unknown> | undefined)?.screenshots as string[] | undefined)?.[0],
     };
   },
