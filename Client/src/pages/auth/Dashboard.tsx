@@ -631,7 +631,7 @@ const Dashboard = () => {
                 { icon: Swords,       label: "Browse tournaments", to: "/auth/player/join-tournament" },
                 { icon: Target,       label: "Leaderboard",        to: "/auth/leaderboard" },
                 { icon: Gamepad2,     label: "My profile",         to: "/auth/player/profile" },
-                { icon: ArrowRight,   label: "Transactions",       to: "/auth/transactions" },
+                { icon: ArrowRight,   label: "Wallet",             to: "/auth/wallet" },
               ].map(({ icon: Icon, label, to }) => (
                 <Link
                   key={label}

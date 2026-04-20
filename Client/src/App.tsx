@@ -24,6 +24,7 @@ import TournamentManage from "./pages/auth/organizer/tournament-manage";
 import BecomeOrganizer from "./pages/auth/player/become-organizer";
 import TournamentDetail from "./pages/auth/player/tournament-detail";
 import TransactionsPage from "./pages/auth/transactions";
+import WalletPage from "./pages/auth/WalletPage";
 import LeaderboardPage from "./pages/auth/LeaderboardPage";
 import SettingsPage from "./pages/auth/SettingsPage";
 import FriendsPage from "./pages/auth/FriendsPage";
@@ -69,7 +70,7 @@ const App = () => {
         <Route element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="transactions" element={<TransactionsPage />} />
-          <Route path="wallet" element={<TransactionsPage />} />
+          <Route path="wallet" element={<WalletPage />} />
           <Route path="leaderboard" element={<LeaderboardPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="friends" element={<FriendsPage />} />

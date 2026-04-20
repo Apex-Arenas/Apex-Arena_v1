@@ -27,7 +27,7 @@ const playerNavItems = [
   { to: "/auth", icon: Home, label: "Home", end: true },
   { to: "/auth/player/join-tournament", icon: Swords, label: "Tournaments" },
   { to: "/auth/leaderboard", icon: Trophy, label: "Leaderboard" },
-  { to: "/auth/transactions", icon: Wallet, label: "Wallet" },
+  { to: "/auth/wallet", icon: Wallet, label: "Wallet" },
   { to: "/auth/friends", icon: Users, label: "Friends" },
   { to: "/auth/player/profile", icon: UserCircle, label: "Profile" },
   { to: "/auth/notifications", icon: Bell, label: "Notifications" },
