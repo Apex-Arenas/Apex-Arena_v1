@@ -69,7 +69,7 @@ function DepositModal({ onClose }: { onClose: () => void }) {
     setSubmitting(true);
     setError("");
     try {
-      const callbackUrl = `${window.location.origin}/payment/callback`;
+      const callbackUrl = `${window.location.origin}/payment/callback?type=wallet`;
       const res = await apiPost(FINANCE_ENDPOINTS.DEPOSIT, {
         amount_ghs: amountNum,
         callback_url: callbackUrl,
