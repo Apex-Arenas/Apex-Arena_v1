@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertCircle, CheckCircle2, Clock3, Loader2,
-  Send, X, DollarSign, Banknote, ArrowDownToLine,
+  Send, X, DollarSign, Banknote, ArrowDownToLine, Trash2,
 } from "lucide-react";
-import { organizerService, type PayoutRequest } from "../../../services/organizer.service";
+import { organizerService, type PayoutRequest, type WalletBalance } from "../../../services/organizer.service";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -35,7 +35,9 @@ function fmtDate(iso?: string) {
 
 export default function PayoutsPage() {
   const [requests, setRequests] = useState<PayoutRequest[]>([]);
+  const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,13 +52,31 @@ export default function PayoutsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setRequests(await organizerService.getMyPayoutRequests());
+      const [reqs, bal] = await Promise.all([
+        organizerService.getMyPayoutRequests(),
+        organizerService.getWalletBalance().catch(() => null),
+      ]);
+      setRequests(reqs);
+      setWallet(bal);
     } catch {
       setRequests([]);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const cancel = async (id: string) => {
+    setCancelling(id);
+    try {
+      await organizerService.cancelPayoutRequest(id);
+      showMsg("Request cancelled.");
+      void load();
+    } catch (e) {
+      showMsg(e instanceof Error ? e.message : "Failed to cancel.", true);
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   useEffect(() => { void load(); }, [load]);
 
@@ -130,11 +150,12 @@ export default function PayoutsPage() {
           </div>
 
           {/* Stats strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-slate-800/60 rounded-xl overflow-hidden border border-slate-800/60">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800/60 rounded-xl overflow-hidden border border-slate-800/60">
             {[
-              { label: "Total Requests",  value: String(requests.length),                                           accent: "text-white" },
-              { label: "Total Paid Out",  value: totalPaid > 0 ? `GHS ${totalPaid.toFixed(2)}` : "—",             accent: "text-emerald-400" },
-              { label: "Pending Amount",  value: totalPending > 0 ? `GHS ${totalPending.toFixed(2)}` : "—",       accent: "text-amber-400" },
+              { label: "Available Balance", value: wallet ? `GHS ${(wallet.availableBalance / 100).toFixed(2)}` : "—", accent: "text-orange-400" },
+              { label: "Total Requests",    value: String(requests.length),                                              accent: "text-white" },
+              { label: "Total Paid Out",    value: totalPaid > 0 ? `GHS ${totalPaid.toFixed(2)}` : "—",                accent: "text-emerald-400" },
+              { label: "Pending Amount",    value: totalPending > 0 ? `GHS ${totalPending.toFixed(2)}` : "—",          accent: "text-amber-400" },
             ].map(s => (
               <div key={s.label} className="bg-slate-900 px-5 py-4">
                 <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
@@ -292,18 +313,30 @@ export default function PayoutsPage() {
                     )}
                   </div>
 
-                  {/* Date */}
-                  <div className="text-right shrink-0">
+                  {/* Date + actions */}
+                  <div className="text-right shrink-0 space-y-1.5">
                     <p className="text-xs text-slate-500">{fmtDate(req.createdAt)}</p>
                     {req.status === "completed" && (
-                      <p className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1 justify-end">
+                      <p className="text-[10px] text-emerald-400 flex items-center gap-1 justify-end">
                         <CheckCircle2 className="w-3 h-3" /> Paid
                       </p>
                     )}
-                    {req.status === "pending" && (
-                      <p className="text-[10px] text-amber-400 mt-1 flex items-center gap-1 justify-end">
-                        <Clock3 className="w-3 h-3" /> Processing
-                      </p>
+                    {(req.status === "pending" || req.status === "approved") && (
+                      <>
+                        <p className="text-[10px] text-amber-400 flex items-center gap-1 justify-end">
+                          <Clock3 className="w-3 h-3" /> Processing
+                        </p>
+                        <button
+                          onClick={() => { void cancel(req.id); }}
+                          disabled={cancelling === req.id}
+                          className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-red-400 transition-colors ml-auto disabled:opacity-50"
+                        >
+                          {cancelling === req.id
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <Trash2 className="w-3 h-3" />}
+                          Cancel
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

@@ -90,8 +90,7 @@ const Login = () => {
     });
   }, [isGoogleReady, renderGoogleButton]);
 
-  const handleLinkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLinkSubmit = async () => {
     if (!googleLinkState || !linkPassword) return;
 
     setIsLoading(true);
@@ -345,7 +344,7 @@ const Login = () => {
 
         {/* Google Link Account — shown when user has a password account that needs linking */}
         {googleLinkState && (
-          <form onSubmit={handleLinkSubmit} className="mt-4 space-y-3">
+          <div className="mt-4 space-y-3">
             <p className="text-sm text-amber-300 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
               {googleLinkState.message}
             </p>
@@ -355,12 +354,14 @@ const Login = () => {
                 type="password"
                 value={linkPassword}
                 onChange={(e) => setLinkPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && void handleLinkSubmit()}
                 className="pl-10 pr-3 py-3 w-full rounded-lg border border-slate-700 bg-slate-950/60 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
                 placeholder="Enter your password to link"
               />
             </div>
             <motion.button
-              type="submit"
+              type="button"
+              onClick={() => void handleLinkSubmit()}
               disabled={isLoading || !linkPassword}
               className="w-full py-3 rounded-lg bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 font-semibold shadow hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={reduceMotion || isLoading ? undefined : { y: -1 }}
@@ -368,7 +369,7 @@ const Login = () => {
             >
               {isLoading ? "Linking..." : "Link & Sign In"}
             </motion.button>
-          </form>
+          </div>
         )}
 
         {/* Sign Up Link */}
