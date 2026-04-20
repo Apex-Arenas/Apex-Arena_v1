@@ -24,6 +24,8 @@ const DashboardLayout = () => {
     ? `${(user.firstName?.[0] ?? "").toUpperCase()}${(user.lastName?.[0] ?? "").toUpperCase()}`
     : "?";
 
+  const profilePath = user?.role === "organizer" ? "/auth/organizer/profile" : "/auth/player/profile";
+
   return (
     <div className="flex min-h-dvh bg-slate-950 text-slate-100">
       <Sidebar mobileOpen={mobileOpen} onMobileClose={handleMobileClose} />
@@ -55,22 +57,22 @@ const DashboardLayout = () => {
               )}
             </Link>
 
-            <div className="flex items-center gap-2">
+            <Link to={profilePath} className="flex items-center gap-2 group">
               {user?.avatarUrl ? (
                 <img
                   src={user.avatarUrl}
                   alt=""
-                  className="w-8 h-8 rounded-full object-cover border border-slate-700"
+                  className="w-8 h-8 rounded-full object-cover border border-slate-700 group-hover:border-orange-500/60 transition-colors"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300">
+                <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 group-hover:border-orange-500/60 flex items-center justify-center text-xs font-semibold text-slate-300 transition-colors">
                   {initials}
                 </div>
               )}
-              <span className="text-sm font-medium text-slate-200 hidden sm:block">
+              <span className="text-sm font-medium text-slate-200 group-hover:text-white hidden sm:block transition-colors">
                 {user?.username ?? "User"}
               </span>
-            </div>
+            </Link>
           </div>
         </header>
 
