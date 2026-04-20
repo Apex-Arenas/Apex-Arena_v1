@@ -75,7 +75,7 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
     <div className="group flex flex-col overflow-hidden rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-600 hover:shadow-xl hover:shadow-black/40 transition-all">
 
       {/* ── Cover image ───────────────────────────────────── */}
-      <Link to={href} className="relative aspect-[4/3] overflow-hidden bg-slate-800 shrink-0 block">
+      <Link to={href} className="relative aspect-4/3 overflow-hidden bg-slate-800 shrink-0 block">
         {coverImage ? (
           <img
             src={coverImage}
@@ -83,7 +83,7 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-slate-800 to-slate-900">
             {tournament.game?.logoUrl ? (
               <img src={tournament.game.logoUrl} alt="" className="w-20 h-20 object-contain opacity-25" />
             ) : (
@@ -93,7 +93,7 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
         )}
 
         {/* Bottom fade */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-slate-900/20 to-transparent" />
 
         {/* Status chip — top right */}
         <div className="absolute top-2.5 right-2.5">
@@ -218,7 +218,7 @@ function CreateCard() {
   return (
     <Link
       to="/auth/organizer/create-tournament"
-      className="group flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/30 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all min-h-[260px]"
+      className="group flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/30 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all min-h-65"
     >
       <div className="flex flex-col items-center gap-3 text-center px-6">
         <div className="w-12 h-12 rounded-full border-2 border-dashed border-slate-600 group-hover:border-orange-400/60 flex items-center justify-center transition-colors">
@@ -298,10 +298,10 @@ const MyTournaments = () => {
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 px-6 py-7 sm:px-8 sm:py-8">
         {/* Ambient glows */}
-        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/[0.12] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/[0.08] blur-3xl pointer-events-none" />
+        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/12 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
         {/* Fine grid */}
-        <div className="absolute inset-0 pointer-events-none [background-image:linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] [background-size:48px_48px]" />
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
 
         <div className="relative flex items-center justify-between gap-4 flex-wrap">
           <div>
@@ -314,7 +314,7 @@ const MyTournaments = () => {
           </div>
           <Link
             to="/auth/organizer/create-tournament"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all shrink-0"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all shrink-0"
           >
             <PlusCircle className="w-4 h-4" />
             Create Tournament
@@ -342,7 +342,7 @@ const MyTournaments = () => {
           </p>
           <Link
             to="/auth/organizer/create-tournament"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold"
           >
             <PlusCircle className="w-4 h-4" />
             Create Tournament
