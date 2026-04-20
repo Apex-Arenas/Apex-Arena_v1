@@ -30,7 +30,7 @@ const NotFound = () => {
         >
           <Link
             to="/"
-            className="rounded-md bg-linear-to-r from-cyan-300 via-sky-400 to-indigo-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:shadow-lg hover:shadow-cyan-500/30 transition-all"
+            className="rounded-md bg-gradient-to-r from-orange-400 to-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:shadow-lg hover:shadow-orange-500/25 transition-all"
           >
             Go to Home
           </Link>
