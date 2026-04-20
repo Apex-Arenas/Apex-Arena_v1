@@ -14,17 +14,25 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     let cancelled = false;
-    notificationService.getUnreadCount()
-      .then((n) => { if (!cancelled) setUnreadCount(n); })
+    notificationService
+      .getUnreadCount()
+      .then((n) => {
+        if (!cancelled) setUnreadCount(n);
+      })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const initials = user
     ? `${(user.firstName?.[0] ?? "").toUpperCase()}${(user.lastName?.[0] ?? "").toUpperCase()}`
     : "?";
 
-  const profilePath = user?.role === "organizer" ? "/auth/organizer/profile" : "/auth/player/profile";
+  const profilePath =
+    user?.role === "organizer"
+      ? "/auth/organizer/profile"
+      : "/auth/player/profile";
 
   return (
     <div className="flex min-h-dvh bg-slate-950 text-slate-100">
