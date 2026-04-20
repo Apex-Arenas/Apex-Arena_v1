@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost } from "../../utils/api.utils";
 import { FINANCE_ENDPOINTS } from "../../config/api.config";
+import { generateUniqueIdempotencyKey } from "../../utils/idempotency.utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -68,26 +69,34 @@ function DepositModal({ onClose }: { onClose: () => void }) {
     setSubmitting(true);
     setError("");
     try {
-      const minorUnits = Math.round(amountNum * 100);
       const callbackUrl = `${window.location.origin}/payment/callback`;
       const res = await apiPost(FINANCE_ENDPOINTS.DEPOSIT, {
-        amount: minorUnits,
+        amount_ghs: amountNum,
         callback_url: callbackUrl,
+        idempotency_key: generateUniqueIdempotencyKey(),
       });
       if (!res.success) {
         setError((res as { error?: { message?: string } }).error?.message ?? "Deposit initiation failed.");
         return;
       }
       const data = res.data as Record<string, unknown>;
+      // API returns authorization_url directly on data (same shape as escrow deposit)
+      // Fall back to other common gateway field names just in case
+      const inner = (typeof data.data === "object" && data.data !== null ? data.data : data) as Record<string, unknown>;
       const paymentUrl =
+        (data.authorization_url as string | undefined) ??
         (data.payment_url as string | undefined) ??
-        (data.paymentUrl as string | undefined) ??
         (data.redirect_url as string | undefined) ??
-        (data.authorization_url as string | undefined);
+        (data.checkout_url as string | undefined) ??
+        (data.link as string | undefined) ??
+        (inner.authorization_url as string | undefined) ??
+        (inner.payment_url as string | undefined) ??
+        (inner.redirect_url as string | undefined);
+
       if (paymentUrl) {
         window.location.href = paymentUrl;
       } else {
-        setError("Payment link not returned. Please try again.");
+        setError(`No payment URL in response. Keys: ${Object.keys(data).join(", ") || "none"}`);
       }
     } catch {
       setError("Something went wrong. Please try again.");
