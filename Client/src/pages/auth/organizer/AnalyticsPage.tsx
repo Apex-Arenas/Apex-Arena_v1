@@ -160,9 +160,9 @@ export default function AnalyticsPage() {
 
       {/* ── Header ────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800">
-        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/[0.12] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-violet-600/[0.08] blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 pointer-events-none [background-image:linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] [background-size:48px_48px]" />
+        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/12 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
 
         <div className="relative px-6 py-7 sm:px-8">
           <div className="flex items-center gap-3 mb-6">
@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
           <p className="font-display text-xl font-semibold text-slate-400">No data yet</p>
           <p className="text-sm text-slate-600 mt-2 mb-7">Create your first tournament to start seeing analytics.</p>
           <Link to="/auth/organizer/create-tournament"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold">
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold">
             Create Tournament
           </Link>
         </div>
@@ -272,7 +272,7 @@ export default function AnalyticsPage() {
                         </p>
                         {/* Fill bar */}
                         <div className="mt-2 flex items-center gap-2">
-                          <div className="flex-1 h-1 rounded-full bg-slate-800 overflow-hidden max-w-[120px]">
+                          <div className="flex-1 h-1 rounded-full bg-slate-800 overflow-hidden max-w-30">
                             <div className={`h-full ${meta.bar}`} style={{ width: `${fillPct}%` }} />
                           </div>
                           <span className="text-[10px] text-slate-500">{t.currentCount}/{t.maxParticipants}</span>
@@ -337,7 +337,7 @@ export default function AnalyticsPage() {
                     return (
                       <div key={t.id}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-slate-300 truncate max-w-[160px]">{t.title}</span>
+                          <span className="text-xs text-slate-300 truncate max-w-40">{t.title}</span>
                           <span className="text-xs font-bold text-white tabular-nums ml-2">{pct}%</span>
                         </div>
                         <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
