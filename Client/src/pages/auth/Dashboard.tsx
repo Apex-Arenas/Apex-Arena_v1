@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   PlusCircle,
   ListTodo,
-  Users,
   Wallet,
   Activity,
   ArrowRight,
@@ -257,10 +256,10 @@ const Dashboard = () => {
         {/* ── Hero ──────────────────────────────────────────────────────── */}
         <div className="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800">
           {/* Ambient glows */}
-          <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/[0.12] blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/[0.08] blur-3xl pointer-events-none" />
+          <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/12 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
           {/* Fine grid */}
-          <div className="absolute inset-0 pointer-events-none [background-image:linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] [background-size:48px_48px]" />
+          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
 
           <div className="relative px-6 py-6 sm:px-8 sm:py-7">
             <div className="flex flex-col sm:flex-row sm:items-start gap-6 justify-between">
@@ -307,7 +306,7 @@ const Dashboard = () => {
                 <div className="flex items-center gap-2">
                   <Link
                     to="/auth/organizer/create-tournament"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all"
                   >
                     <PlusCircle className="w-4 h-4" />
                     Create Tournament
@@ -378,7 +377,7 @@ const Dashboard = () => {
                   <p className="text-sm text-slate-600 mt-1 mb-6">Create or publish one to start receiving registrations.</p>
                   <Link
                     to="/auth/organizer/create-tournament"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold"
                   >
                     <PlusCircle className="w-4 h-4" />
                     Create Tournament
@@ -473,12 +472,12 @@ const Dashboard = () => {
       {/* Hero */}
       <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 px-6 py-7 sm:px-8 sm:py-8">
         <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-cyan-500/[0.07] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-indigo-500/[0.05] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
 
         <div className="relative flex items-center justify-between flex-wrap gap-5">
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
-              <div className="w-[60px] h-[60px] rounded-full ring-2 ring-slate-700 ring-offset-2 ring-offset-slate-900 bg-slate-800 flex items-center justify-center text-xl font-bold text-white overflow-hidden">
+              <div className="w-15 h-15 rounded-full ring-2 ring-slate-700 ring-offset-2 ring-offset-slate-900 bg-slate-800 flex items-center justify-center text-xl font-bold text-white overflow-hidden">
                 {profile?.avatarUrl
                   ? <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
                   : initials}
