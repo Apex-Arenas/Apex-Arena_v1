@@ -58,17 +58,13 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Poll unread notification count
+  // Fetch unread count once on mount — no polling until the endpoint is stable
   useEffect(() => {
     let cancelled = false;
-    const fetch = () => {
-      notificationService.getUnreadCount()
-        .then((n) => { if (!cancelled) setUnreadCount(n); })
-        .catch(() => {});
-    };
-    fetch();
-    const id = setInterval(fetch, 60_000);
-    return () => { cancelled = true; clearInterval(id); };
+    notificationService.getUnreadCount()
+      .then((n) => { if (!cancelled) setUnreadCount(n); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   const isOrganizer = user?.role === "organizer";

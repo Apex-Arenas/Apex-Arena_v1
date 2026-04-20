@@ -85,13 +85,14 @@ export const notificationService = {
   },
 
   async getUnreadCount(): Promise<number> {
-    const response = await apiGet(NOTIFICATION_ENDPOINTS.UNREAD_COUNT);
-    if (!response.success) {
-      throw new Error(response.error?.message ?? 'Failed to load unread count');
+    try {
+      const response = await apiGet(NOTIFICATION_ENDPOINTS.UNREAD_COUNT);
+      if (!response.success) return 0;
+      const data = response.data as Record<string, unknown>;
+      return Number(data.unread_count ?? data.count ?? 0);
+    } catch {
+      return 0;
     }
-
-    const data = response.data as Record<string, unknown>;
-    return Number(data.unread_count ?? 0);
   },
 
   async markRead(notificationId: string): Promise<void> {

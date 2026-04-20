@@ -14,14 +14,10 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     let cancelled = false;
-    const fetch = () => {
-      notificationService.getUnreadCount()
-        .then((n) => { if (!cancelled) setUnreadCount(n); })
-        .catch(() => {});
-    };
-    fetch();
-    const id = setInterval(fetch, 60_000);
-    return () => { cancelled = true; clearInterval(id); };
+    notificationService.getUnreadCount()
+      .then((n) => { if (!cancelled) setUnreadCount(n); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   const initials = user
