@@ -22,21 +22,31 @@ import { DateTimePicker } from "../../../components/DateTimePicker";
 // ─── Small UI helpers ────────────────────────────────────────────────────────
 
 function SectionCard({
+  step,
   title,
   icon: Icon,
   children,
 }: {
+  step: number;
   title: string;
   icon: React.ElementType;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-      <h2 className="font-display text-base font-semibold text-white flex items-center gap-2">
-        <Icon className="w-4 h-4 text-cyan-400" />
-        {title}
-      </h2>
-      {children}
+    <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+      {/* Section header */}
+      <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-800 bg-slate-900/80">
+        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-500/15 border border-orange-500/25 shrink-0">
+          <span className="font-display text-sm font-bold text-orange-400">{step}</span>
+        </div>
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon className="w-4 h-4 text-orange-400 shrink-0" />
+          <h2 className="font-display text-base font-bold text-white">{title}</h2>
+        </div>
+      </div>
+      <div className="p-6 space-y-4">
+        {children}
+      </div>
     </div>
   );
 }
@@ -52,11 +62,11 @@ function Field({
 }) {
   return (
     <div>
-      <label className="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1.5">
+      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
         {label}
         {required
-          ? <span className="text-red-400">*</span>
-          : <span className="text-slate-600 text-[10px] font-normal">optional</span>
+          ? <span className="text-orange-400 normal-case font-normal tracking-normal">*</span>
+          : <span className="text-slate-600 text-[10px] font-normal normal-case tracking-normal">optional</span>
         }
       </label>
       {children}
@@ -65,10 +75,10 @@ function Field({
 }
 
 const inputCls =
-  "w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 transition-colors";
+  "w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/70 focus:bg-slate-800 transition-colors";
 
 const selectCls =
-  "w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors";
+  "w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/70 focus:bg-slate-800 transition-colors";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -805,542 +815,342 @@ const CreateTournament = () => {
   };
 
   return (
-    <div className="px-6 py-8 max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate("/auth/organizer/tournaments")}
-          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="font-display text-2xl font-bold text-white">
-            {isEditMode ? "Edit Tournament" : "Create Tournament"}
-          </h1>
-          <p className="text-sm text-slate-400 mt-0.5">
-            {isEditMode
-              ? "Update your tournament details before it goes live."
-              : "Fill in the details to set up your tournament."}
-          </p>
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6">
+
+      {/* ── Header ────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 px-6 py-6 sm:px-8">
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-orange-500/[0.12] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-violet-600/[0.08] blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 pointer-events-none [background-image:linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] [background-size:48px_48px]" />
+        <div className="relative flex items-center gap-3">
+          <button
+            onClick={() => navigate("/auth/organizer/tournaments")}
+            className="p-2 rounded-xl border border-slate-700 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800/60 transition-colors shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-white">
+              {isEditMode ? "Edit Tournament" : "Create Tournament"}
+            </h1>
+            <p className="text-sm text-slate-400 mt-0.5">
+              {isEditMode
+                ? "Update your tournament details before it goes live."
+                : "Fill in the details below to publish your tournament."}
+            </p>
+          </div>
         </div>
       </div>
 
       {isLoadingTournament && (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
         </div>
       )}
 
       {error && !isLoadingTournament && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
           {error}
         </div>
       )}
 
+      {/* ── Limited edit (post-publish) ───────────────────────────── */}
       {!isLoadingTournament && isLimitedEditMode && (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl">
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Tournament is already published. You can still update
-            organizer-facing details.
+            Tournament is already published. You can still update organizer-facing details.
             {canEditThumbnailAfterPublish
               ? " Editable now: description, contact email, and thumbnail image."
               : " Editable now: description and contact email."}
           </div>
 
-          <SectionCard title="Post-Publish Edits" icon={Trophy}>
+          <SectionCard step={1} title="Post-Publish Edits" icon={Trophy}>
             <Field label="Description">
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)}
                 placeholder="Update organizer notes, rules summary, or event details"
-                rows={4}
-                maxLength={2000}
-                className={`${inputCls} resize-none`}
-              />
+                rows={4} maxLength={2000} className={`${inputCls} resize-none`} />
             </Field>
-
             <Field label="Contact Email">
-              <input
-                type="email"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                placeholder="organizer@example.com"
-                className={inputCls}
-              />
+              <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)}
+                placeholder="organizer@example.com" className={inputCls} />
             </Field>
-
             {canEditThumbnailAfterPublish && (
               <Field label="Thumbnail Image">
-                <ImageUploadDropzone
-                  value={thumbnailUrl}
-                  onChange={setThumbnailUrl}
-                  folder="apex-arenas/tournaments/thumbnails"
-                />
+                <ImageUploadDropzone value={thumbnailUrl} onChange={setThumbnailUrl}
+                  folder="apex-arenas/tournaments/thumbnails" />
               </Field>
             )}
           </SectionCard>
 
           <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => navigate("/auth/organizer/tournaments")}
-              className="px-5 py-2.5 rounded-lg border border-slate-700 text-slate-300 text-sm font-medium hover:bg-white/5 transition-colors"
-            >
+            <button type="button" onClick={() => navigate("/auth/organizer/tournaments")}
+              className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 text-sm font-medium hover:bg-white/5 transition-colors">
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-cyan-500 text-slate-950 text-sm font-semibold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Trophy className="w-4 h-4" />
-                  Save Changes
-                </>
-              )}
+            <button type="submit" disabled={isSubmitting}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-60 transition-all">
+              {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</> : <><Trophy className="w-4 h-4" />Save Changes</>}
             </button>
           </div>
         </form>
       )}
 
+      {/* ── Full create / edit form ────────────────────────────────── */}
       {!isLoadingTournament && !isLimitedEditMode && (
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Basic Info */}
-          <SectionCard title="Basic Info" icon={Trophy}>
-            <Field label="Tournament Title" required>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Apex Arenas Season 1"
-                maxLength={100}
-                className={inputCls}
-              />
-            </Field>
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start">
 
-            <Field label="Description">
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe your tournament..."
-                rows={3}
-                maxLength={2000}
-                className={`${inputCls} resize-none`}
-              />
-            </Field>
+            {/* ── LEFT column ─────────────────────────────────────── */}
+            <div className="space-y-5">
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Game" required>
-                <select
-                  value={gameId}
-                  onChange={(e) => setGameId(e.target.value)}
-                  className={selectCls}
-                >
-                  <option value="">Select a game</option>
-                  {games.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-
-              </Field>
-
-              <Field label="Tournament Type" required>
-                <select
-                  value={tournamentType}
-                  onChange={(e) => setTournamentType(e.target.value)}
-                  className={selectCls}
-                >
-                  <option value="single_elimination">Single Elimination</option>
-                  <option value="double_elimination">Double Elimination</option>
-                  <option value="round_robin">Round Robin</option>
-                  <option value="swiss">Swiss</option>
-                  <option value="battle_royale">Battle Royale</option>
-                  <option value="league">League (Premier League style)</option>
-                </select>
-              </Field>
-
-              {tournamentType === "league" && (
-                <Field label="League Legs" required>
-                  <select
-                    value={leagueLegs}
-                    onChange={(e) => setLeagueLegs(e.target.value as "1" | "2")}
-                    className={selectCls}
-                  >
-                    <option value="1">Single Leg (home only)</option>
-                    <option value="2">Double Leg (home & away)</option>
-                  </select>
+              {/* 1 · Basic Info */}
+              <SectionCard step={1} title="Basic Info" icon={Trophy}>
+                <Field label="Tournament Title" required>
+                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Apex Arenas Season 1" maxLength={100} className={inputCls} />
                 </Field>
-              )}
-              <Field label="Format" required>
-                <select
-                  value={format}
-                  onChange={(e) => setFormat(e.target.value)}
-                  className={selectCls}
-                >
-                  {["1v1", "2v2", "3v3", "4v4", "5v5", "solo", "squad"].map(
-                    (f) => (
-                      <option key={f} value={f}>
-                        {f}
-                      </option>
-                    ),
+
+                <Field label="Description">
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe your tournament…" rows={3} maxLength={2000}
+                    className={`${inputCls} resize-none`} />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Game" required>
+                    <select value={gameId} onChange={(e) => setGameId(e.target.value)} className={selectCls}>
+                      <option value="">Select a game</option>
+                      {games.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Format" required>
+                    <select value={format} onChange={(e) => setFormat(e.target.value)} className={selectCls}>
+                      {["1v1", "2v2", "3v3", "4v4", "5v5", "solo", "squad"].map((f) => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Tournament Type" required>
+                    <select value={tournamentType} onChange={(e) => setTournamentType(e.target.value)} className={selectCls}>
+                      <option value="single_elimination">Single Elimination</option>
+                      <option value="double_elimination">Double Elimination</option>
+                      <option value="round_robin">Round Robin</option>
+                      <option value="swiss">Swiss</option>
+                      <option value="battle_royale">Battle Royale</option>
+                      <option value="league">League (Premier League style)</option>
+                    </select>
+                  </Field>
+                  {tournamentType === "league" ? (
+                    <Field label="League Legs" required>
+                      <select value={leagueLegs} onChange={(e) => setLeagueLegs(e.target.value as "1" | "2")} className={selectCls}>
+                        <option value="1">Single Leg (home only)</option>
+                        <option value="2">Double Leg (home &amp; away)</option>
+                      </select>
+                    </Field>
+                  ) : (
+                    <Field label="Visibility">
+                      <select value={visibility} onChange={(e) => setVisibility(e.target.value)} className={selectCls}>
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                        <option value="invite_only">Invite Only</option>
+                      </select>
+                    </Field>
                   )}
-                </select>
-              </Field>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Visibility">
-                <select
-                  value={visibility}
-                  onChange={(e) => setVisibility(e.target.value)}
-                  className={selectCls}
-                >
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
-                  <option value="invite_only">Invite Only</option>
-                </select>
-              </Field>
-
-              <Field label="Region">
-                <input
-                  type="text"
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value)}
-                  placeholder="e.g. Ghana, Global"
-                  className={inputCls}
-                />
-              </Field>
-
-              <Field label="Timezone">
-                <input
-                  type="text"
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  placeholder="Africa/Accra"
-                  className={inputCls}
-                />
-              </Field>
-
-              <Field label="Contact Email">
-                <input
-                  type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="organizer@example.com"
-                  className={inputCls}
-                />
-              </Field>
-            </div>
-
-            <Field label="Thumbnail Image">
-              <ImageUploadDropzone
-                value={thumbnailUrl}
-                onChange={setThumbnailUrl}
-                folder="apex-arenas/tournaments/thumbnails"
-              />
-            </Field>
-          </SectionCard>
-
-          {/* Participants */}
-          <SectionCard title="Participants" icon={Users}>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Max Participants" required>
-                <input
-                  type="number"
-                  value={maxParticipants}
-                  onChange={(e) => setMaxParticipants(e.target.value)}
-                  min={2}
-                  max={1024}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Min Participants" required>
-                <input
-                  type="number"
-                  value={minParticipants}
-                  onChange={(e) => setMinParticipants(e.target.value)}
-                  min={2}
-                  className={inputCls}
-                />
-              </Field>
-            </div>
-
-            {isTeamFormat(format) && (
-              <Field label="Team Size" required>
-                <input
-                  type="number"
-                  value={teamSize}
-                  onChange={(e) => setTeamSize(e.target.value)}
-                  min={1}
-                  max={100}
-                  readOnly={inferTeamSize(format) !== null}
-                  className={inputCls}
-                />
-              </Field>
-            )}
-
-          </SectionCard>
-
-          {/* Schedule */}
-          <SectionCard title="Schedule" icon={CalendarDays}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Registration Opens" required>
-                <DateTimePicker
-                  value={registrationStart}
-                  onChange={setRegistrationStart}
-                  placeholder="Pick date & time"
-                />
-              </Field>
-              <Field label="Registration Closes" required>
-                <DateTimePicker
-                  value={registrationEnd}
-                  onChange={setRegistrationEnd}
-                  placeholder="Pick date & time"
-                  minDate={registrationStart ? new Date(registrationStart) : undefined}
-                />
-              </Field>
-              <Field label="Tournament Starts" required>
-                <DateTimePicker
-                  value={tournamentStart}
-                  onChange={setTournamentStart}
-                  placeholder="Pick date & time"
-                  minDate={registrationEnd ? new Date(registrationEnd) : undefined}
-                />
-              </Field>
-
-              <Field label="Tournament Ends">
-                <DateTimePicker
-                  value={tournamentEnd}
-                  onChange={setTournamentEnd}
-                  placeholder="Pick date & time"
-                  minDate={tournamentStart ? new Date(tournamentStart) : undefined}
-                />
-              </Field>
-
-              <Field label="Check-In Opens">
-                <DateTimePicker
-                  value={checkInStart}
-                  onChange={setCheckInStart}
-                  placeholder="Pick date & time"
-                  minDate={registrationEnd ? new Date(registrationEnd) : undefined}
-                />
-              </Field>
-
-              <Field label="Check-In Closes">
-                <DateTimePicker
-                  value={checkInEnd}
-                  onChange={setCheckInEnd}
-                  placeholder="Pick date & time"
-                  minDate={checkInStart ? new Date(checkInStart) : undefined}
-                />
-              </Field>
-            </div>
-
-            <label className="inline-flex items-center gap-2 text-sm text-slate-300">
-              <input
-                type="checkbox"
-                checked={waitlistEnabled}
-                onChange={(e) => setWaitlistEnabled(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-cyan-500"
-              />
-              Enable waitlist when tournament is full
-            </label>
-
-            <div className="pt-1 border-t border-slate-800">
-              <Field label="Match Play Deadline">
-                <select
-                  value={matchDeadline}
-                  onChange={(e) => {
-                    setMatchDeadline(e.target.value as typeof matchDeadline);
-                    setMatchDeadlineCustomDate('');
-                  }}
-                  className={selectCls}
-                >
-                  <option value="none">No Deadline</option>
-                  <option value="24h">24 Hours</option>
-                  <option value="48h">2 Days</option>
-                  <option value="168h">1 Week</option>
-                  <option value="custom">Custom Date</option>
-                </select>
-                <p className="text-[11px] text-slate-500 mt-1.5">
-                  {matchDeadline === 'none'
-                    ? 'Players can play their match at any time.'
-                    : matchDeadline === 'custom'
-                    ? 'All matches must be played before the chosen date.'
-                    : `Each match must be played within ${matchDeadline === '24h' ? '24 hours' : matchDeadline === '48h' ? '2 days' : '1 week'} of its scheduled time.`}
-                </p>
-              </Field>
-
-              {matchDeadline === 'custom' && (
-                <div className="mt-3">
-                  <Field label="Deadline Date & Time" required>
-                    <DateTimePicker
-                      value={matchDeadlineCustomDate}
-                      onChange={setMatchDeadlineCustomDate}
-                      placeholder="Pick deadline date & time"
-                      minDate={tournamentStart ? new Date(tournamentStart) : undefined}
-                    />
+                  {tournamentType === "league" && (
+                    <Field label="Visibility">
+                      <select value={visibility} onChange={(e) => setVisibility(e.target.value)} className={selectCls}>
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                        <option value="invite_only">Invite Only</option>
+                      </select>
+                    </Field>
+                  )}
+                  <Field label="Region">
+                    <input type="text" value={region} onChange={(e) => setRegion(e.target.value)}
+                      placeholder="e.g. Ghana, Global" className={inputCls} />
+                  </Field>
+                  <Field label="Timezone">
+                    <input type="text" value={timezone} onChange={(e) => setTimezone(e.target.value)}
+                      placeholder="Africa/Accra" className={inputCls} />
+                  </Field>
+                  <Field label="Contact Email">
+                    <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)}
+                      placeholder="organizer@example.com" className={inputCls} />
                   </Field>
                 </div>
-              )}
-            </div>
-          </SectionCard>
 
-          {/* Entry & Prize */}
-          <SectionCard title="Entry Fee & Prize" icon={DollarSign}>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsFree(true)}
-                className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
-                  isFree
-                    ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/40"
-                    : "border-slate-700 text-slate-400 hover:border-slate-600"
-                }`}
-              >
-                Free Entry
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsFree(false)}
-                className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
-                  !isFree
-                    ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/40"
-                    : "border-slate-700 text-slate-400 hover:border-slate-600"
-                }`}
-              >
-                Paid Entry
-              </button>
-            </div>
+                <Field label="Thumbnail Image">
+                  <ImageUploadDropzone value={thumbnailUrl} onChange={setThumbnailUrl}
+                    folder="apex-arenas/tournaments/thumbnails" />
+                </Field>
+              </SectionCard>
 
-            {!isFree && (
-              <Field label="Entry Fee (GHS)" required>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-                    ₵
-                  </span>
-                  <input
-                    type="number"
-                    value={entryFee}
-                    onChange={(e) => setEntryFee(e.target.value)}
-                    placeholder="0.00"
-                    min={0}
-                    step={0.01}
-                    className={`${inputCls} pl-7`}
-                  />
+              {/* 3 · Schedule */}
+              <SectionCard step={3} title="Schedule" icon={CalendarDays}>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Registration Opens" required>
+                    <DateTimePicker value={registrationStart} onChange={setRegistrationStart} placeholder="Pick date & time" />
+                  </Field>
+                  <Field label="Registration Closes" required>
+                    <DateTimePicker value={registrationEnd} onChange={setRegistrationEnd} placeholder="Pick date & time"
+                      minDate={registrationStart ? new Date(registrationStart) : undefined} />
+                  </Field>
+                  <Field label="Tournament Starts" required>
+                    <DateTimePicker value={tournamentStart} onChange={setTournamentStart} placeholder="Pick date & time"
+                      minDate={registrationEnd ? new Date(registrationEnd) : undefined} />
+                  </Field>
+                  <Field label="Tournament Ends">
+                    <DateTimePicker value={tournamentEnd} onChange={setTournamentEnd} placeholder="Pick date & time"
+                      minDate={tournamentStart ? new Date(tournamentStart) : undefined} />
+                  </Field>
+                  <Field label="Check-In Opens">
+                    <DateTimePicker value={checkInStart} onChange={setCheckInStart} placeholder="Pick date & time"
+                      minDate={registrationEnd ? new Date(registrationEnd) : undefined} />
+                  </Field>
+                  <Field label="Check-In Closes">
+                    <DateTimePicker value={checkInEnd} onChange={setCheckInEnd} placeholder="Pick date & time"
+                      minDate={checkInStart ? new Date(checkInStart) : undefined} />
+                  </Field>
                 </div>
-              </Field>
-            )}
 
-            {!isFree && (
-              <Field label="Prize Pool (GHS)" required>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-                    ₵
-                  </span>
-                  <input
-                    type="number"
-                    value={prizePool}
-                    onChange={(e) => setPrizePool(e.target.value)}
-                    placeholder="0.00"
-                    min={0}
-                    step={0.01}
-                    className={`${inputCls} pl-7`}
-                  />
+                <label className="inline-flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input type="checkbox" checked={waitlistEnabled} onChange={(e) => setWaitlistEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-orange-500 focus:ring-orange-500" />
+                  Enable waitlist when tournament is full
+                </label>
+
+                <div className="pt-2 border-t border-slate-800 space-y-3">
+                  <Field label="Match Play Deadline">
+                    <select value={matchDeadline} onChange={(e) => { setMatchDeadline(e.target.value as typeof matchDeadline); setMatchDeadlineCustomDate(''); }} className={selectCls}>
+                      <option value="none">No Deadline</option>
+                      <option value="24h">24 Hours</option>
+                      <option value="48h">2 Days</option>
+                      <option value="168h">1 Week</option>
+                      <option value="custom">Custom Date</option>
+                    </select>
+                    <p className="text-[11px] text-slate-500 mt-1.5">
+                      {matchDeadline === 'none' ? 'Players can play their match at any time.'
+                        : matchDeadline === 'custom' ? 'All matches must be played before the chosen date.'
+                        : `Each match must be played within ${matchDeadline === '24h' ? '24 hours' : matchDeadline === '48h' ? '2 days' : '1 week'} of its scheduled time.`}
+                    </p>
+                  </Field>
+                  {matchDeadline === 'custom' && (
+                    <Field label="Deadline Date & Time" required>
+                      <DateTimePicker value={matchDeadlineCustomDate} onChange={setMatchDeadlineCustomDate}
+                        placeholder="Pick deadline date & time"
+                        minDate={tournamentStart ? new Date(tournamentStart) : undefined} />
+                    </Field>
+                  )}
                 </div>
-              </Field>
-            )}
+              </SectionCard>
+            </div>
 
-            {!isFree && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Field label="1st Prize %" required>
-                  <input
-                    type="number"
-                    value={firstPrizePercentage}
-                    onChange={(e) => setFirstPrizePercentage(e.target.value)}
-                    min={0}
-                    step={0.01}
-                    className={inputCls}
-                  />
+            {/* ── RIGHT column ─────────────────────────────────────── */}
+            <div className="space-y-5 lg:sticky lg:top-6">
+
+              {/* 2 · Participants */}
+              <SectionCard step={2} title="Participants" icon={Users}>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Max Players" required>
+                    <input type="number" value={maxParticipants} onChange={(e) => setMaxParticipants(e.target.value)}
+                      min={2} max={1024} className={inputCls} />
+                  </Field>
+                  <Field label="Min Players" required>
+                    <input type="number" value={minParticipants} onChange={(e) => setMinParticipants(e.target.value)}
+                      min={2} className={inputCls} />
+                  </Field>
+                </div>
+                {isTeamFormat(format) && (
+                  <Field label="Team Size" required>
+                    <input type="number" value={teamSize} onChange={(e) => setTeamSize(e.target.value)}
+                      min={1} max={100} readOnly={inferTeamSize(format) !== null} className={inputCls} />
+                  </Field>
+                )}
+              </SectionCard>
+
+              {/* 4 · Entry & Prize */}
+              <SectionCard step={4} title="Entry Fee & Prize" icon={DollarSign}>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setIsFree(true)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                      isFree ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/40" : "border-slate-700 text-slate-400 hover:border-slate-600"
+                    }`}>
+                    Free
+                  </button>
+                  <button type="button" onClick={() => setIsFree(false)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                      !isFree ? "bg-orange-500/15 text-orange-300 border-orange-500/40" : "border-slate-700 text-slate-400 hover:border-slate-600"
+                    }`}>
+                    Paid
+                  </button>
+                </div>
+
+                {!isFree && (
+                  <div className="space-y-4">
+                    <Field label="Entry Fee (GHS)" required>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₵</span>
+                        <input type="number" value={entryFee} onChange={(e) => setEntryFee(e.target.value)}
+                          placeholder="0.00" min={0} step={0.01} className={`${inputCls} pl-8`} />
+                      </div>
+                    </Field>
+                    <Field label="Prize Pool (GHS)" required>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₵</span>
+                        <input type="number" value={prizePool} onChange={(e) => setPrizePool(e.target.value)}
+                          placeholder="0.00" min={0} step={0.01} className={`${inputCls} pl-8`} />
+                      </div>
+                    </Field>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Field label="1st %" required>
+                        <input type="number" value={firstPrizePercentage} onChange={(e) => setFirstPrizePercentage(e.target.value)}
+                          min={0} step={0.01} className={inputCls} />
+                      </Field>
+                      <Field label="2nd %" required>
+                        <input type="number" value={secondPrizePercentage} onChange={(e) => setSecondPrizePercentage(e.target.value)}
+                          min={0} step={0.01} className={inputCls} />
+                      </Field>
+                      <Field label="3rd %" required>
+                        <input type="number" value={thirdPrizePercentage} onChange={(e) => setThirdPrizePercentage(e.target.value)}
+                          min={0} step={0.01} className={inputCls} />
+                      </Field>
+                    </div>
+                  </div>
+                )}
+              </SectionCard>
+
+              {/* 5 · Rules */}
+              <SectionCard step={5} title="Rules & Info" icon={Globe}>
+                <Field label="Rules">
+                  <textarea value={rules} onChange={(e) => setRules(e.target.value)}
+                    placeholder="Tournament rules, code of conduct, etc."
+                    rows={5} maxLength={5000} className={`${inputCls} resize-none`} />
                 </Field>
-                <Field label="2nd Prize %" required>
-                  <input
-                    type="number"
-                    value={secondPrizePercentage}
-                    onChange={(e) => setSecondPrizePercentage(e.target.value)}
-                    min={0}
-                    step={0.01}
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label="3rd Prize %" required>
-                  <input
-                    type="number"
-                    value={thirdPrizePercentage}
-                    onChange={(e) => setThirdPrizePercentage(e.target.value)}
-                    min={0}
-                    step={0.01}
-                    className={inputCls}
-                  />
-                </Field>
+              </SectionCard>
+
+              {/* Submit */}
+              <div className="rounded-2xl border border-slate-700/60 bg-slate-900 px-5 py-4 space-y-3">
+                {error && (
+                  <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
+                    <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    {error}
+                  </div>
+                )}
+                <button type="submit" disabled={isSubmitting}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-60 transition-all">
+                  {isSubmitting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? "Saving…" : !isFree ? "Redirecting to payment…" : "Publishing…"}</>
+                  ) : (
+                    <><Trophy className="w-4 h-4" />{isEditMode ? "Save Changes" : !isFree ? "Create & Pay Prize Pool" : "Create & Publish"}</>
+                  )}
+                </button>
+                <button type="button" onClick={() => navigate("/auth/organizer/tournaments")}
+                  className="w-full py-2.5 rounded-xl border border-slate-700 text-slate-400 text-sm font-medium hover:bg-white/5 transition-colors">
+                  Cancel
+                </button>
               </div>
-            )}
-          </SectionCard>
-
-          {/* Rules (optional) */}
-          <SectionCard title="Rules & Info" icon={Globe}>
-            <Field label="Rules">
-              <textarea
-                value={rules}
-                onChange={(e) => setRules(e.target.value)}
-                placeholder="Tournament rules, code of conduct, etc."
-                rows={4}
-                maxLength={5000}
-                className={`${inputCls} resize-none`}
-              />
-            </Field>
-          </SectionCard>
-
-          {/* Submit */}
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => navigate("/auth/organizer/tournaments")}
-              className="px-5 py-2.5 rounded-lg border border-slate-700 text-slate-300 text-sm font-medium hover:bg-white/5 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-cyan-500 text-slate-950 text-sm font-semibold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {isEditMode ? "Saving..." : !isFree ? "Redirecting to payment..." : "Publishing..."}
-                </>
-              ) : (
-                <>
-                  <Trophy className="w-4 h-4" />
-                  {isEditMode
-                    ? "Save Changes"
-                    : !isFree
-                      ? "Create & Pay Prize Pool"
-                      : "Create & Publish"}
-                </>
-              )}
-            </button>
+            </div>
           </div>
         </form>
       )}
