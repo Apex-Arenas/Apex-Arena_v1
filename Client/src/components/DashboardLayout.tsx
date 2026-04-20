@@ -51,7 +51,7 @@ const DashboardLayout = () => {
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 min-w-[14px] h-[14px] rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-0.5 leading-none">
+                <span className="absolute top-1 right-1 min-w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-0.5 leading-none">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
