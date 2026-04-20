@@ -307,7 +307,7 @@ const Login = () => {
         <motion.button
           type="submit"
           disabled={isLoading}
-          className="mt-8 w-full py-3 rounded-lg bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 font-semibold text-base shadow hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-8 w-full py-3 rounded-lg bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-semibold text-base shadow hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           whileHover={reduceMotion || isLoading ? undefined : { y: -1 }}
           whileTap={reduceMotion || isLoading ? undefined : { scale: 0.98 }}
         >
@@ -363,7 +363,7 @@ const Login = () => {
               type="button"
               onClick={() => void handleLinkSubmit()}
               disabled={isLoading || !linkPassword}
-              className="w-full py-3 rounded-lg bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 font-semibold shadow hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 rounded-lg bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-semibold shadow hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={reduceMotion || isLoading ? undefined : { y: -1 }}
               whileTap={reduceMotion || isLoading ? undefined : { scale: 0.98 }}
             >
