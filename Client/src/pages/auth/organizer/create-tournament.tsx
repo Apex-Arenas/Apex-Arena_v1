@@ -819,9 +819,9 @@ const CreateTournament = () => {
 
       {/* ── Header ────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 px-6 py-6 sm:px-8">
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-orange-500/[0.12] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-violet-600/[0.08] blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 pointer-events-none [background-image:linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] [background-size:48px_48px]" />
+        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-orange-500/12 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
         <div className="relative flex items-center gap-3">
           <button
             onClick={() => navigate("/auth/organizer/tournaments")}
@@ -889,7 +889,7 @@ const CreateTournament = () => {
               Cancel
             </button>
             <button type="submit" disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-60 transition-all">
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-60 transition-all">
               {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</> : <><Trophy className="w-4 h-4" />Save Changes</>}
             </button>
           </div>
@@ -1138,7 +1138,7 @@ const CreateTournament = () => {
                   </div>
                 )}
                 <button type="submit" disabled={isSubmitting}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-60 transition-all">
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-60 transition-all">
                   {isSubmitting ? (
                     <><Loader2 className="w-4 h-4 animate-spin" />{isEditMode ? "Saving…" : !isFree ? "Redirecting to payment…" : "Publishing…"}</>
                   ) : (
