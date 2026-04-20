@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Gamepad2, Trophy, Users } from "lucide-react";
+import { Gamepad2, Trophy } from "lucide-react";
 import type { Tournament as OrganizerTournament } from "../../services/organizer.service";
 
 type Props = { tournament: OrganizerTournament };
@@ -54,7 +54,7 @@ export default function OrganizerTournamentCard({ tournament }: Props) {
       className="group flex flex-col overflow-hidden rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-600 hover:shadow-xl hover:shadow-black/40 transition-all"
     >
       {/* ── Cover image ─────────────────────────────────────── */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-800 shrink-0">
+      <div className="relative aspect-4/3 overflow-hidden bg-slate-800 shrink-0">
         {coverImage ? (
           <img
             src={coverImage}
@@ -62,7 +62,7 @@ export default function OrganizerTournamentCard({ tournament }: Props) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-slate-800 to-slate-900">
             {tournament.game?.logoUrl ? (
               <img src={tournament.game.logoUrl} alt="" className="w-20 h-20 object-contain opacity-25" />
             ) : (
@@ -72,7 +72,7 @@ export default function OrganizerTournamentCard({ tournament }: Props) {
         )}
 
         {/* Bottom fade */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-slate-900/20 to-transparent" />
 
         {/* Status chip — top right */}
         <div className="absolute top-2.5 right-2.5">
