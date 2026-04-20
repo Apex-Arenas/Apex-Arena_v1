@@ -146,8 +146,8 @@ const Dashboard = () => {
   const organizerActiveList = organizerTournaments.filter(
     (t) => t.status !== "completed" && t.status !== "cancelled",
   );
-  const organizerActivePreview = organizerActiveList.slice(0, 4);
-  const organizerActiveHiddenCount = Math.max(0, organizerActiveList.length - 4);
+  const organizerActivePreview = organizerActiveList.slice(0, 8);
+  const organizerActiveHiddenCount = Math.max(0, organizerActiveList.length - 8);
 
   const formatGhs = (amountMinorUnits?: number | null) => {
     const value = Number(amountMinorUnits ?? 0) / 100;
@@ -252,98 +252,137 @@ const Dashboard = () => {
 
   if (isOrganizer) {
     return (
-      <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6">
+      <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-8">
 
-        {/* Hero */}
-        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 px-6 py-7 sm:px-8 sm:py-8">
-          <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-cyan-500/[0.07] blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-emerald-500/[0.05] blur-3xl pointer-events-none" />
+        {/* ── Hero ──────────────────────────────────────────────────────── */}
+        <div className="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800">
+          {/* Ambient glows */}
+          <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/[0.12] blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/[0.08] blur-3xl pointer-events-none" />
+          {/* Fine grid */}
+          <div className="absolute inset-0 pointer-events-none [background-image:linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] [background-size:48px_48px]" />
 
-          <div className="relative flex items-center justify-between flex-wrap gap-5">
-            <div className="flex items-center gap-4">
-              <div className="relative shrink-0">
-                <div className="w-[60px] h-[60px] rounded-full ring-2 ring-slate-700 ring-offset-2 ring-offset-slate-900 bg-slate-800 flex items-center justify-center text-xl font-bold text-white overflow-hidden">
-                  {profile?.avatarUrl
-                    ? <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
-                    : initials}
+          <div className="relative px-6 py-6 sm:px-8 sm:py-7">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-6 justify-between">
+              {/* Identity */}
+              <div className="flex items-center gap-5">
+                <div className="relative shrink-0">
+                  <div className="w-16 h-16 rounded-full ring-2 ring-orange-500/40 ring-offset-2 ring-offset-slate-900 bg-slate-800 flex items-center justify-center text-xl font-bold text-white overflow-hidden">
+                    {profile?.avatarUrl
+                      ? <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+                      : initials}
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
                 </div>
-                <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-900" />
+                <div>
+                  <p className="text-xs text-orange-400/80 font-semibold uppercase tracking-[0.18em] mb-1">
+                    {greeting} · Organizer
+                  </p>
+                  <h1 className="font-display text-3xl sm:text-4xl font-bold text-white leading-none">
+                    {displayName}
+                  </h1>
+                  {organizerTournaments.length > 0 ? (
+                    <p className="text-sm text-slate-400 mt-2">
+                      {organizerTournaments.length} tournament{organizerTournaments.length !== 1 ? "s" : ""} ·{" "}
+                      <span className="text-emerald-400">{organizerLiveCount} live</span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-slate-500 mt-2">No tournaments yet — create your first one</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium mb-0.5">{greeting} — Organizer</p>
-                <h1 className="font-display text-2xl font-bold text-white">{displayName}</h1>
-                <p className="text-sm text-slate-400 mt-0.5">
-                  {organizerTournaments.length > 0
-                    ? `${organizerTournaments.length} tournament${organizerTournaments.length !== 1 ? "s" : ""} · ${organizerLiveCount} live`
-                    : "No tournaments yet — create your first one"}
-                </p>
+
+              {/* Live count + CTAs */}
+              <div className="flex flex-col sm:items-end gap-4 shrink-0">
+                {organizerLiveCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                    </span>
+                    <span className="font-display text-2xl font-bold text-white">{organizerLiveCount}</span>
+                    <span className="text-sm text-slate-400">live right now</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/auth/organizer/create-tournament"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    Create Tournament
+                  </Link>
+                  <Link
+                    to="/auth/organizer/tournaments"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 text-sm font-medium hover:border-slate-600 hover:bg-slate-800/60 transition-all"
+                  >
+                    <ListTodo className="w-4 h-4" />
+                    Manage
+                  </Link>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <Link
-                to="/auth/organizer/create-tournament"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500 text-slate-950 text-sm font-bold hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20"
-              >
-                <PlusCircle className="w-4 h-4" />
-                Create Tournament
-              </Link>
-              <Link
-                to="/auth/organizer/tournaments"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 text-slate-300 text-sm font-medium hover:border-slate-600 hover:bg-slate-800/50 transition-colors"
-              >
-                <ListTodo className="w-4 h-4" />
-                Manage
-              </Link>
+            {/* Stats strip */}
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800/60 rounded-xl overflow-hidden border border-slate-800/60">
+              {[
+                { label: "Tournaments",   value: String(organizerTournaments.length),            accent: "text-white" },
+                { label: "Live / Active", value: String(organizerLiveCount),                     accent: "text-emerald-400" },
+                { label: "Total Entrants",value: String(organizerTotalParticipants),              accent: "text-cyan-400" },
+                { label: "Wallet",        value: organizerWalletBalance === null ? "GHS —" : `GHS ${(organizerWalletBalance / 100).toFixed(2)}`, accent: "text-amber-400" },
+              ].map((s) => (
+                <div key={s.label} className="bg-slate-900 px-4 py-3">
+                  <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
+                  <p className={`font-display text-xl font-bold tabular-nums ${s.accent}`}>{s.value}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard icon={Trophy}   label="Total Tournaments" value={organizerTournaments.length} accentColor="cyan" />
-          <StatCard icon={Activity} label="Live / Published"   value={organizerLiveCount}          accentColor="emerald" />
-          <StatCard icon={Users}    label="Total Entrants"     value={organizerTotalParticipants}  accentColor="indigo" />
-          <StatCard
-            icon={Wallet}
-            label="Wallet Balance"
-            value={organizerWalletBalance === null ? "GHS —" : `GHS ${(organizerWalletBalance / 100).toFixed(2)}`}
-            accentColor="amber"
-          />
-        </div>
-
-        {/* Main Grid */}
-        <div className="grid lg:grid-cols-[1fr_300px] gap-6">
-          <div className="space-y-6 min-w-0">
+        {/* ── Main grid ─────────────────────────────────────────────────── */}
+        <div className="grid lg:grid-cols-[1fr_272px] gap-6">
+          <div className="space-y-8 min-w-0">
 
             {/* Active Tournaments */}
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display text-base font-semibold text-white">Active Tournaments</h2>
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <h2 className="font-display text-xl font-bold text-white">Active Tournaments</h2>
+                  {organizerActiveList.length > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/20">
+                      {organizerActiveList.length}
+                    </span>
+                  )}
+                </div>
                 {organizerActiveHiddenCount > 0 && (
                   <Link
                     to="/auth/organizer/tournaments"
-                    className="text-xs text-slate-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
+                    className="text-xs text-slate-400 hover:text-orange-400 flex items-center gap-1 transition-colors"
                   >
                     +{organizerActiveHiddenCount} more <ArrowRight className="w-3 h-3" />
                   </Link>
                 )}
               </div>
+
               {organizerActiveList.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {organizerActivePreview.map((t) => (
                     <OrganizerTournamentCard key={t.id} tournament={t} />
                   ))}
                 </div>
               ) : (
-                <div className="rounded-xl border border-slate-800 bg-slate-900/60">
-                  <EmptyState
-                    icon={Trophy}
-                    title="No Active Tournaments"
-                    description="Create or publish a tournament to start receiving registrations."
-                    actionLabel="Create Tournament"
-                    actionTo="/auth/organizer/create-tournament"
-                  />
+                <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 py-14 px-6 text-center">
+                  <Trophy className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+                  <p className="font-display text-lg font-semibold text-slate-400">No active tournaments</p>
+                  <p className="text-sm text-slate-600 mt-1 mb-6">Create or publish one to start receiving registrations.</p>
+                  <Link
+                    to="/auth/organizer/create-tournament"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    Create Tournament
+                  </Link>
                 </div>
               )}
             </section>
@@ -351,11 +390,14 @@ const Dashboard = () => {
             {/* Drafts */}
             {organizerDrafts.length > 0 && (
               <section>
-                <h2 className="font-display text-base font-semibold text-white mb-4">
-                  Drafts & Pending Deposit
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {organizerDrafts.slice(0, 4).map((t) => (
+                <div className="flex items-center gap-3 mb-5">
+                  <h2 className="font-display text-xl font-bold text-white">Drafts & Pending</h2>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                    {organizerDrafts.length}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {organizerDrafts.slice(0, 6).map((t) => (
                     <OrganizerTournamentCard key={`draft-${t.id}`} tournament={t} />
                   ))}
                 </div>
@@ -367,44 +409,52 @@ const Dashboard = () => {
           <div className="space-y-4">
             <CalendarWidget events={organizerCalendarEvents} />
 
-            {/* Snapshot */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-3">
-                Snapshot
-              </h3>
-              <div className="space-y-2.5">
+            {/* Portfolio at a glance */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-800/60">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Portfolio</p>
+              </div>
+              <div className="divide-y divide-slate-800/60">
                 {[
-                  { label: "Open / Live",      value: organizerLiveCount,      color: "text-cyan-300" },
-                  { label: "Draft / Pending",  value: organizerDrafts.length,  color: "text-amber-300" },
-                  { label: "Completed",        value: organizerCompletedCount, color: "text-emerald-300" },
+                  { label: "Open / Live",     value: organizerLiveCount,      accent: "text-emerald-400", dot: "bg-emerald-400" },
+                  { label: "Draft / Pending", value: organizerDrafts.length,  accent: "text-amber-400",   dot: "bg-amber-400" },
+                  { label: "Completed",       value: organizerCompletedCount, accent: "text-cyan-300",    dot: "bg-cyan-400" },
                 ].map((row) => (
-                  <div key={row.label} className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400">{row.label}</span>
-                    <span className={`text-sm font-bold tabular-nums ${row.color}`}>{row.value}</span>
+                  <div key={row.label} className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${row.dot}`} />
+                      <span className="text-xs text-slate-400">{row.label}</span>
+                    </div>
+                    <span className={`font-display text-xl font-bold tabular-nums ${row.accent}`}>{row.value}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Quick Links */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-              <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-3">
-                Quick Links
-              </h3>
-              <div className="space-y-1.5">
+            {/* Quick Actions */}
+            <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-800/60">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Quick Actions</p>
+              </div>
+              <div className="p-2">
                 {[
-                  { label: "Create a tournament",   to: "/auth/organizer/create-tournament" },
-                  { label: "Tournament management", to: "/auth/organizer/tournaments" },
-                  { label: "Organizer profile",     to: "/auth/organizer/profile" },
-                  { label: "Analytics",             to: "/auth/organizer/analytics" },
+                  { label: "Create a tournament",  to: "/auth/organizer/create-tournament", accent: true },
+                  { label: "Manage tournaments",   to: "/auth/organizer/tournaments" },
+                  { label: "Analytics",            to: "/auth/organizer/analytics" },
+                  { label: "Payouts",              to: "/auth/organizer/payouts" },
+                  { label: "Profile",              to: "/auth/organizer/profile" },
                 ].map((a) => (
                   <Link
                     key={a.to}
                     to={a.to}
-                    className="flex items-center justify-between text-xs rounded-lg border border-slate-800 px-3 py-2.5 text-slate-400 hover:border-slate-700 hover:text-white hover:bg-slate-800/40 transition-all"
+                    className={`flex items-center justify-between text-xs rounded-lg px-3 py-2.5 transition-all group ${
+                      a.accent
+                        ? "text-orange-400 hover:bg-orange-500/10 hover:text-orange-300"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                    }`}
                   >
                     {a.label}
-                    <ArrowRight className="w-3 h-3 opacity-40" />
+                    <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
                   </Link>
                 ))}
               </div>
