@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trophy, CalendarDays, Loader2, RefreshCw } from 'lucide-react';
+import { Trophy, CalendarDays, RefreshCw, AlertCircle } from 'lucide-react';
 import { tournamentService } from '../../services/tournament.service';
 import type { LeagueTableRow, LeagueMatchweek } from '../../services/tournament.service';
 import { LeagueTable } from './LeagueTable';
@@ -63,23 +63,24 @@ export function LeagueView({
   }, [tournamentId]);
 
   const tabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'table', label: 'Standings', icon: <Trophy className="w-4 h-4" /> },
-    { id: 'fixtures', label: 'Fixtures', icon: <CalendarDays className="w-4 h-4" /> },
+    { id: 'table',    label: 'Standings', icon: <Trophy className="w-4 h-4" />      },
+    { id: 'fixtures', label: 'Fixtures',  icon: <CalendarDays className="w-4 h-4" /> },
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/60 border border-slate-800">
+    <div className="space-y-5">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        {/* Tab pills */}
+        <div className="flex items-center gap-1.5 bg-slate-950/60 border border-slate-800 rounded-2xl p-1.5">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${
                 activeTab === tab.id
-                  ? 'bg-cyan-500 text-slate-950 shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               {tab.icon}
@@ -89,40 +90,44 @@ export function LeagueView({
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Week indicator */}
           {totalMatchweeks > 0 && currentMatchweek > 0 && (
-            <span className="text-xs text-slate-500 hidden sm:block">
-              Week{' '}
-              {legs >= 2 ? (
-                <span className="text-slate-300 font-semibold">{currentMatchweek - 1} - {currentMatchweek}</span>
-              ) : (
-                <span className="text-slate-300 font-semibold">{currentMatchweek}</span>
-              )}
-              {' / '}{totalMatchweeks}
-            </span>
+            <div className="hidden sm:flex items-center gap-2 bg-slate-800/60 border border-slate-700/60 rounded-xl px-3 py-1.5 text-xs">
+              <CalendarDays className="w-3.5 h-3.5 text-orange-400" />
+              <span className="text-slate-400">Week</span>
+              <span className="font-bold text-white tabular-nums">
+                {legs >= 2 ? `${currentMatchweek - 1}–${currentMatchweek}` : currentMatchweek}
+              </span>
+              <span className="text-slate-600">/ {totalMatchweeks}</span>
+            </div>
           )}
+          {/* Refresh */}
           <button
             onClick={() => loadData(true)}
             disabled={refreshing}
-            className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-50 transition-colors"
-            title="Refresh"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-50 transition-colors"
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
       </div>
 
-      {/* Content */}
+      {/* ── Content ── */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-sm">Loading league data…</span>
+        <div className="space-y-3 animate-pulse">
+          <div className="h-24 rounded-2xl bg-slate-800" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-12 rounded-xl bg-slate-800/70" />
+          ))}
         </div>
       ) : error ? (
-        <div className="text-center py-12">
-          <p className="text-red-400 text-sm mb-3">{error}</p>
+        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center rounded-2xl border border-dashed border-slate-700">
+          <AlertCircle className="w-8 h-8 text-slate-600" />
+          <p className="text-sm text-red-400">{error}</p>
           <button
             onClick={() => loadData()}
-            className="text-sm text-cyan-400 hover:text-cyan-300 underline"
+            className="text-sm text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2"
           >
             Try again
           </button>
@@ -139,29 +144,21 @@ export function LeagueView({
         />
       )}
 
-      {/* Player match action modal */}
+      {/* Modals */}
       {activeMatchId && highlightUserId && !isOrganizer && (
         <MatchActionModal
           matchId={activeMatchId}
           currentUserId={highlightUserId}
           currentMatchweek={currentMatchweek}
           onClose={() => setActiveMatchId(null)}
-          onActionComplete={() => {
-            setActiveMatchId(null);
-            loadData(true);
-          }}
+          onActionComplete={() => { setActiveMatchId(null); loadData(true); }}
         />
       )}
-
-      {/* Organizer match modal */}
       {activeMatchId && isOrganizer && (
         <OrganizerMatchModal
           matchId={activeMatchId}
           onClose={() => setActiveMatchId(null)}
-          onActionComplete={() => {
-            setActiveMatchId(null);
-            loadData(true);
-          }}
+          onActionComplete={() => { setActiveMatchId(null); loadData(true); }}
         />
       )}
     </div>
