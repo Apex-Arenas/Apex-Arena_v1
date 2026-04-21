@@ -49,7 +49,7 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800/70 bg-slate-950/80 text-white backdrop-blur-md">
       {/* Announcement bar */}
-      <div className="bg-gradient-to-r from-cyan-500/10 via-sky-500/10 to-cyan-500/10 border-b border-cyan-500/20">
+      <div className="bg-linear-to-r from-cyan-500/10 via-sky-500/10 to-cyan-500/10 border-b border-cyan-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-center gap-2 text-xs">
           <Zap className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
           <span className="text-slate-300">
@@ -181,7 +181,7 @@ const Navbar = () => {
                 >
                   <NavLink
                     to="/signup"
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 hover:shadow-md hover:shadow-orange-500/25 transition-all"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 hover:shadow-md hover:shadow-orange-500/25 transition-all"
                   >
                     <User size={18} />
                     <span>Start free</span>
@@ -299,7 +299,7 @@ const Navbar = () => {
                       <NavLink
                         to="/signup"
                         onClick={() => setIsMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium bg-linear-to-r from-orange-400 to-amber-400 text-slate-950"
                       >
                         <User size={20} />
                         <span>Start free</span>

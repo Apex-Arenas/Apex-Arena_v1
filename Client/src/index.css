@@ -3,7 +3,7 @@
 @import "tailwindcss";
 
 .font-display {
-  font-family: "Rajdhani", sans-serif;
+  font-family: "Space Grotesk", sans-serif;
 }
 
 .font-body {
@@ -126,7 +126,7 @@ html {
 }
 
 body {
-  font-family: "Allerta Stencil", ui-sans-serif;
+  font-family: "Space Grotesk", ui-sans-serif;
   background-color: transparent;
   color: #f8fafc;
   position: relative;
