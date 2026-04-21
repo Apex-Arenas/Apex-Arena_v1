@@ -85,7 +85,7 @@ export default function OrganizerTournamentCard({ tournament }: Props) {
 
         {/* Game logo — bottom left */}
         {tournament.game?.logoUrl && (
-          <div className="absolute bottom-2.5 left-2.5 w-7 h-7 rounded-md overflow-hidden bg-slate-800 border border-white/15 shadow-md relative">
+          <div className="absolute bottom-2.5 left-2.5 w-7 h-7 rounded-md overflow-hidden bg-slate-800 border border-white/15 shadow-md">
             <FadeImage
               src={tournament.game.logoUrl}
               alt={tournament.game.name}
