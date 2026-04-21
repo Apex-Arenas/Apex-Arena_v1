@@ -384,7 +384,7 @@ const JoinTournament = () => {
 
               {/* Game filter */}
               {availableGames.length > 0 && (
-                <div className="relative flex items-center gap-2.5 bg-slate-800/60 border border-slate-700 rounded-2xl px-4 py-3.5 min-w-[150px]">
+                <div className="relative flex items-center gap-2.5 bg-slate-800/60 border border-slate-700 rounded-2xl px-4 py-3.5 min-w-37.5">
                   <Gamepad2 className="w-4 h-4 text-slate-500 shrink-0" />
                   <select
                     value={gameFilter}
