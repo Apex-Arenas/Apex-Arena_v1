@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Gamepad2, Trophy } from "lucide-react";
 import type { Tournament as OrganizerTournament } from "../../services/organizer.service";
+import { FadeImage } from "../ui/FadeImage";
 
 type Props = { tournament: OrganizerTournament };
 
@@ -56,10 +57,10 @@ export default function OrganizerTournamentCard({ tournament }: Props) {
       {/* ── Cover image ─────────────────────────────────────── */}
       <div className="relative aspect-4/3 overflow-hidden bg-slate-800 shrink-0">
         {coverImage ? (
-          <img
+          <FadeImage
             src={coverImage}
             alt={tournament.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-slate-800 to-slate-900">
@@ -84,11 +85,11 @@ export default function OrganizerTournamentCard({ tournament }: Props) {
 
         {/* Game logo — bottom left */}
         {tournament.game?.logoUrl && (
-          <div className="absolute bottom-2.5 left-2.5">
-            <img
+          <div className="absolute bottom-2.5 left-2.5 w-7 h-7 rounded-md overflow-hidden bg-slate-800 border border-white/15 shadow-md relative">
+            <FadeImage
               src={tournament.game.logoUrl}
               alt={tournament.game.name}
-              className="w-7 h-7 rounded-md object-cover border border-white/15 shadow-md"
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
         )}
