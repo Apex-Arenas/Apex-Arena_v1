@@ -181,6 +181,9 @@ export interface MyTournamentRegistration {
   tournamentStatus: string;
   tournamentStart?: string;
   tournamentGameName?: string;
+  tournamentThumbnailUrl?: string;
+  tournamentBannerUrl?: string;
+  tournamentGameLogoUrl?: string;
   status: string;
   checkedIn: boolean;
   inGameId?: string;
@@ -576,6 +579,9 @@ export const tournamentService = {
             (schedule.start_date as string | undefined) ??
             (schedule.startDate as string | undefined),
           tournamentGameName: (game.name as string | undefined),
+          tournamentThumbnailUrl: (tournament.thumbnail_url as string | undefined) ?? (tournament.thumbnailUrl as string | undefined),
+          tournamentBannerUrl: (tournament.banner_url as string | undefined) ?? (tournament.bannerUrl as string | undefined),
+          tournamentGameLogoUrl: (game.logo_url as string | undefined) ?? (game.logoUrl as string | undefined),
           status: normalizeStatus(item.status),
           checkedIn: Boolean(checkIn.checked_in ?? false),
           inGameId: (item.in_game_id as string | undefined) ??
