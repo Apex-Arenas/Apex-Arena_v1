@@ -666,7 +666,7 @@ export const organizerService = {
   },
 
   async initiateWalletTopUp(amountGhs: number): Promise<WalletTopUpResult> {
-    const callbackUrl = `${window.location.origin}/payment/callback`;
+    const callbackUrl = FINANCE_ENDPOINTS.DEPOSIT_VERIFY;
 
     const response = await apiPost(FINANCE_ENDPOINTS.DEPOSIT, {
       amount_ghs: amountGhs,
