@@ -11,6 +11,7 @@ import Login from "./pages/public/login";
 import Dashboard from "./pages/auth/Dashboard";
 import VerifyOtp from "./pages/public/verify-otp";
 import PaymentCallback from "./pages/public/payment-callback.tsx";
+import DepositResult from "./pages/public/deposit-result";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleRoute from "./components/RoleRoute";
 
@@ -26,7 +27,6 @@ import TournamentDetail from "./pages/auth/player/tournament-detail";
 import TransactionsPage from "./pages/auth/transactions";
 import WalletPage from "./pages/auth/WalletPage";
 import LeaderboardPage from "./pages/auth/LeaderboardPage";
-import SettingsPage from "./pages/auth/SettingsPage";
 import FriendsPage from "./pages/auth/FriendsPage";
 import NotificationsPage from "./pages/auth/NotificationsPage";
 import AnalyticsPage from "./pages/auth/organizer/AnalyticsPage";
@@ -62,6 +62,9 @@ const App = () => {
         <Route path="forgot" element={<ForgotPassword />} />
         <Route path="verify-otp" element={<VerifyOtp />} />
         <Route path="payment/callback" element={<PaymentCallback />} />
+        <Route path="deposit/success" element={<DepositResult />} />
+        <Route path="deposit/failed" element={<DepositResult />} />
+        <Route path="deposit/pending" element={<DepositResult />} />
         <Route path="*" element={<NotFound />} />
       </Route>
 
@@ -72,7 +75,6 @@ const App = () => {
           <Route path="transactions" element={<TransactionsPage />} />
           <Route path="wallet" element={<WalletPage />} />
           <Route path="leaderboard" element={<LeaderboardPage />} />
-          <Route path="settings" element={<SettingsPage />} />
           <Route path="friends" element={<FriendsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
 
