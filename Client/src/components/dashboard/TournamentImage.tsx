@@ -18,12 +18,9 @@ export default function TournamentImage({
   if (!imageUrl || hasImageError) {
     return (
       <div
-        className={`bg-gradient-to-br from-cyan-950/60 via-slate-800 to-indigo-950/60 flex flex-col items-center justify-center gap-2 text-slate-500 ${className ?? "w-12 h-12 rounded-lg border border-slate-700"}`}
+        className={`bg-linear-to-br from-orange-950/60 via-slate-800 to-violet-950/60 flex flex-col items-center justify-center gap-2 text-slate-500 ${className ?? "w-12 h-12 rounded-lg border border-slate-700"}`}
       >
-        <Gamepad2 className="w-6 h-6 opacity-40" />
-        <span className="text-[10px] font-medium text-slate-600 tracking-wide uppercase">
-          No Image
-        </span>
+        <Gamepad2 className="w-8 h-8 opacity-30" />
       </div>
     );
   }
