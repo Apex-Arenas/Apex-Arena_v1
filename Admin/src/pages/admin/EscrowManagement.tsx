@@ -7,11 +7,12 @@ import {
   XCircle,
   Play,
   RefreshCw,
+  CheckCircle2,
 } from 'lucide-react';
 import { adminService, type AdminEscrowInfo } from '../../services/admin.service';
 
 const inputCls =
-  'bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors';
+  'bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors';
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -76,100 +77,132 @@ export default function EscrowManagement() {
     else setActionError('Failed to run escrow processor.');
   };
 
+  const escrowStatusColor = escrow ? {
+    active:    'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    funded:    'bg-blue-500/15 text-blue-300 border-blue-500/30',
+    pending:   'bg-amber-500/15 text-amber-300 border-amber-500/30',
+    cancelled: 'bg-slate-700/60 text-slate-400 border-slate-600/30',
+    released:  'bg-slate-700/60 text-slate-300 border-slate-600/30',
+  }[escrow.status] ?? 'bg-slate-700/60 text-slate-300 border-slate-600/30' : '';
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="bg-amber-500/15 p-2.5 rounded-xl">
-            <Lock className="w-5 h-5 text-amber-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Escrow Management</h1>
-            <p className="text-sm text-slate-400">Inspect and manage tournament escrow accounts</p>
+    <div className="min-h-screen bg-slate-950">
+      {/* Full-bleed Hero */}
+      <div className="relative overflow-hidden border-b border-slate-800">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/8 via-transparent to-transparent" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center shrink-0">
+                <Lock className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-display font-bold text-white">Escrow Management</h1>
+                <p className="text-sm text-slate-400 mt-0.5">Inspect and manage tournament escrow accounts.</p>
+              </div>
+            </div>
+            <button
+              onClick={handleRunProcessor}
+              disabled={runningProcessor}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-sm font-semibold hover:bg-amber-400 disabled:opacity-50 transition-colors"
+            >
+              {runningProcessor ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+              Run Escrow Processor
+            </button>
           </div>
         </div>
-        <button
-          onClick={handleRunProcessor}
-          disabled={runningProcessor}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
-        >
-          {runningProcessor ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-          Run Escrow Processor
-        </button>
       </div>
 
-      {/* Action feedback */}
-      {actionMsg && (
-        <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-sm">
-          <RefreshCw className="w-4 h-4" /> {actionMsg}
-        </div>
-      )}
-      {actionError && (
-        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-          <AlertCircle className="w-4 h-4" /> {actionError}
-        </div>
-      )}
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-      {/* Lookup */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-white">Look Up Tournament Escrow</h2>
-        <div className="flex gap-3">
-          <input
-            value={tournamentId}
-            onChange={(e) => setTournamentId(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
-            className={`flex-1 ${inputCls}`}
-            placeholder="Tournament ID..."
-          />
-          <button
-            onClick={handleFetch}
-            disabled={fetching || !tournamentId.trim()}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
-          >
-            {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            Lookup
-          </button>
+        {/* Action feedback */}
+        {actionMsg && (
+          <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-sm">
+            <CheckCircle2 className="w-4 h-4 shrink-0" /> {actionMsg}
+          </div>
+        )}
+        {actionError && (
+          <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+            <AlertCircle className="w-4 h-4 shrink-0" /> {actionError}
+          </div>
+        )}
+
+        {/* Lookup card */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-white">Look Up Tournament Escrow</h2>
+          <div className="flex gap-3">
+            <input
+              value={tournamentId}
+              onChange={(e) => setTournamentId(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
+              className={`flex-1 ${inputCls}`}
+              placeholder="Tournament ID..."
+            />
+            <button
+              onClick={handleFetch}
+              disabled={fetching || !tournamentId.trim()}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-sm font-semibold hover:bg-amber-400 disabled:opacity-50 transition-colors"
+            >
+              {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              Lookup
+            </button>
+          </div>
+
+          {fetchError && (
+            <div className="flex items-center gap-2 text-red-400 text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0" /> {fetchError}
+            </div>
+          )}
         </div>
 
-        {fetchError && (
-          <div className="flex items-center gap-2 text-red-400 text-sm">
-            <AlertCircle className="w-4 h-4" /> {fetchError}
+        {/* Escrow detail card */}
+        {escrow && (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-white">{escrow.tournamentName || escrow.tournamentId}</h2>
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${escrowStatusColor}`}>
+                {escrow.status}
+              </span>
+            </div>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800/60">
+              {[
+                { label: 'Prize Pool', value: formatGHS(escrow.prizePool) },
+                { label: 'Deposited', value: formatGHS(escrow.depositedAmount) },
+                { label: 'Balance', value: formatGHS(escrow.balance) },
+                { label: 'Currency', value: escrow.currency },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-slate-900/60 px-5 py-4">
+                  <p className="text-xs text-slate-500 mb-1">{label}</p>
+                  <p className="text-base font-semibold text-white">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Dates & actions */}
+            <div className="p-6 space-y-4">
+              <div>
+                <InfoRow label="Created" value={new Date(escrow.createdAt).toLocaleString()} />
+                <InfoRow label="Updated" value={new Date(escrow.updatedAt).toLocaleString()} />
+              </div>
+
+              {['pending', 'active', 'funded'].includes(escrow.status) && (
+                <button
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-medium hover:bg-red-500/25 disabled:opacity-50 transition-colors"
+                >
+                  {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                  Cancel Escrow
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
-
-      {/* Escrow detail */}
-      {escrow && (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white">{escrow.tournamentName || escrow.tournamentId}</h2>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 capitalize">
-              {escrow.status}
-            </span>
-          </div>
-
-          <div>
-            <InfoRow label="Prize Pool" value={formatGHS(escrow.prizePool)} />
-            <InfoRow label="Deposited" value={formatGHS(escrow.depositedAmount)} />
-            <InfoRow label="Balance" value={formatGHS(escrow.balance)} />
-            <InfoRow label="Currency" value={escrow.currency} />
-            <InfoRow label="Created" value={new Date(escrow.createdAt).toLocaleString()} />
-            <InfoRow label="Updated" value={new Date(escrow.updatedAt).toLocaleString()} />
-          </div>
-
-          {['pending', 'active', 'funded'].includes(escrow.status) && (
-            <button
-              onClick={handleCancel}
-              disabled={cancelling}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-              Cancel Escrow
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }

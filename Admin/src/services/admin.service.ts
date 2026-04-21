@@ -323,6 +323,12 @@ export interface AdminUser {
   twoFactorEnabled?: boolean;
 }
 
+export interface AdminActionResponse {
+  ok: boolean;
+  code?: string;
+  message?: string;
+}
+
 // ─── Session Types ────────────────────────────────────────────────────────────
 
 export interface UserSession {
@@ -711,13 +717,24 @@ export const adminService = {
     return response.success;
   },
 
-  async forceAdmin2FA(adminId: string): Promise<boolean> {
+  async forceAdmin2FA(adminId: string): Promise<AdminActionResponse> {
     const response = await apiPost(
-      `${AUTH_ENDPOINTS.ADMIN_GET_USERS}/${adminId}/force-2fa`,
+      `${AUTH_ENDPOINTS.ADMIN_GET_USERS.replace('/users', '')}/admins/${adminId}/force-2fa`,
       {},
       adminHeaders(),
     );
-    return response.success;
+    if (!response.success) {
+      return {
+        ok: false,
+        code: response.error.code,
+        message: response.error.message,
+      };
+    }
+
+    return {
+      ok: true,
+      message: response.message ?? '2FA setup required on next login.',
+    };
   },
 
   // ─── Finance: Payouts ─────────────────────────────────────────────────────

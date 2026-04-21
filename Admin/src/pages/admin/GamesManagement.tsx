@@ -474,7 +474,7 @@ const GamesManagement = () => {
 
       {/* Full-bleed Hero */}
       <div className="relative overflow-hidden border-b border-slate-800">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/8 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-br from-purple-500/8 via-transparent to-transparent" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">

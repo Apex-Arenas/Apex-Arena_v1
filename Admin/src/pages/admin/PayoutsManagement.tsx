@@ -12,15 +12,24 @@ import {
 import { adminService, type AdminPayoutRequest } from '../../services/admin.service';
 
 const inputCls =
-  'w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors';
+  'w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors';
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-amber-500/15 text-amber-300',
-  approved: 'bg-green-500/15 text-green-300',
-  rejected: 'bg-red-500/15 text-red-300',
-  processing: 'bg-blue-500/15 text-blue-300',
-  completed: 'bg-emerald-500/15 text-emerald-300',
-  failed: 'bg-red-500/15 text-red-400',
+  pending:    'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  approved:   'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+  rejected:   'bg-red-500/15 text-red-300 border-red-500/30',
+  processing: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+  completed:  'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+  failed:     'bg-red-500/15 text-red-400 border-red-500/30',
+};
+
+const statusBorder: Record<string, string> = {
+  pending:    'border-l-amber-500',
+  approved:   'border-l-emerald-500',
+  rejected:   'border-l-red-500',
+  processing: 'border-l-blue-500',
+  completed:  'border-l-blue-500',
+  failed:     'border-l-red-500',
 };
 
 function formatGHS(amount: number) {
@@ -88,172 +97,195 @@ export default function PayoutsManagement() {
     }
   };
 
+  const pendingCount = payouts.filter((p) => p.status === 'pending').length;
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-amber-500/15 p-2.5 rounded-xl">
-            <Wallet className="w-5 h-5 text-amber-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Payout Requests</h1>
-            <p className="text-sm text-slate-400">Review and process user withdrawal requests</p>
+    <div className="min-h-screen bg-slate-950">
+      {/* Full-bleed Hero */}
+      <div className="relative overflow-hidden border-b border-slate-800">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-transparent to-transparent" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <Wallet className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-2xl font-display font-bold text-white">Payout Requests</h1>
+                  {pendingCount > 0 && (
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
+                      {pendingCount} pending
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-slate-400 mt-0.5">Review and process user withdrawal requests.</p>
+              </div>
+            </div>
+            <button
+              onClick={loadPayouts}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900/60 text-sm text-slate-300 hover:text-white hover:border-slate-600 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
           </div>
         </div>
-        <button
-          onClick={loadPayouts}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 text-sm transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          {error}
-        </div>
-      )}
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-      {/* Loading */}
-      {loading && (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
-        </div>
-      )}
+        {/* Error */}
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {error}
+          </div>
+        )}
 
-      {/* Empty */}
-      {!loading && !error && payouts.length === 0 && (
-        <div className="text-center py-16 text-slate-500">
-          <Wallet className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>No pending payout requests</p>
-        </div>
-      )}
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
+          </div>
+        )}
 
-      {/* List */}
-      {!loading && payouts.length > 0 && (
-        <div className="space-y-3">
-          {payouts.map((p) => {
-            const expanded = expandedId === p.id;
-            return (
-              <div
-                key={p.id}
-                className="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden"
-              >
-                {/* Row */}
-                <button
-                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-800/40 transition-colors"
-                  onClick={() => { setExpandedId(expanded ? null : p.id); setActionError(''); }}
+        {/* Empty */}
+        {!loading && !error && payouts.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center mb-4">
+              <Wallet className="w-7 h-7 text-slate-600" />
+            </div>
+            <h2 className="text-base font-semibold text-white mb-1">No pending payout requests</h2>
+            <p className="text-sm text-slate-500">All payouts have been processed.</p>
+          </div>
+        )}
+
+        {/* List */}
+        {!loading && payouts.length > 0 && (
+          <div className="space-y-2.5">
+            {payouts.map((p) => {
+              const expanded = expandedId === p.id;
+              const borderColor = statusBorder[p.status] ?? 'border-l-slate-600';
+              return (
+                <div
+                  key={p.id}
+                  className={`bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden border-l-4 ${borderColor}`}
                 >
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-medium text-sm">{p.username}</span>
-                        <span className="text-slate-500 text-xs">{p.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-amber-400 font-semibold text-sm">{formatGHS(p.amount)}</span>
-                        <span className="text-xs text-slate-500 capitalize">{p.type.replace('_', ' ')}</span>
+                  {/* Row */}
+                  <button
+                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-800/30 transition-colors"
+                    onClick={() => { setExpandedId(expanded ? null : p.id); setActionError(''); }}
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-white font-semibold text-sm">{p.username}</span>
+                          <span className="text-slate-500 text-xs">{p.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-amber-400 font-bold text-base">{formatGHS(p.amount)}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700/50 capitalize">{p.type.replace('_', ' ')}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[p.status] ?? 'bg-slate-700 text-slate-300'}`}>
-                      {p.status}
-                    </span>
-                    <span className="text-xs text-slate-500">{formatDate(p.requestedAt)}</span>
-                    {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                  </div>
-                </button>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${statusColors[p.status] ?? 'bg-slate-700/60 text-slate-300 border-slate-600/30'}`}>
+                        {p.status}
+                      </span>
+                      <span className="text-xs text-slate-500 hidden sm:block">{formatDate(p.requestedAt)}</span>
+                      {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                    </div>
+                  </button>
 
-                {/* Expanded detail */}
-                {expanded && (
-                  <div className="px-5 pb-5 border-t border-slate-800 space-y-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 text-sm">
-                      <div>
-                        <span className="text-slate-500 block text-xs mb-1">MoMo Number</span>
-                        <span className="text-white">{p.momoNumber ?? '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-xs mb-1">Network</span>
-                        <span className="text-white">{p.network ?? '—'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-xs mb-1">Account Name</span>
-                        <span className="text-white">{p.accountName ?? '—'}</span>
-                      </div>
-                      {p.tournamentName && (
+                  {/* Expanded detail */}
+                  {expanded && (
+                    <div className="px-5 pb-5 border-t border-slate-800 space-y-4">
+                      {/* MoMo details grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4 p-4 rounded-xl bg-slate-800/30 border border-slate-700/50">
                         <div>
-                          <span className="text-slate-500 block text-xs mb-1">Tournament</span>
-                          <span className="text-white">{p.tournamentName}</span>
+                          <span className="text-slate-500 block text-xs mb-1">MoMo Number</span>
+                          <span className="text-white text-sm font-medium">{p.momoNumber ?? '—'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-xs mb-1">Network</span>
+                          <span className="text-white text-sm font-medium">{p.network ?? '—'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-xs mb-1">Account Name</span>
+                          <span className="text-white text-sm font-medium">{p.accountName ?? '—'}</span>
+                        </div>
+                        {p.tournamentName && (
+                          <div>
+                            <span className="text-slate-500 block text-xs mb-1">Tournament</span>
+                            <span className="text-white text-sm font-medium">{p.tournamentName}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {actionError && (
+                        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs">
+                          <AlertCircle className="w-3 h-3 shrink-0" /> {actionError}
+                        </div>
+                      )}
+
+                      {p.status === 'pending' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {/* Approve */}
+                          <div className="space-y-2">
+                            <label className="text-xs text-slate-400">Admin Notes <span className="text-slate-600">(optional)</span></label>
+                            <input
+                              value={approveNotes}
+                              onChange={(e) => setApproveNotes(e.target.value)}
+                              className={inputCls}
+                              placeholder="Notes for approval..."
+                            />
+                            <button
+                              onClick={() => handleApprove(p.id)}
+                              disabled={approvingId === p.id}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm font-medium hover:bg-emerald-500/25 transition-colors disabled:opacity-50"
+                            >
+                              {approvingId === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                              Approve
+                            </button>
+                          </div>
+
+                          {/* Reject */}
+                          <div className="space-y-2">
+                            <label className="text-xs text-slate-400">Rejection Reason <span className="text-red-400">*</span></label>
+                            <input
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                              className={inputCls}
+                              placeholder="Reason for rejection..."
+                            />
+                            <button
+                              onClick={() => handleReject(p.id)}
+                              disabled={rejectingId === p.id}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-medium hover:bg-red-500/25 transition-colors disabled:opacity-50"
+                            >
+                              {rejectingId === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {p.adminNotes && (
+                        <div className="mt-2 p-3 bg-slate-800/60 rounded-xl border border-slate-700/50 text-xs text-slate-400">
+                          <span className="text-slate-500 font-medium">Admin Notes: </span>{p.adminNotes}
                         </div>
                       )}
                     </div>
-
-                    {actionError && (
-                      <div className="flex items-center gap-2 p-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs">
-                        <AlertCircle className="w-3 h-3 shrink-0" /> {actionError}
-                      </div>
-                    )}
-
-                    {p.status === 'pending' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Approve */}
-                        <div className="space-y-2">
-                          <label className="text-xs text-slate-400">Admin Notes (optional)</label>
-                          <input
-                            value={approveNotes}
-                            onChange={(e) => setApproveNotes(e.target.value)}
-                            className={inputCls}
-                            placeholder="Notes for approval..."
-                          />
-                          <button
-                            onClick={() => handleApprove(p.id)}
-                            disabled={approvingId === p.id}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
-                          >
-                            {approvingId === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                            Approve
-                          </button>
-                        </div>
-
-                        {/* Reject */}
-                        <div className="space-y-2">
-                          <label className="text-xs text-slate-400">Rejection Reason <span className="text-red-400">*</span></label>
-                          <input
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                            className={inputCls}
-                            placeholder="Reason for rejection..."
-                          />
-                          <button
-                            onClick={() => handleReject(p.id)}
-                            disabled={rejectingId === p.id}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
-                          >
-                            {rejectingId === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {p.adminNotes && (
-                      <div className="mt-2 p-3 bg-slate-800/60 rounded-lg text-xs text-slate-400">
-                        <span className="text-slate-500 font-medium">Admin Notes: </span>{p.adminNotes}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
