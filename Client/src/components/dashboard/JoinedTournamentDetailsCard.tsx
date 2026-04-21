@@ -1,128 +1,176 @@
 import { Link } from "react-router-dom";
+import { Gamepad2, Trophy } from "lucide-react";
 import type { TournamentRegistration } from "../../services/dashboard.service";
-import TournamentImage from "./TournamentImage";
+import { FadeImage } from "../ui/FadeImage";
 
-type JoinedTournamentDetailsCardProps = {
-  reg: TournamentRegistration;
-};
+type Props = { reg: TournamentRegistration };
 
 function fmt(value?: string) {
   if (!value) return "TBD";
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
+  return new Date(value).toLocaleDateString("en-GB", {
     day: "numeric",
+    month: "short",
     year: "numeric",
   });
 }
 
-const regStatusStyles: Record<string, string> = {
-  registered:      "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
-  checked_in:      "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
-  pending_payment: "bg-amber-500/15 text-amber-300 border-amber-500/25",
-  disqualified:    "bg-red-500/15 text-red-300 border-red-500/25",
-  withdrawn:       "bg-slate-500/15 text-slate-400 border-slate-600/25",
-  cancelled:       "bg-slate-500/15 text-slate-400 border-slate-600/25",
+const REG_STATUS_META: Record<string, { label: string; dot: string; text: string }> = {
+  registered:      { label: "Registered",       dot: "bg-cyan-400",    text: "text-cyan-300"    },
+  checked_in:      { label: "Checked In",        dot: "bg-emerald-400", text: "text-emerald-300" },
+  pending_payment: { label: "Payment Pending",   dot: "bg-amber-400 animate-pulse", text: "text-amber-300" },
+  disqualified:    { label: "Disqualified",      dot: "bg-red-400",     text: "text-red-300"     },
+  withdrawn:       { label: "Withdrawn",         dot: "bg-slate-500",   text: "text-slate-400"   },
+  cancelled:       { label: "Cancelled",         dot: "bg-slate-500",   text: "text-slate-400"   },
 };
 
-const tourStatusStyles: Record<string, string> = {
-  draft:             "bg-slate-600/15 text-slate-400 border-slate-600/25",
-  awaiting_deposit:  "bg-amber-500/15 text-amber-300 border-amber-500/25",
-  published:         "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
-  open:              "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
-  locked:            "bg-violet-500/15 text-violet-300 border-violet-500/25",
-  ongoing:           "bg-blue-500/15 text-blue-300 border-blue-500/25",
-  awaiting_results:  "bg-yellow-500/15 text-yellow-300 border-yellow-500/25",
-  verifying_results: "bg-purple-500/15 text-purple-300 border-purple-500/25",
-  completed:         "bg-indigo-500/15 text-indigo-300 border-indigo-500/25",
-  cancelled:         "bg-slate-500/15 text-slate-400 border-slate-600/25",
+const TOUR_STATUS_META: Record<string, { label: string; dot: string; text: string }> = {
+  draft:             { label: "Draft",            dot: "bg-slate-500",   text: "text-slate-300"  },
+  awaiting_deposit:  { label: "Awaiting Deposit", dot: "bg-amber-400",   text: "text-amber-300"  },
+  published:         { label: "Published",        dot: "bg-cyan-400",    text: "text-cyan-300"   },
+  open:              { label: "Open",             dot: "bg-emerald-400", text: "text-emerald-300"},
+  locked:            { label: "Locked",           dot: "bg-violet-400",  text: "text-violet-300" },
+  in_progress:       { label: "Live",             dot: "bg-orange-400",  text: "text-orange-300" },
+  ongoing:           { label: "Live",             dot: "bg-orange-400",  text: "text-orange-300" },
+  awaiting_results:  { label: "Awaiting Results", dot: "bg-yellow-400",  text: "text-yellow-300" },
+  verifying_results: { label: "Verifying",        dot: "bg-purple-400",  text: "text-purple-300" },
+  completed:         { label: "Completed",        dot: "bg-slate-400",   text: "text-slate-400"  },
+  cancelled:         { label: "Cancelled",        dot: "bg-red-400",     text: "text-red-400"    },
 };
 
-export default function JoinedTournamentDetailsCard({
-  reg,
-}: JoinedTournamentDetailsCardProps) {
-  const regLabel = reg.status.replace(/_/g, " ");
-  const tourLabel = reg.tournamentStatus
-    ? reg.tournamentStatus.replace(/_/g, " ")
-    : null;
+export default function JoinedTournamentDetailsCard({ reg }: Props) {
+  const regMeta = REG_STATUS_META[reg.status] ?? {
+    label: reg.status.replace(/_/g, " "),
+    dot: "bg-slate-500",
+    text: "text-slate-300",
+  };
+  const tourMeta = TOUR_STATUS_META[reg.tournamentStatus] ?? null;
+
+  const imageUrl = reg.tournamentThumbnailUrl ?? reg.tournamentBannerUrl ?? reg.gameLogoUrl ?? null;
+  const hasImage = !!imageUrl;
+
+  const prizeGhs =
+    reg.prizeWon && reg.prizeWon > 0
+      ? `GHS ${(reg.prizeWon / 100).toLocaleString("en-GH", { minimumFractionDigits: 0 })}`
+      : null;
+
+  const startDate = fmt(reg.tournamentSchedule.startDate);
+  const checkIn = fmt(reg.tournamentSchedule.checkInStart);
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/70 overflow-hidden group hover:border-slate-700 transition-all">
-      {/* Banner image */}
-      <div className="relative h-40 bg-gradient-to-br from-cyan-950/80 via-slate-800 to-indigo-950/80 overflow-hidden">
-        <TournamentImage
-          reg={reg}
-          className="absolute inset-0 w-full h-full object-contain group-hover:scale-[1.03] transition-transform duration-500"
-        />
-        {/* Bottom fade so status pills and text stay readable */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
+    <Link
+      to={`/auth/tournaments/${reg.tournamentId}`}
+      className="group flex flex-col overflow-hidden rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-600 hover:shadow-xl hover:shadow-black/40 transition-all"
+    >
+      {/* ── Cover image ─────────────────────────────────────── */}
+      <div className="relative aspect-4/3 overflow-hidden shrink-0">
+        {/* Neutral dark base so images render true-to-colour */}
+        <div className="absolute inset-0 bg-slate-900" />
 
-        {/* Status pills on image */}
-        <div className="absolute bottom-2.5 left-3 flex flex-wrap gap-1.5">
-          <span
-            className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-medium border backdrop-blur-sm ${
-              regStatusStyles[reg.status] ??
-              "bg-slate-700/80 text-slate-300 border-slate-600"
-            }`}
-          >
-            {regLabel}
-          </span>
-          {tourLabel && (
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-medium border backdrop-blur-sm ${
-                tourStatusStyles[reg.tournamentStatus] ??
-                "bg-slate-700/80 text-slate-300 border-slate-600"
-              }`}
-            >
-              {tourLabel}
+        {hasImage ? (
+          <>
+            <FadeImage
+              src={imageUrl}
+              alt={reg.tournamentTitle}
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+            {/* Branded colour overlay */}
+            <div className="absolute inset-0 bg-linear-to-br from-orange-500/25 via-transparent to-violet-600/25" />
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-linear-to-br from-orange-950 via-slate-900 to-violet-950" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Gamepad2 className="w-14 h-14 text-slate-700" />
+            </div>
+          </>
+        )}
+
+        {/* Bottom fade — only covers the bottom third for chip readability */}
+        <div className="absolute inset-0 bg-linear-to-t from-slate-900/95 via-slate-900/20 to-transparent" />
+
+        {/* Top-right: tournament status chip */}
+        {tourMeta && (
+          <div className="absolute top-2.5 right-2.5">
+            <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-sm border border-white/10 ${tourMeta.text}`}>
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${tourMeta.dot}`} />
+              {tourMeta.label}
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* View Details */}
-        <Link
-          to={`/auth/tournaments/${reg.tournamentId}`}
-          className="absolute top-2.5 right-2.5 text-[11px] px-2.5 py-1 rounded-lg bg-slate-900/70 backdrop-blur-sm border border-slate-700/60 text-cyan-300 hover:bg-slate-800/80 hover:border-cyan-500/40 transition-all font-medium"
-        >
-          View Details
-        </Link>
+
+        {/* Bottom-right: prize won or placement */}
+        {prizeGhs ? (
+          <div className="absolute bottom-2.5 right-2.5">
+            <span className="text-[11px] font-bold text-amber-300 bg-slate-950/80 backdrop-blur-sm px-2 py-0.5 rounded-full border border-amber-400/20">
+              {prizeGhs}
+            </span>
+          </div>
+        ) : reg.finalPlacement ? (
+          <div className="absolute bottom-2.5 right-2.5">
+            <span className="text-[11px] font-bold text-orange-300 bg-slate-950/80 backdrop-blur-sm px-2 py-0.5 rounded-full border border-orange-400/20">
+              #{reg.finalPlacement}
+            </span>
+          </div>
+        ) : null}
       </div>
 
-      {/* Content */}
-      <div className="p-4">
-        <h4 className="text-sm font-semibold text-white truncate mb-0.5">
-          {reg.tournamentTitle}
-        </h4>
-        <p className="text-[11px] text-slate-500 mb-3">
-          {reg.gameName ?? "Game not set"}&nbsp;·&nbsp;Joined {fmt(reg.createdAt)}
-        </p>
-
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-xs">
-          <div>
-            <p className="text-slate-500 mb-0.5">Start Date</p>
-            <p className="text-slate-200 font-medium">{fmt(reg.tournamentSchedule.startDate)}</p>
-          </div>
-          <div>
-            <p className="text-slate-500 mb-0.5">Check-In</p>
-            <p className="text-slate-200 font-medium">{fmt(reg.tournamentSchedule.checkInStart)}</p>
-          </div>
-          <div>
-            <p className="text-slate-500 mb-0.5">Entry Type</p>
-            <p className="text-slate-200 font-medium capitalize">{reg.registrationType}</p>
-          </div>
-          <div>
-            <p className="text-slate-500 mb-0.5">In-Game ID</p>
-            <p className="text-cyan-300 font-medium truncate" title={reg.inGameId ?? "Not set"}>
-              {reg.inGameId ?? "—"}
+      {/* ── Content ─────────────────────────────────────────── */}
+      <div className="px-4 pt-3 pb-4 flex flex-col gap-3">
+        {/* Title + reg status */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h4 className="font-display text-sm font-bold text-white leading-tight truncate group-hover:text-orange-300 transition-colors">
+              {reg.tournamentTitle}
+            </h4>
+            <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+              {reg.gameName ?? "Unknown Game"} · {reg.registrationType === "team" ? "Team" : "Solo"}
             </p>
           </div>
-          {reg.teamName && (
-            <div className="col-span-2">
-              <p className="text-slate-500 mb-0.5">Team</p>
-              <p className="text-slate-200 font-medium truncate">{reg.teamName}</p>
-            </div>
-          )}
+          <span className={`shrink-0 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-800 border border-white/5 ${regMeta.text}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${regMeta.dot}`} />
+            {regMeta.label}
+          </span>
         </div>
+
+        {/* Detail grid */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+          <div>
+            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Starts</p>
+            <p className="text-[11px] font-medium text-slate-300">{startDate}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Check-In</p>
+            <p className="text-[11px] font-medium text-slate-300">{checkIn}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">In-Game ID</p>
+            <p className="text-[11px] font-medium text-orange-300 truncate" title={reg.inGameId || "Not set"}>
+              {reg.inGameId || "—"}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Type</p>
+            <p className="text-[11px] font-medium text-slate-300 capitalize">{reg.registrationType}</p>
+          </div>
+        </div>
+
+        {/* Team name */}
+        {reg.teamName && (
+          <div className="flex items-center gap-1.5 pt-1 border-t border-slate-800">
+            <Trophy className="w-3 h-3 text-orange-400 shrink-0" />
+            <span className="text-[11px] font-semibold text-slate-300 truncate">{reg.teamName}</span>
+          </div>
+        )}
+
+        {/* Prize won */}
+        {prizeGhs && !reg.teamName && (
+          <div className="flex items-center gap-1.5 pt-1 border-t border-slate-800">
+            <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
+            <span className="text-[11px] font-semibold text-amber-400">{prizeGhs} prize won</span>
+          </div>
+        )}
       </div>
-    </div>
+    </Link>
   );
 }
