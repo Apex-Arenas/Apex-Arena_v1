@@ -1,5 +1,6 @@
 import { useAuth } from "../lib/auth-context";
 import { Link, Outlet } from "react-router-dom";
+import { FadeImage } from "./ui/FadeImage";
 import Sidebar from "./Sidebar";
 import { Bell, Menu } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -67,11 +68,9 @@ const DashboardLayout = () => {
 
             <Link to={profilePath} className="flex items-center gap-2 group">
               {user?.avatarUrl ? (
-                <img
-                  src={user.avatarUrl}
-                  alt=""
-                  className="w-8 h-8 rounded-full object-cover border border-slate-700 group-hover:border-orange-500/60 transition-colors"
-                />
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-800 border border-slate-700 group-hover:border-orange-500/60 transition-colors relative shrink-0">
+                  <FadeImage src={user.avatarUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                </div>
               ) : (
                 <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 group-hover:border-orange-500/60 flex items-center justify-center text-xs font-semibold text-slate-300 transition-colors">
                   {initials}
