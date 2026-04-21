@@ -550,7 +550,10 @@ export const tournamentService = {
       ? data
       : ((data.registrations ?? data.data ?? []) as Record<string, unknown>[]);
 
-    return list
+    // Track game IDs separately for lookup
+    const gameIdByRegId = new Map<string, string>();
+
+    const mapped: MyTournamentRegistration[] = list
       .map((item) => {
         const rawTournament =
           item.tournament_id ?? item.tournament ?? item.tournamentId ?? {};
@@ -558,7 +561,12 @@ export const tournamentService = {
           rawTournament && typeof rawTournament === 'object'
             ? (rawTournament as Record<string, unknown>)
             : {};
-        const game = (tournament.game_id ?? {}) as Record<string, unknown>;
+        const gameRaw = tournament.game_id;
+        const game =
+          gameRaw && typeof gameRaw === 'object'
+            ? (gameRaw as Record<string, unknown>)
+            : {};
+        const gameId = extractGameId(gameRaw);
         const schedule = (tournament.schedule ?? {}) as Record<string, unknown>;
         const checkIn = (item.check_in ?? {}) as Record<string, unknown>;
 
@@ -567,10 +575,14 @@ export const tournamentService = {
           extractId(item.tournament_id) ||
           extractId(item.tournamentId);
 
+        const registrationId = String(
+          item._id ?? item.id ?? item.registration_id ?? item.registrationId ?? '',
+        );
+
+        if (gameId) gameIdByRegId.set(registrationId, gameId);
+
         return {
-          registrationId: String(
-            item._id ?? item.id ?? item.registration_id ?? item.registrationId ?? '',
-          ),
+          registrationId,
           tournamentId,
           tournamentTitle: String(tournament.title ?? 'Tournament'),
           tournamentStatus: normalizeStatus(tournament.status),
@@ -592,6 +604,28 @@ export const tournamentService = {
         };
       })
       .filter((item) => item.tournamentId.length > 0);
+
+    // Resolve game names for registrations where game_id was a plain string ID
+    const missingGameIds = mapped
+      .filter((r) => !r.tournamentGameName && gameIdByRegId.has(r.registrationId))
+      .map((r) => gameIdByRegId.get(r.registrationId) as string);
+
+    if (missingGameIds.length > 0) {
+      const gameLookup = await fetchGameLookupByIds(missingGameIds);
+      return mapped.map((r) => {
+        if (r.tournamentGameName) return r;
+        const gid = gameIdByRegId.get(r.registrationId);
+        if (!gid) return r;
+        const g = gameLookup.get(gid);
+        return {
+          ...r,
+          tournamentGameName: g?.name ?? r.tournamentGameName,
+          tournamentGameLogoUrl: r.tournamentGameLogoUrl ?? g?.logoUrl,
+        };
+      });
+    }
+
+    return mapped;
   },
 
   // ─── Check-in ──────────────────────────────────────────────────────────────
