@@ -13,8 +13,6 @@ import {
   Plus,
   Trash2,
   Trophy,
-  Calendar,
-  Swords,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import { authService } from "../../services/auth.service";
@@ -690,64 +688,6 @@ const ProfilePage = () => {
               )}
             </button>
 
-            {/* Tournament History */}
-            <SectionCard icon={Swords} title="Tournament History">
-              {statsLoading ? (
-                <div className="flex items-center justify-center py-10">
-                  <div className="h-6 w-6 rounded-full border-2 border-orange-500/40 border-t-orange-400 animate-spin" />
-                </div>
-              ) : registrations.length === 0 ? (
-                <div className="text-center py-10">
-                  <div className="w-12 h-12 rounded-full bg-slate-800/60 border border-slate-700 flex items-center justify-center mx-auto mb-3">
-                    <Trophy className="w-5 h-5 text-slate-600" />
-                  </div>
-                  <p className="text-sm text-slate-500">No tournament history yet.</p>
-                  <p className="text-xs text-slate-600 mt-1">Join a tournament to get started!</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {registrations.slice(0, 10).map((reg) => {
-                    const statusMap: Record<string, { text: string; cls: string }> = {
-                      completed:   { text: "Completed",   cls: "text-emerald-300 bg-emerald-500/10 border-emerald-500/20" },
-                      active:      { text: "Active",      cls: "text-cyan-300 bg-cyan-500/10 border-cyan-500/20" },
-                      ongoing:     { text: "Ongoing",     cls: "text-cyan-300 bg-cyan-500/10 border-cyan-500/20" },
-                      in_progress: { text: "In Progress", cls: "text-cyan-300 bg-cyan-500/10 border-cyan-500/20" },
-                      cancelled:   { text: "Cancelled",   cls: "text-slate-400 bg-slate-500/10 border-slate-500/20" },
-                      registered:  { text: "Registered",  cls: "text-indigo-300 bg-indigo-500/10 border-indigo-500/20" },
-                    };
-                    const statusKey = reg.tournamentStatus ?? "";
-                    const badge = statusMap[statusKey] ?? { text: statusKey.replace(/_/g, " "), cls: "text-slate-400 bg-slate-500/10 border-slate-500/20" };
-
-                    return (
-                      <div key={reg.registrationId} className="rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                            <Trophy className="w-3.5 h-3.5 text-slate-500" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm text-white font-medium truncate">{reg.tournamentTitle}</p>
-                            {reg.tournamentGameName && (
-                              <p className="text-xs text-slate-500 truncate">{reg.tournamentGameName}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="shrink-0 text-right space-y-1">
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium border capitalize ${badge.cls}`}>
-                            {badge.text}
-                          </span>
-                          {reg.tournamentStart && (
-                            <p className="text-[11px] text-slate-500 flex items-center gap-1 justify-end">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(reg.tournamentStart).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </SectionCard>
           </div>
 
           {/* ── Right column (sticky) ────────────────────────────────────── */}
