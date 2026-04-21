@@ -24,7 +24,7 @@ const statusColors: Record<string, string> = {
 };
 
 function formatGHS(amount: number) {
-  return `GHS ${amount.toFixed(2)}`;
+  return `GHS ${(amount / 100).toFixed(2)}`;
 }
 
 function formatDate(iso: string) {
