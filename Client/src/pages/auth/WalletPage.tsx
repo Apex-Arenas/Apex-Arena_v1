@@ -69,7 +69,7 @@ function DepositModal({ onClose }: { onClose: () => void }) {
     setSubmitting(true);
     setError("");
     try {
-      const callbackUrl = `${window.location.origin}/payment/callback?type=wallet`;
+      const callbackUrl = `${FINANCE_ENDPOINTS.DEPOSIT_VERIFY}?return_to=${encodeURIComponent(window.location.origin)}`;
       const res = await apiPost(FINANCE_ENDPOINTS.DEPOSIT, {
         amount_ghs: amountNum,
         callback_url: callbackUrl,
@@ -179,7 +179,7 @@ function DepositModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={handleDeposit}
             disabled={!isValid || submitting}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowDownLeft className="w-4 h-4" />}
             {submitting ? "Redirecting…" : isValid ? `Deposit GHS ${amountNum.toFixed(2)}` : "Enter an amount"}
@@ -196,6 +196,7 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
   const [amount, setAmount] = useState("");
   const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState(MOMO_NETWORKS[0]);
+  const [accountName, setAccountName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -205,7 +206,8 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
     !isNaN(amountNum) &&
     amountNum >= 1 &&
     amountMinor <= balance &&
-    /^0[235]\d{8}$/.test(momoNumber);
+    /^0[235]\d{8}$/.test(momoNumber) &&
+    accountName.trim().length >= 2;
 
   async function handleWithdraw() {
     if (!isValid) return;
@@ -213,9 +215,12 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
     setError("");
     try {
       const res = await apiPost(FINANCE_ENDPOINTS.PAYOUT_REQUEST, {
-        amount: amountMinor,
+        amount_ghs: amountNum,
+        request_type: "wallet_withdrawal",
         momo_number: momoNumber,
-        momo_network: momoNetwork,
+        network: momoNetwork,
+        account_name: accountName.trim(),
+        idempotency_key: generateUniqueIdempotencyKey(),
       });
       if (!res.success) {
         setError((res as { error?: { message?: string } }).error?.message ?? "Withdrawal request failed.");
@@ -262,7 +267,7 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
                 value={amount}
                 onChange={(e) => { setAmount(e.target.value); setError(""); }}
                 placeholder="0.00"
-                className="w-full pl-12 pr-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors text-lg font-semibold"
+                className="w-full pl-12 pr-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors text-lg font-semibold"
               />
             </div>
             {amountNum > 0 && amountMinor > balance && (
@@ -281,7 +286,7 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
                   onClick={() => setMomoNetwork(n)}
                   className={`py-2 rounded-lg text-sm font-semibold border transition-colors ${
                     momoNetwork === n
-                      ? "border-cyan-500 bg-cyan-500/15 text-cyan-300"
+                      ? "border-orange-500 bg-orange-500/15 text-orange-300"
                       : "border-slate-700 bg-slate-800/60 text-slate-300 hover:border-slate-500"
                   }`}
                 >
@@ -301,12 +306,24 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
                 value={momoNumber}
                 onChange={(e) => { setMomoNumber(e.target.value.replace(/\D/g, "").slice(0, 10)); setError(""); }}
                 placeholder="0241234567"
-                className="w-full pl-10 pr-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full pl-10 pr-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
               />
             </div>
             {momoNumber.length > 0 && !/^0[235]\d{8}$/.test(momoNumber) && (
               <p className="text-xs text-red-400 mt-1">Enter a valid 10-digit Ghanaian MoMo number.</p>
             )}
+          </div>
+
+          {/* Account name */}
+          <div>
+            <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Account Name</label>
+            <input
+              type="text"
+              value={accountName}
+              onChange={(e) => { setAccountName(e.target.value); setError(""); }}
+              placeholder="Name registered on the MoMo account"
+              className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
+            />
           </div>
 
           {error && (
@@ -324,7 +341,7 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
           <button
             onClick={handleWithdraw}
             disabled={!isValid || submitting}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpRight className="w-4 h-4" />}
             {submitting ? "Submitting…" : isValid ? `Withdraw GHS ${amountNum.toFixed(2)}` : "Complete the form"}
@@ -355,7 +372,7 @@ export default function WalletPage() {
       if (walletRes.success) {
         const d = walletRes.data as Record<string, unknown>;
         setWallet({
-          balance: Number(d.balance ?? d.wallet_balance ?? 0),
+          balance: Number(d.available_balance ?? d.balance ?? d.wallet_balance ?? 0),
           currency: (d.currency as string | undefined) ?? "GHS",
           lastUpdated: d.updated_at as string | undefined,
         });
@@ -364,16 +381,19 @@ export default function WalletPage() {
       if (payoutsRes.success) {
         const d = payoutsRes.data as Record<string, unknown>;
         const list = (Array.isArray(payoutsRes.data) ? payoutsRes.data : (d.requests ?? d.payouts ?? [])) as Record<string, unknown>[];
-        setPayouts(list.map((p) => ({
-          id: (p._id ?? p.id) as string,
-          amount: Number(p.amount ?? 0),
-          status: (p.status as PayoutRequest["status"]) ?? "pending",
-          momoNumber: p.momo_number as string | undefined,
-          momoNetwork: p.momo_network as string | undefined,
-          createdAt: (p.created_at ?? p.createdAt) as string,
-          processedAt: (p.processed_at ?? p.processedAt) as string | undefined,
-          rejectionReason: (p.rejection_reason ?? p.rejectionReason) as string | undefined,
-        })));
+        setPayouts(list.map((p) => {
+          const pd = (p.payout_details ?? {}) as Record<string, unknown>;
+          return {
+            id: (p._id ?? p.id) as string,
+            amount: Number(p.amount ?? 0),
+            status: (p.status as PayoutRequest["status"]) ?? "pending",
+            momoNumber: (pd.momo_number ?? p.momo_number) as string | undefined,
+            momoNetwork: (pd.network ?? p.momo_network) as string | undefined,
+            createdAt: (p.created_at ?? p.createdAt) as string,
+            processedAt: (p.processed_at ?? p.processedAt) as string | undefined,
+            rejectionReason: (p.rejection_reason ?? p.rejectionReason) as string | undefined,
+          };
+        }));
       }
     } catch {
       // silently fail
@@ -433,7 +453,7 @@ export default function WalletPage() {
           <div className="flex flex-col sm:flex-row gap-3 mt-8">
             <button
               onClick={() => setModal("deposit")}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 transition-all"
             >
               <ArrowDownLeft className="w-4 h-4" />
               Add Funds
