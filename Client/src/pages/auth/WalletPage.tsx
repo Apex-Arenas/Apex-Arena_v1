@@ -436,7 +436,7 @@ export default function WalletPage() {
       {/* Balance card */}
       <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 p-6 sm:p-8">
         <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-cyan-500/[0.07] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-44 h-44 rounded-full bg-indigo-500/[0.06] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 w-44 h-44 rounded-full bg-indigo-500/6 blur-3xl pointer-events-none" />
 
         <div className="relative">
           <div className="flex items-center gap-2 text-slate-400 text-sm mb-3">
