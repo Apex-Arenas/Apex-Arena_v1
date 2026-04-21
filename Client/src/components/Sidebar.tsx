@@ -167,7 +167,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
               <div className="relative shrink-0">
                 <Icon className="w-5 h-5" />
                 {to === "/auth/notifications" && unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1 leading-none">
+                  <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1 leading-none">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
