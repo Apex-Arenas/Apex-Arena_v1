@@ -729,17 +729,18 @@ export const adminService = {
     const list = (Array.isArray(data) ? data : (data.payouts ?? data.requests ?? data.data ?? [])) as Record<string, unknown>[];
     return list.map((p) => {
       const user = (p.user_id ?? p.user ?? {}) as Record<string, unknown>;
+      const pd = (p.payout_details ?? {}) as Record<string, unknown>;
       return {
         id: String(p._id ?? p.id ?? ''),
         userId: String(user._id ?? user.id ?? p.user_id ?? ''),
         username: String(user.username ?? p.username ?? ''),
         email: String(user.email ?? p.email ?? ''),
-        amount: Number(p.amount ?? 0),
-        type: String(p.type ?? 'wallet_withdrawal') as AdminPayoutRequest['type'],
+        amount: Number(p.amount ?? 0),                          // pesewas — divide by 100 to display
+        type: String(p.request_type ?? p.type ?? 'wallet_withdrawal') as AdminPayoutRequest['type'],
         status: String(p.status ?? 'pending') as AdminPayoutRequest['status'],
-        momoNumber: p.momo_number as string | undefined,
-        network: p.network as string | undefined,
-        accountName: p.account_name as string | undefined,
+        momoNumber: (pd.momo_number ?? p.momo_number) as string | undefined,
+        network: (pd.network ?? p.network) as string | undefined,
+        accountName: (pd.account_name ?? p.account_name) as string | undefined,
         tournamentId: p.tournament_id as string | undefined,
         tournamentName: (p.tournament as Record<string, unknown>)?.name as string | undefined,
         requestedAt: String(p.requested_at ?? p.created_at ?? p.createdAt ?? ''),
@@ -754,17 +755,18 @@ export const adminService = {
     if (!response.success) return null;
     const p = (response.data as Record<string, unknown>).payout as Record<string, unknown> ?? response.data as Record<string, unknown>;
     const user = (p.user_id ?? p.user ?? {}) as Record<string, unknown>;
+    const pd = (p.payout_details ?? {}) as Record<string, unknown>;
     return {
       id: String(p._id ?? p.id ?? ''),
       userId: String(user._id ?? user.id ?? p.user_id ?? ''),
       username: String(user.username ?? p.username ?? ''),
       email: String(user.email ?? p.email ?? ''),
-      amount: Number(p.amount ?? 0),
-      type: String(p.type ?? 'wallet_withdrawal') as AdminPayoutRequest['type'],
+      amount: Number(p.amount ?? 0),                          // pesewas — divide by 100 to display
+      type: String(p.request_type ?? p.type ?? 'wallet_withdrawal') as AdminPayoutRequest['type'],
       status: String(p.status ?? 'pending') as AdminPayoutRequest['status'],
-      momoNumber: p.momo_number as string | undefined,
-      network: p.network as string | undefined,
-      accountName: p.account_name as string | undefined,
+      momoNumber: (pd.momo_number ?? p.momo_number) as string | undefined,
+      network: (pd.network ?? p.network) as string | undefined,
+      accountName: (pd.account_name ?? p.account_name) as string | undefined,
       tournamentId: p.tournament_id as string | undefined,
       tournamentName: (p.tournament as Record<string, unknown>)?.name as string | undefined,
       requestedAt: String(p.requested_at ?? p.created_at ?? p.createdAt ?? ''),
