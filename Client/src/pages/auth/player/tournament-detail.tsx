@@ -5,7 +5,6 @@ import {
   Users,
   CalendarDays,
   ChevronLeft,
-  Loader2,
   AlertCircle,
   CheckCircle2,
   Clock,
@@ -16,6 +15,9 @@ import {
   Globe,
   Award,
   RefreshCw,
+  Loader2,
+  Swords,
+  LogOut,
 } from "lucide-react";
 import {
   tournamentService,
@@ -25,6 +27,7 @@ import {
 import { apiGet, apiPost } from "../../../utils/api.utils";
 import { TOURNAMENT_ENDPOINTS } from "../../../config/api.config";
 import { useAuth } from "../../../lib/auth-context";
+import { FadeImage } from "../../../components/ui/FadeImage";
 import {
   BRACKET_VISIBLE_STATUSES,
   BracketView,
@@ -69,22 +72,61 @@ function formatPrize(pesewas: number, currency: string) {
   return `${currency} ${(pesewas / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 }
 
-const REGISTRATION_STATUS_COLORS: Record<string, string> = {
-  registered: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-  checked_in: "bg-green-500/20 text-green-300 border-green-500/30",
-  pending_payment: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  waitlist: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  withdrawn: "bg-slate-600/20 text-slate-400 border-slate-600/30",
-  cancelled: "bg-slate-600/20 text-slate-400 border-slate-600/30",
-  disqualified: "bg-red-500/20 text-red-300 border-red-500/30",
+const STATUS_META: Record<string, { label: string; dot: string; text: string }> = {
+  open:             { label: "Open",             dot: "bg-emerald-400",              text: "text-emerald-300" },
+  published:        { label: "Published",        dot: "bg-cyan-400",                 text: "text-cyan-300"   },
+  started:          { label: "Live",             dot: "bg-orange-400 animate-pulse", text: "text-orange-300" },
+  ongoing:          { label: "Live",             dot: "bg-orange-400 animate-pulse", text: "text-orange-300" },
+  locked:           { label: "Locked",           dot: "bg-amber-400",                text: "text-amber-300"  },
+  awaiting_deposit: { label: "Awaiting Deposit", dot: "bg-amber-400",                text: "text-amber-300"  },
+  completed:        { label: "Completed",        dot: "bg-slate-400",                text: "text-slate-400"  },
+  cancelled:        { label: "Cancelled",        dot: "bg-red-400",                  text: "text-red-400"    },
+  draft:            { label: "Draft",            dot: "bg-slate-500",                text: "text-slate-300"  },
 };
 
-const ACTIVE_STATUSES = new Set([
-  "registered",
-  "checked_in",
-  "pending_payment",
-  "waitlist",
-]);
+const REG_STATUS_META: Record<string, { label: string; cls: string }> = {
+  registered:      { label: "Registered",     cls: "bg-cyan-500/15 text-cyan-300 border-cyan-500/25"          },
+  checked_in:      { label: "Checked In",     cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25" },
+  pending_payment: { label: "Pmt. Pending",   cls: "bg-amber-500/15 text-amber-300 border-amber-500/25"       },
+  waitlist:        { label: "Waitlisted",     cls: "bg-violet-500/15 text-violet-300 border-violet-500/25"    },
+  withdrawn:       { label: "Withdrawn",      cls: "bg-slate-700/50 text-slate-400 border-slate-600/25"       },
+  cancelled:       { label: "Cancelled",      cls: "bg-slate-700/50 text-slate-400 border-slate-600/25"       },
+  disqualified:    { label: "Disqualified",   cls: "bg-red-500/15 text-red-300 border-red-500/25"             },
+};
+
+const ACTIVE_STATUSES = new Set(["registered", "checked_in", "pending_payment", "waitlist"]);
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function PageSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 animate-pulse space-y-6">
+      <div className="h-5 w-32 bg-slate-800 rounded" />
+      <div className="rounded-2xl overflow-hidden border border-slate-800 h-72 bg-slate-800" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-4 space-y-2">
+            <div className="h-3 w-16 bg-slate-800 rounded" />
+            <div className="h-6 w-24 bg-slate-800 rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3">
+              <div className="h-4 w-40 bg-slate-800 rounded" />
+              <div className="h-3 w-full bg-slate-800 rounded" />
+              <div className="h-3 w-4/5 bg-slate-800 rounded" />
+            </div>
+          ))}
+        </div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 h-48" />
+      </div>
+    </div>
+  );
+}
+
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -94,17 +136,13 @@ const TournamentDetail = () => {
   const { user } = useAuth();
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
-  const [myRegistration, setMyRegistration] =
-    useState<MyTournamentRegistration | null>(null);
+  const [myRegistration, setMyRegistration] = useState<MyTournamentRegistration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
-  const [checkInStatus, setCheckInStatus] = useState<Record<
-    string,
-    unknown
-  > | null>(null);
+  const [checkInStatus, setCheckInStatus] = useState<Record<string, unknown> | null>(null);
   const [bracketRounds, setBracketRounds] = useState<BracketRound[]>([]);
   const [isLoadingBracket, setIsLoadingBracket] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -118,8 +156,7 @@ const TournamentDetail = () => {
   const loadRegistration = useCallback(async (tid: string) => {
     try {
       const list = await tournamentService.getMyRegistrations();
-      const found = list.find((r) => r.tournamentId === tid) ?? null;
-      setMyRegistration(found);
+      setMyRegistration(list.find((r) => r.tournamentId === tid) ?? null);
     } catch {
       setMyRegistration(null);
     }
@@ -127,27 +164,16 @@ const TournamentDetail = () => {
 
   const loadCheckInStatus = useCallback(async (tid: string) => {
     try {
-      const res = await apiGet(
-        `${TOURNAMENT_ENDPOINTS.CHECK_IN_STATUS}/${tid}/check-in/status`,
-      );
-      if (res.success) {
-        setCheckInStatus(res.data as Record<string, unknown>);
-      }
-    } catch {
-      // not critical
-    }
+      const res = await apiGet(`${TOURNAMENT_ENDPOINTS.CHECK_IN_STATUS}/${tid}/check-in/status`);
+      if (res.success) setCheckInStatus(res.data as Record<string, unknown>);
+    } catch { /* not critical */ }
   }, []);
 
   const loadBracket = useCallback(async (tid: string) => {
     setIsLoadingBracket(true);
     try {
-      const res = await apiGet(
-        `${TOURNAMENT_ENDPOINTS.BRACKET}/${tid}/bracket`,
-      );
-      if (res.success) {
-        const rounds = extractBracketRounds(res.data);
-        setBracketRounds(rounds);
-      }
+      const res = await apiGet(`${TOURNAMENT_ENDPOINTS.BRACKET}/${tid}/bracket`);
+      if (res.success) setBracketRounds(extractBracketRounds(res.data));
     } catch {
       setBracketRounds([]);
     } finally {
@@ -155,28 +181,20 @@ const TournamentDetail = () => {
     }
   }, []);
 
-  const loadAll = useCallback(
-    async (silent = false) => {
-      if (!tournamentId) return;
-      if (!silent) setIsLoading(true);
-      try {
-        const t = await tournamentService.getTournamentDetail(tournamentId);
-        setTournament(t);
-        await Promise.all([
-          loadRegistration(tournamentId),
-          loadCheckInStatus(tournamentId),
-        ]);
-        if (t && BRACKET_VISIBLE_STATUSES.has(t.status)) {
-          void loadBracket(tournamentId);
-        }
-      } catch {
-        if (!silent) setTournament(null);
-      } finally {
-        if (!silent) setIsLoading(false);
-      }
-    },
-    [tournamentId, loadRegistration, loadCheckInStatus, loadBracket],
-  );
+  const loadAll = useCallback(async (silent = false) => {
+    if (!tournamentId) return;
+    if (!silent) setIsLoading(true);
+    try {
+      const t = await tournamentService.getTournamentDetail(tournamentId);
+      setTournament(t);
+      await Promise.all([loadRegistration(tournamentId), loadCheckInStatus(tournamentId)]);
+      if (t && BRACKET_VISIBLE_STATUSES.has(t.status)) void loadBracket(tournamentId);
+    } catch {
+      if (!silent) setTournament(null);
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  }, [tournamentId, loadRegistration, loadCheckInStatus, loadBracket]);
 
   const handleRefresh = useCallback(async () => {
     if (!tournamentId || isRefreshing) return;
@@ -184,23 +202,12 @@ const TournamentDetail = () => {
     try {
       const t = await tournamentService.getTournamentDetail(tournamentId);
       setTournament(t);
-      await Promise.all([
-        loadRegistration(tournamentId),
-        loadCheckInStatus(tournamentId),
-      ]);
-      if (t && BRACKET_VISIBLE_STATUSES.has(t.status)) {
-        await loadBracket(tournamentId);
-      }
+      await Promise.all([loadRegistration(tournamentId), loadCheckInStatus(tournamentId)]);
+      if (t && BRACKET_VISIBLE_STATUSES.has(t.status)) await loadBracket(tournamentId);
     } finally {
       setIsRefreshing(false);
     }
-  }, [
-    tournamentId,
-    isRefreshing,
-    loadRegistration,
-    loadCheckInStatus,
-    loadBracket,
-  ]);
+  }, [tournamentId, isRefreshing, loadRegistration, loadCheckInStatus, loadBracket]);
 
   useEffect(() => {
     if (hasFetched.current) return;
@@ -208,8 +215,6 @@ const TournamentDetail = () => {
     void loadAll();
   }, [loadAll]);
 
-  // Auto-poll every 10s only while check-in is open.
-  // Bracket refresh is now manual to avoid automatic updates in the bracket section.
   useEffect(() => {
     if (!tournament) return;
     const shouldPoll =
@@ -221,19 +226,13 @@ const TournamentDetail = () => {
         false,
       );
     if (!shouldPoll) return;
-
-    const id = window.setInterval(() => {
-      void loadAll(true);
-    }, 10000);
-
+    const id = window.setInterval(() => { void loadAll(true); }, 10000);
     return () => window.clearInterval(id);
   }, [tournament?.status, checkInStatus, loadAll]);
 
   const handleRegisterSuccess = async () => {
     setShowRegisterModal(false);
-    setSuccessMsg(
-      "You've successfully joined the tournament! Check your status below.",
-    );
+    setSuccessMsg("You've successfully joined the tournament!");
     if (tournamentId) await loadRegistration(tournamentId);
     setTimeout(() => setSuccessMsg(null), 6000);
   };
@@ -243,10 +242,7 @@ const TournamentDetail = () => {
     setIsCheckingIn(true);
     setErrorMsg(null);
     try {
-      await apiPost(
-        `${TOURNAMENT_ENDPOINTS.CHECK_IN}/${tournamentId}/check-in`,
-        {},
-      );
+      await apiPost(`${TOURNAMENT_ENDPOINTS.CHECK_IN}/${tournamentId}/check-in`, {});
       setSuccessMsg("You have checked in successfully!");
       await loadRegistration(tournamentId);
       await loadCheckInStatus(tournamentId);
@@ -278,57 +274,39 @@ const TournamentDetail = () => {
     }
   };
 
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return <PageSkeleton />;
 
   if (!tournament) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-6">
-        <AlertCircle className="w-12 h-12 text-slate-600" />
-        <p className="text-slate-400">Tournament not found.</p>
+        <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center">
+          <AlertCircle className="w-8 h-8 text-slate-600" />
+        </div>
+        <div>
+          <h2 className="font-display text-lg font-bold text-white mb-1">Tournament Not Found</h2>
+          <p className="text-sm text-slate-400">This tournament may have been removed or the link is invalid.</p>
+        </div>
         <button
           onClick={() => navigate("/auth/tournaments")}
-          className="text-cyan-400 text-sm hover:underline"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all"
         >
+          <ChevronLeft className="w-4 h-4" />
           Back to Tournaments
         </button>
       </div>
     );
   }
 
-  const isRegistered =
-    myRegistration !== null && ACTIVE_STATUSES.has(myRegistration.status);
-  const isCheckedIn =
-    myRegistration?.checkedIn === true ||
-    myRegistration?.status === "checked_in";
-  const canWithdraw =
-    myRegistration !== null && ACTIVE_STATUSES.has(myRegistration.status);
+  const isRegistered = myRegistration !== null && ACTIVE_STATUSES.has(myRegistration.status);
+  const isCheckedIn = myRegistration?.checkedIn === true || myRegistration?.status === "checked_in";
+  const canWithdraw = myRegistration !== null && ACTIVE_STATUSES.has(myRegistration.status);
 
-  const checkInWindow = checkInStatus?.checkInWindow as
-    | { start?: string; end?: string; isOpen?: boolean }
-    | undefined;
-
-  const checkInStart =
-    checkInWindow?.start ??
-    (checkInStatus?.check_in_start as string | undefined) ??
-    tournament.schedule.checkInStart;
-  const checkInEnd =
-    checkInWindow?.end ??
-    (checkInStatus?.check_in_end as string | undefined) ??
-    tournament.schedule.checkInEnd;
+  const checkInWindow = checkInStatus?.checkInWindow as { start?: string; end?: string; isOpen?: boolean } | undefined;
+  const checkInStart = checkInWindow?.start ?? (checkInStatus?.check_in_start as string | undefined) ?? tournament.schedule.checkInStart;
+  const checkInEnd   = checkInWindow?.end   ?? (checkInStatus?.check_in_end   as string | undefined) ?? tournament.schedule.checkInEnd;
 
   const checkInOpenFromApi = Boolean(
-    checkInWindow?.isOpen ??
-    checkInStatus?.is_check_in_open ??
-    checkInStatus?.check_in_open ??
-    checkInStatus?.isOpen ??
-    false,
+    checkInWindow?.isOpen ?? checkInStatus?.is_check_in_open ?? checkInStatus?.check_in_open ?? checkInStatus?.isOpen ?? false,
   );
   const now = Date.now();
   const checkInOpenFromSchedule = Boolean(
@@ -338,252 +316,280 @@ const TournamentDetail = () => {
   );
   const checkInOpen = checkInOpenFromApi || checkInOpenFromSchedule;
 
-  const isLeague = tournament.tournamentType === 'league';
+  const isLeague = tournament.tournamentType === "league";
   const showBracketSection = !isLeague && BRACKET_VISIBLE_STATUSES.has(tournament.status);
   const canRegister = tournament.status === "open" && !isRegistered;
-  const registrationClosed =
-    !["open"].includes(tournament.status) && !isRegistered;
+  const registrationClosed = !["open"].includes(tournament.status) && !isRegistered;
 
   const currentUserId = user?.id;
   const myInGameId = myRegistration?.inGameId;
+  const allBracketMatches = bracketRounds.flatMap((r) => r.matches ?? []);
+  const myMatches = allBracketMatches.filter((m) => matchIncludesCurrentPlayer(m, currentUserId, myInGameId));
 
-  const allBracketMatches = bracketRounds.flatMap(
-    (round) => round.matches ?? [],
-  );
+  const statusMeta = STATUS_META[tournament.status] ?? {
+    label: tournament.status.replace(/_/g, " "),
+    dot: "bg-slate-500",
+    text: "text-slate-300",
+  };
+  const regMeta = myRegistration ? (REG_STATUS_META[myRegistration.status] ?? null) : null;
 
-  const myMatches = allBracketMatches.filter((match) =>
-    matchIncludesCurrentPlayer(match, currentUserId, myInGameId),
-  );
+  const imageUrl = tournament.thumbnailUrl ?? tournament.bannerUrl ?? null;
+  const hasImage = !!imageUrl;
+
+  const prizeGhs = tournament.prizePool && tournament.prizePool > 0
+    ? formatPrize(tournament.prizePool, tournament.currency)
+    : null;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-      {/* Back + Refresh */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate("/auth/tournaments")}
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Tournaments
-        </button>
-        <button
-          onClick={() => {
-            void handleRefresh();
-          }}
-          disabled={isRefreshing}
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-        >
-          <RefreshCw
-            className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`}
-          />
-          {isRefreshing ? "Refreshing…" : "Refresh"}
-        </button>
-      </div>
+    <div className="max-w-6xl mx-auto">
 
-      {/* Toasts */}
-      {successMsg && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-green-500/10 border border-green-500/30 text-green-300 text-sm">
-          <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
-          <span className="flex-1">{successMsg}</span>
-          <button onClick={() => setSuccessMsg(null)}>
-            <X className="w-4 h-4 opacity-60 hover:opacity-100" />
-          </button>
-        </div>
-      )}
-      {errorMsg && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          <span className="flex-1">{errorMsg}</span>
-          <button onClick={() => setErrorMsg(null)}>
-            <X className="w-4 h-4 opacity-60 hover:opacity-100" />
-          </button>
-        </div>
-      )}
-
-      {/* Hero */}
-      <div className="relative rounded-2xl overflow-hidden border border-slate-800">
-        {tournament.thumbnailUrl ? (
-          <img
-            src={tournament.thumbnailUrl}
-            alt=""
-            className="w-full h-48 sm:h-64 object-cover"
-          />
-        ) : (
-          <div className="w-full h-48 sm:h-64 bg-linear-to-br from-slate-900 via-cyan-950/30 to-slate-900 flex items-center justify-center">
-            <Gamepad2 className="w-20 h-20 text-slate-700" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/60 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
-          <div className="flex items-center gap-2 mb-2">
-            {tournament.game?.logoUrl && (
-              <img
-                src={tournament.game.logoUrl}
-                alt=""
-                className="w-5 h-5 rounded object-cover"
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden">
+        {/* Cover */}
+        <div className="relative h-64 sm:h-80 overflow-hidden bg-slate-900">
+          {hasImage ? (
+            <>
+              <FadeImage
+                src={imageUrl}
+                alt={tournament.title}
+                className="absolute inset-0 w-full h-full object-cover"
               />
-            )}
-            <span className="text-xs text-slate-300">
-              {tournament.game?.name ?? "Unknown Game"}
-            </span>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full capitalize ml-1
-              ${
-                tournament.status === "open"
-                  ? "bg-green-500/20 text-green-300"
-                  : tournament.status === "started" ||
-                      tournament.status === "ongoing"
-                    ? "bg-blue-500/20 text-blue-300"
-                    : tournament.status === "completed"
-                      ? "bg-slate-500/20 text-slate-400"
-                      : tournament.status === "cancelled"
-                        ? "bg-red-500/20 text-red-400"
-                        : "bg-amber-500/20 text-amber-300"
-              }`}
-            >
-              {tournament.status.replace("_", " ")}
+              <div className="absolute inset-0 bg-linear-to-br from-orange-500/20 via-transparent to-violet-600/20" />
+            </>
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-linear-to-br from-orange-950 via-slate-900 to-violet-950" />
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                {tournament.game?.logoUrl ? (
+                  <img src={tournament.game.logoUrl} alt="" className="w-28 h-28 object-contain opacity-15" />
+                ) : (
+                  <Gamepad2 className="w-24 h-24 text-slate-800" />
+                )}
+              </div>
+            </>
+          )}
+          {/* Bottom fade */}
+          <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/50 to-transparent" />
+
+          {/* Status chip — top right */}
+          <div className="absolute top-4 right-4">
+            <span className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-sm border border-white/10 ${statusMeta.text}`}>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${statusMeta.dot}`} />
+              {statusMeta.label}
             </span>
           </div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">
-            {tournament.title}
-          </h1>
-        </div>
-      </div>
 
-      {/* Stats bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {tournament.prizePool && tournament.prizePool > 0 ? (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3">
-            <p className="text-xs text-slate-400 mb-1 flex items-center gap-1.5">
-              <Trophy className="w-3.5 h-3.5 text-cyan-400" /> Prize Pool
-            </p>
-            <p className="text-base font-bold text-cyan-300">
-              {formatPrize(tournament.prizePool, tournament.currency)}
-            </p>
-          </div>
-        ) : null}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3">
-          <p className="text-xs text-slate-400 mb-1 flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5" /> Players
-          </p>
-          <p className="text-base font-bold text-white">
-            {tournament.currentCount} / {tournament.maxParticipants}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3">
-          <p className="text-xs text-slate-400 mb-1 flex items-center gap-1.5">
-            <CalendarDays className="w-3.5 h-3.5" /> Starts
-          </p>
-          <p className="text-base font-bold text-white">
-            {formatDate(tournament.schedule.tournamentStart)}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3">
-          <p className="text-xs text-slate-400 mb-1 flex items-center gap-1.5">
-            <Award className="w-3.5 h-3.5" /> Entry
-          </p>
-          <p className="text-base font-bold text-white">
-            {formatFee(
-              tournament.isFree,
-              tournament.entryFee,
-              tournament.currency,
-            )}
-          </p>
-        </div>
-      </div>
-
-      {/* Main layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column */}
-        <div className="lg:col-span-2 space-y-5">
-          {/* Description */}
-          {tournament.description && (
-            <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-              <h2 className="font-display text-base font-semibold text-white mb-3">
-                About This Tournament
-              </h2>
-              <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-                {tournament.description}
-              </p>
-            </section>
+          {/* Registration status chip — top left (when registered) */}
+          {isRegistered && regMeta && (
+            <div className="absolute top-4 left-4">
+              <span className={`text-[11px] px-3 py-1.5 rounded-full font-bold border backdrop-blur-sm ${regMeta.cls}`}>
+                {regMeta.label}
+              </span>
+            </div>
           )}
 
-          {/* Schedule */}
-          <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-            <h2 className="font-display text-base font-semibold text-white mb-4">
-              Schedule
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              {[
-                {
-                  label: "Registration Open",
-                  value: tournament.schedule.registrationStart,
-                },
-                {
-                  label: "Registration Closes",
-                  value: tournament.schedule.registrationEnd,
-                },
-                {
-                  label: "Tournament Start",
-                  value: tournament.schedule.tournamentStart,
-                },
-                {
-                  label: "Tournament End",
-                  value: tournament.schedule.tournamentEnd,
-                },
-                {
-                  label: "Check-in Opens",
-                  value: tournament.schedule.checkInStart ?? checkInStart,
-                },
-                {
-                  label: "Check-in Closes",
-                  value: tournament.schedule.checkInEnd ?? checkInEnd,
-                },
-              ]
-                .filter((row) => Boolean(row.value))
-                .map((row) => (
-                  <div key={row.label} className="flex flex-col gap-0.5">
-                    <span className="text-xs text-slate-400">{row.label}</span>
-                    <span className="font-medium text-white">
-                      {formatDateTime(row.value)}
-                    </span>
+          {/* Prize badge — bottom right */}
+          {prizeGhs && (
+            <div className="absolute bottom-4 right-4">
+              <span className="text-sm font-bold text-amber-300 bg-slate-950/80 backdrop-blur-sm px-3 py-1 rounded-full border border-amber-400/25 flex items-center gap-1.5">
+                <Trophy className="w-3.5 h-3.5" />
+                {prizeGhs}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Title bar below image */}
+        <div className="bg-slate-950 border-b border-slate-800 px-4 sm:px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              {/* Back */}
+              <button
+                onClick={() => navigate("/auth/tournaments")}
+                className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-orange-400 transition-colors mb-2"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Back to Tournaments
+              </button>
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-white leading-tight">
+                {tournament.title}
+              </h1>
+              <p className="text-sm text-slate-400 mt-1">
+                {tournament.game?.name ?? "Unknown Game"}
+                {tournament.format ? ` · ${tournament.format}` : ""}
+                {tournament.region ? ` · ${tournament.region}` : ""}
+              </p>
+            </div>
+            <button
+              onClick={() => { void handleRefresh(); }}
+              disabled={isRefreshing}
+              className="shrink-0 flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors disabled:opacity-50 mt-1"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+              {isRefreshing ? "Refreshing…" : "Refresh"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 sm:px-6 py-6 space-y-6">
+
+        {/* Toasts */}
+        {successMsg && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-sm">
+            <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+            <span className="flex-1">{successMsg}</span>
+            <button onClick={() => setSuccessMsg(null)}><X className="w-4 h-4 opacity-60 hover:opacity-100" /></button>
+          </div>
+        )}
+        {errorMsg && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <span className="flex-1">{errorMsg}</span>
+            <button onClick={() => setErrorMsg(null)}><X className="w-4 h-4 opacity-60 hover:opacity-100" /></button>
+          </div>
+        )}
+
+        {/* ── Stats bar ─────────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            {
+              icon: <Trophy className="w-5 h-5 text-amber-400" />,
+              iconBg: "bg-amber-500/10 border-amber-500/20",
+              label: "Prize Pool",
+              value: prizeGhs ?? "—",
+              accent: prizeGhs ? "text-amber-300" : "text-slate-600",
+              border: "border-t-amber-500/40",
+            },
+            {
+              icon: <Users className="w-5 h-5 text-orange-400" />,
+              iconBg: "bg-orange-500/10 border-orange-500/20",
+              label: "Players",
+              value: `${tournament.currentCount} / ${tournament.maxParticipants}`,
+              accent: "text-white",
+              border: "border-t-orange-500/40",
+            },
+            {
+              icon: <CalendarDays className="w-5 h-5 text-orange-400" />,
+              iconBg: "bg-orange-500/10 border-orange-500/20",
+              label: "Starts",
+              value: formatDate(tournament.schedule.tournamentStart),
+              accent: "text-white",
+              border: "border-t-orange-500/40",
+            },
+            {
+              icon: <Award className="w-5 h-5 text-orange-400" />,
+              iconBg: "bg-orange-500/10 border-orange-500/20",
+              label: "Entry",
+              value: formatFee(tournament.isFree, tournament.entryFee, tournament.currency),
+              accent: tournament.isFree ? "text-emerald-400" : "text-white",
+              border: "border-t-orange-500/40",
+            },
+          ].map((s) => (
+            <div key={s.label} className={`rounded-2xl border border-slate-800 border-t-2 ${s.border} bg-slate-900 px-4 py-4 flex flex-col gap-3`}>
+              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${s.iconBg}`}>
+                {s.icon}
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
+                <p className={`text-xl font-display font-bold leading-none ${s.accent}`}>{s.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Check-in banner */}
+        {isRegistered && checkInOpen && !isCheckedIn && (
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/8 p-5 flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                <Clock className="w-4.5 h-4.5 text-emerald-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-emerald-200">Check-in is open!</p>
+                <p className="text-sm text-emerald-300/70 mt-0.5">
+                  Check in now to secure your spot.
+                  {checkInEnd ? ` Closes ${formatDateTime(checkInEnd)}.` : ""}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => { void handleCheckIn(); }}
+              disabled={isCheckingIn}
+              className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-slate-950 text-sm font-bold hover:bg-emerald-400 disabled:opacity-60 transition-colors"
+            >
+              {isCheckingIn ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              {isCheckingIn ? "Checking in…" : "Check In"}
+            </button>
+          </div>
+        )}
+
+        {/* ── Main layout ───────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* ── Left column ─────────────────────────────────────────────────── */}
+          <div className="lg:col-span-2 space-y-5">
+
+            {/* Description */}
+            {tournament.description && (
+              <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                <h2 className="font-display text-base font-bold text-white mb-3 flex items-center gap-2">
+                  <Gamepad2 className="w-4 h-4 text-orange-400" />
+                  About This Tournament
+                </h2>
+                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                  {tournament.description}
+                </p>
+              </section>
+            )}
+
+            {/* Schedule */}
+            <section className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                  <CalendarDays className="w-3.5 h-3.5 text-orange-400" />
+                </div>
+                <h2 className="font-display text-base font-bold text-white">Schedule</h2>
+              </div>
+              <div className="divide-y divide-slate-800/60">
+                {[
+                  { label: "Registration Open",   value: tournament.schedule.registrationStart,             dot: "bg-emerald-400" },
+                  { label: "Registration Closes", value: tournament.schedule.registrationEnd,               dot: "bg-red-400"     },
+                  { label: "Tournament Start",    value: tournament.schedule.tournamentStart,               dot: "bg-orange-400"  },
+                  { label: "Tournament End",      value: tournament.schedule.tournamentEnd,                 dot: "bg-slate-400"   },
+                  { label: "Check-in Opens",      value: tournament.schedule.checkInStart ?? checkInStart,  dot: "bg-cyan-400"    },
+                  { label: "Check-in Closes",     value: tournament.schedule.checkInEnd ?? checkInEnd,      dot: "bg-amber-400"   },
+                ].filter((r) => Boolean(r.value)).map((r) => (
+                  <div key={r.label} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-800/30 transition-colors">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${r.dot}`} />
+                    <span className="text-xs text-slate-500 w-36 shrink-0">{r.label}</span>
+                    <span className="text-sm font-semibold text-white">{formatDateTime(r.value)}</span>
                   </div>
                 ))}
-            </div>
-          </section>
+              </div>
+            </section>
 
-          {/* Prize Distribution */}
-          {!tournament.isFree &&
-            tournament.prizeDistribution &&
-            tournament.prizeDistribution.length > 0 && (
-              <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-                <h2 className="font-display text-base font-semibold text-white mb-4">
+            {/* Prize Distribution */}
+            {!tournament.isFree && tournament.prizeDistribution && tournament.prizeDistribution.length > 0 && (
+              <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                <h2 className="font-display text-base font-bold text-white mb-4 flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-amber-400" />
                   Prize Distribution
                 </h2>
                 <div className="grid grid-cols-3 gap-3">
                   {tournament.prizeDistribution.slice(0, 3).map((d) => (
-                    <div
-                      key={d.position}
-                      className="rounded-xl border border-slate-700 bg-slate-800/60 p-3 text-center"
-                    >
-                      <p className="text-xs text-slate-400 mb-1">
-                        {d.position === 1
-                          ? "🥇 1st"
-                          : d.position === 2
-                            ? "🥈 2nd"
-                            : "🥉 3rd"}
+                    <div key={d.position} className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 text-center">
+                      <p className="text-sm mb-1">
+                        {d.position === 1 ? "🥇" : d.position === 2 ? "🥈" : "🥉"}
                       </p>
-                      <p className="text-base font-bold text-cyan-300">
-                        {d.percentage}%
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">
+                        {d.position === 1 ? "1st" : d.position === 2 ? "2nd" : "3rd"}
                       </p>
+                      <p className="text-lg font-display font-bold text-amber-300">{d.percentage}%</p>
                       {tournament.prizePool && (
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {formatPrize(
-                            Math.floor(
-                              (tournament.prizePool * d.percentage) / 100,
-                            ),
-                            tournament.currency,
-                          )}
+                        <p className="text-xs text-slate-400 mt-1">
+                          {formatPrize(Math.floor((tournament.prizePool * d.percentage) / 100), tournament.currency)}
                         </p>
                       )}
                     </div>
@@ -592,343 +598,301 @@ const TournamentDetail = () => {
               </section>
             )}
 
-          {/* Rules */}
-          {tournament.rules && (
-            <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-              <h2 className="font-display text-base font-semibold text-white mb-3 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-cyan-400" />
-                Rules
-              </h2>
-              <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-                {tournament.rules}
-              </p>
-            </section>
-          )}
+            {/* Rules */}
+            {tournament.rules && (
+              <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+                <h2 className="font-display text-base font-bold text-white mb-3 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-orange-400" />
+                  Rules
+                </h2>
+                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                  {tournament.rules}
+                </p>
+              </section>
+            )}
 
-          {/* Details */}
-          <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-            <h2 className="font-display text-base font-semibold text-white mb-4">
-              Details
-            </h2>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {[
-                { label: "Format", value: tournament.format },
-                { label: "Type", value: tournament.tournamentType },
-                { label: "Region", value: tournament.region },
-                {
-                  label: "Min Players",
-                  value:
-                    tournament.minParticipants > 0
-                      ? String(tournament.minParticipants)
-                      : null,
-                },
-                {
-                  label: "Visibility",
-                  value: tournament.visibility
-                    ? tournament.visibility.charAt(0).toUpperCase() +
-                      tournament.visibility.slice(1)
-                    : null,
-                },
-              ]
-                .filter((row) => Boolean(row.value))
-                .map((row) => (
-                  <div key={row.label}>
-                    <p className="text-xs text-slate-400">{row.label}</p>
-                    <p className="font-medium text-white capitalize mt-0.5">
-                      {row.value}
-                    </p>
+            {/* Details */}
+            <section className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                  <Globe className="w-3.5 h-3.5 text-orange-400" />
+                </div>
+                <h2 className="font-display text-base font-bold text-white">Details</h2>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-slate-800/40">
+                {[
+                  { icon: <Swords className="w-4 h-4 text-orange-400" />,       label: "Format",      value: tournament.format                   },
+                  { icon: <Trophy className="w-4 h-4 text-amber-400" />,        label: "Type",        value: tournament.tournamentType           },
+                  { icon: <Globe className="w-4 h-4 text-cyan-400" />,          label: "Region",      value: tournament.region                   },
+                  { icon: <Users className="w-4 h-4 text-orange-400" />,        label: "Min Players", value: tournament.minParticipants > 0 ? String(tournament.minParticipants) : null },
+                  { icon: <Shield className="w-4 h-4 text-violet-400" />,       label: "Visibility",  value: tournament.visibility ? tournament.visibility.charAt(0).toUpperCase() + tournament.visibility.slice(1) : null },
+                ].filter((r) => Boolean(r.value)).map((r) => (
+                  <div key={r.label} className="bg-slate-900 px-4 py-4">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      {r.icon}
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest">{r.label}</p>
+                    </div>
+                    <p className="text-sm font-bold text-white capitalize">{r.value}</p>
                   </div>
                 ))}
-            </div>
-          </section>
-        </div>
-
-        {/* Right sidebar */}
-        <div className="space-y-4">
-          {/* Registration card */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-            <h2 className="font-display text-base font-semibold text-white">
-              {isRegistered ? "My Registration" : "Join Tournament"}
-            </h2>
-
-            {isRegistered && myRegistration ? (
-              <>
-                <div
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border capitalize
-                  ${REGISTRATION_STATUS_COLORS[myRegistration.status] ?? "bg-slate-700 text-slate-300 border-slate-600"}`}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {myRegistration.status.replace("_", " ")}
-                </div>
-
-                <div className="text-xs text-slate-400 space-y-1.5">
-                  <p>Joined: {formatDate(myRegistration.registeredAt)}</p>
-                  {isCheckedIn && (
-                    <p className="text-green-300 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Checked in
-                    </p>
-                  )}
-                </div>
-
-                {/* Check-in button */}
-                {checkInOpen &&
-                  !isCheckedIn &&
-                  myRegistration.status === "registered" && (
-                    <button
-                      onClick={() => {
-                        void handleCheckIn();
-                      }}
-                      disabled={isCheckingIn}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-green-500 text-slate-950 text-sm font-semibold hover:bg-green-400 disabled:opacity-60 transition-colors"
-                    >
-                      {isCheckingIn ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="w-4 h-4" />
-                      )}
-                      {isCheckingIn ? "Checking in…" : "Check In Now"}
-                    </button>
-                  )}
-
-                {/* Check-in window info */}
-                {!checkInOpen &&
-                  !isCheckedIn &&
-                  myRegistration.status === "registered" && (
-                    <div className="flex items-start gap-2 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2.5 text-xs text-slate-400">
-                      <Clock className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                      <span>
-                        Check-in is not open yet.
-                        {tournament.schedule.checkInStart
-                          ? ` Opens ${formatDateTime(tournament.schedule.checkInStart)}.`
-                          : ""}
-                      </span>
-                    </div>
-                  )}
-
-                {/* Withdraw */}
-                {canWithdraw && myRegistration.status !== "checked_in" && (
-                  <button
-                    onClick={() => setShowWithdrawModal(true)}
-                    className="w-full py-2 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 text-sm font-medium hover:bg-red-500 hover:text-white transition-colors"
-                  >
-                    Withdraw
-                  </button>
-                )}
-              </>
-            ) : canRegister ? (
-              <>
-                <div className="text-xs text-slate-400 space-y-1">
-                  <p className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5" />
-                    {tournament.currentCount} / {tournament.maxParticipants}{" "}
-                    players
-                  </p>
-                  {!tournament.isFree && (
-                    <p className="flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5" />
-                      Entry fee deducted from wallet
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setShowRegisterModal(true)}
-                  className="w-full py-2.5 rounded-lg bg-cyan-500 text-slate-950 text-sm font-semibold hover:bg-cyan-400 transition-colors"
-                >
-                  Join Tournament
-                </button>
-              </>
-            ) : registrationClosed ? (
-              <div className="flex items-center gap-2 text-sm text-slate-400">
-                <Lock className="w-4 h-4 shrink-0" />
-                Registration is{" "}
-                {tournament.status === "completed"
-                  ? "closed (tournament ended)"
-                  : "not open yet"}
               </div>
-            ) : null}
+            </section>
           </div>
 
-          {/* Tournament info summary */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-400">Format</span>
-              <span className="text-white font-medium capitalize">
-                {tournament.format ?? "Solo"}
-              </span>
-            </div>
-            <div className="h-px bg-slate-800" />
-            <div className="flex items-center justify-between">
-              <span className="text-slate-400">Type</span>
-              <span className="text-white font-medium capitalize">
-                {tournament.tournamentType ?? "Standard"}
-              </span>
-            </div>
-            {tournament.region && (
-              <>
-                <div className="h-px bg-slate-800" />
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Region</span>
-                  <span className="text-white font-medium">
-                    {tournament.region}
+          {/* ── Right sidebar ────────────────────────────────────────────────── */}
+          <div className="space-y-4">
+
+            {/* Registration card */}
+            <div className={`rounded-2xl border bg-slate-900 overflow-hidden ${
+              isRegistered
+                ? isCheckedIn
+                  ? "border-emerald-500/30"
+                  : "border-orange-500/25"
+                : canRegister
+                  ? "border-orange-500/30"
+                  : "border-slate-800"
+            }`}>
+              {/* Card header */}
+              <div className={`px-5 py-4 border-b flex items-center justify-between ${
+                isRegistered
+                  ? isCheckedIn
+                    ? "border-emerald-500/20 bg-emerald-500/5"
+                    : "border-orange-500/15 bg-orange-500/5"
+                  : canRegister
+                    ? "border-orange-500/20 bg-orange-500/5"
+                    : "border-slate-800"
+              }`}>
+                <h2 className="font-display text-base font-bold text-white">
+                  {isRegistered ? "My Registration" : "Join Tournament"}
+                </h2>
+                {isRegistered && regMeta && (
+                  <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold border ${regMeta.cls}`}>
+                    {regMeta.label}
                   </span>
-                </div>
-              </>
-            )}
-            <div className="h-px bg-slate-800" />
-            <div className="flex items-center justify-between">
-              <span className="text-slate-400">Min Players</span>
-              <span className="text-white font-medium">
-                {tournament.minParticipants}
-              </span>
+                )}
+              </div>
+
+              <div className="p-5 space-y-4">
+                {isRegistered && myRegistration ? (
+                  <>
+                    {/* Meta rows */}
+                    <div className="space-y-0 rounded-xl border border-slate-800 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800/60">
+                        <span className="text-xs text-slate-500">Joined</span>
+                        <span className="text-xs font-bold text-white">{formatDate(myRegistration.registeredAt)}</span>
+                      </div>
+                      {myRegistration.inGameId && (
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800/60">
+                          <span className="text-xs text-slate-500">In-Game ID</span>
+                          <span className="text-xs font-bold text-orange-300">{myRegistration.inGameId}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-xs text-slate-500">Check-in</span>
+                        {isCheckedIn ? (
+                          <span className="flex items-center gap-1 text-xs font-bold text-emerald-400">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Done
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-500">Pending</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Check-in button */}
+                    {checkInOpen && !isCheckedIn && myRegistration.status === "registered" && (
+                      <button
+                        onClick={() => { void handleCheckIn(); }}
+                        disabled={isCheckingIn}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500 text-slate-950 text-sm font-bold hover:bg-emerald-400 disabled:opacity-60 transition-colors"
+                      >
+                        {isCheckingIn ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                        {isCheckingIn ? "Checking in…" : "Check In Now"}
+                      </button>
+                    )}
+
+                    {/* Check-in window not open */}
+                    {!checkInOpen && !isCheckedIn && myRegistration.status === "registered" && (
+                      <div className="flex items-start gap-2.5 bg-slate-800/60 border border-slate-700/60 rounded-xl px-4 py-3 text-xs text-slate-400">
+                        <Clock className="w-3.5 h-3.5 shrink-0 mt-0.5 text-slate-500" />
+                        <span>
+                          Check-in not open yet.
+                          {tournament.schedule.checkInStart ? ` Opens ${formatDateTime(tournament.schedule.checkInStart)}.` : ""}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Withdraw */}
+                    {canWithdraw && myRegistration.status !== "checked_in" && (
+                      <button
+                        onClick={() => setShowWithdrawModal(true)}
+                        className="w-full py-2.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-sm font-bold hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center justify-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Withdraw
+                      </button>
+                    )}
+                  </>
+                ) : canRegister ? (
+                  <>
+                    {/* Capacity bar */}
+                    <div>
+                      <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+                        <span>Spots filled</span>
+                        <span className="font-semibold text-white">{tournament.currentCount} / {tournament.maxParticipants}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-linear-to-r from-orange-500 to-amber-400 transition-all"
+                          style={{ width: `${Math.min(100, (tournament.currentCount / tournament.maxParticipants) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    {!tournament.isFree && (
+                      <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/60 border border-slate-700/60 rounded-xl px-3 py-2.5">
+                        <Globe className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                        Entry fee deducted from wallet
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setShowRegisterModal(true)}
+                      className="w-full py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Swords className="w-4 h-4" />
+                      Join Tournament
+                    </button>
+                  </>
+                ) : registrationClosed ? (
+                  <div className="flex items-center gap-2.5 text-sm text-slate-400 bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-3">
+                    <Lock className="w-4 h-4 shrink-0" />
+                    <span>
+                      {tournament.status === "completed" ? "Tournament has ended" : "Registration is not open"}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Quick stats sidebar */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-slate-800">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tournament Info</p>
+              </div>
+              <div className="divide-y divide-slate-800/60">
+                {[
+                  { label: "Format",      value: tournament.format ?? "Solo"             },
+                  { label: "Type",        value: tournament.tournamentType ?? "Standard" },
+                  ...(tournament.region ? [{ label: "Region", value: tournament.region }] : []),
+                  { label: "Min Players", value: String(tournament.minParticipants)      },
+                ].map((r) => (
+                  <div key={r.label} className="flex items-center justify-between px-5 py-3">
+                    <span className="text-xs text-slate-500">{r.label}</span>
+                    <span className="text-xs font-bold text-white capitalize">{r.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Registered-only & bracket sections ── */}
-
-      {/* Check-in banner (prominent when window is open and registered but not checked in) */}
-      {isRegistered && checkInOpen && !isCheckedIn && (
-        <section className="rounded-xl border border-green-500/40 bg-green-500/10 p-5 flex items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <Clock className="w-5 h-5 text-green-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-semibold text-green-200">
-                Check-in is now open!
-              </p>
-              <p className="text-sm text-green-300/80 mt-0.5">
-                Make sure to check in before the window closes to keep your
-                spot.
-                {checkInEnd ? ` Closes ${formatDateTime(checkInEnd)}.` : ""}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              void handleCheckIn();
-            }}
-            disabled={isCheckingIn}
-            className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500 text-slate-950 text-sm font-semibold hover:bg-green-400 disabled:opacity-60 transition-colors"
-          >
-            {isCheckingIn ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <CheckCircle2 className="w-4 h-4" />
-            )}
-            {isCheckingIn ? "Checking in…" : "Check In"}
-          </button>
-        </section>
-      )}
-
-      {/* League View */}
-      {isLeague && !['draft', 'cancelled'].includes(tournament.status) && (
-        <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-          <div className="mb-4">
-            <h2 className="font-display text-base font-semibold text-white flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-cyan-400" />
+        {/* ── League View ───────────────────────────────────────────────────── */}
+        {isLeague && !["draft", "cancelled"].includes(tournament.status) && (
+          <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+            <h2 className="font-display text-base font-bold text-white mb-4 flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-orange-400" />
               League
             </h2>
-          </div>
-          <LeagueView
-            tournamentId={tournament.id}
-            currentMatchweek={tournament.leagueSettings?.currentMatchweek ?? 0}
-            totalMatchweeks={tournament.leagueSettings?.totalMatchweeks ?? 0}
-            legs={tournament.leagueSettings?.legs ?? 1}
-            highlightUserId={currentUserId}
-          />
-        </section>
-      )}
-
-      {/* Bracket */}
-      {showBracketSection && (
-        <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-base font-semibold text-white flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-cyan-400" />
-              Tournament Bracket
-            </h2>
-            <button
-              onClick={() => {
-                void handleRefresh();
-              }}
-              disabled={isRefreshing}
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-            >
-              <RefreshCw
-                className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              {isRefreshing ? "Refreshing…" : "Refresh"}
-            </button>
-          </div>
-          {isLoadingBracket ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
-            </div>
-          ) : (
-            <BracketView
-              rounds={bracketRounds}
-              onMatchClick={isRegistered ? (id) => setActiveMatchId(id) : undefined}
+            <LeagueView
+              tournamentId={tournament.id}
+              currentMatchweek={tournament.leagueSettings?.currentMatchweek ?? 0}
+              totalMatchweeks={tournament.leagueSettings?.totalMatchweeks ?? 0}
+              legs={tournament.leagueSettings?.legs ?? 1}
+              highlightUserId={currentUserId}
             />
-          )}
-        </section>
-      )}
+          </section>
+        )}
 
-      {/* My Matches */}
-      {isRegistered && showBracketSection && (
-        <section className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-5">
-          <h2 className="font-display text-base font-semibold text-white mb-3 flex items-center gap-2">
-            <Gamepad2 className="w-4 h-4 text-cyan-400" />
-            My Matches
-          </h2>
-
-          {myMatches.length === 0 ? (
-            <p className="text-sm text-slate-400">
-              No active matches for your registration yet. Your matches will
-              appear here when your bracket match is ready.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {myMatches.map((match, index) => {
-                const matchId = match._id ?? match.id ?? "";
-                return (
-                  <button
-                    key={matchId || index}
-                    type="button"
-                    onClick={() => matchId && setActiveMatchId(matchId)}
-                    disabled={!matchId}
-                    className="w-full text-left rounded-xl border border-slate-700 bg-slate-900/70 p-4 hover:border-slate-500 transition-colors disabled:opacity-50"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-white">
-                          Match #{match.match_number ?? index + 1}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          Round {match.round ?? match.round_number ?? 1} •
-                          Opponent:{" "}
-                          {getOpponentLabel(match, currentUserId, myInGameId)}
-                        </p>
-                      </div>
-                      <span className="text-[11px] uppercase tracking-wide text-slate-300 px-2.5 py-1 rounded-full border border-slate-600 bg-slate-800/60">
-                        {match.status ?? "pending"}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
+        {/* ── Bracket ───────────────────────────────────────────────────────── */}
+        {showBracketSection && (
+          <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-base font-bold text-white flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-orange-400" />
+                Tournament Bracket
+              </h2>
+              <button
+                onClick={() => { void handleRefresh(); }}
+                disabled={isRefreshing}
+                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                {isRefreshing ? "Refreshing…" : "Refresh"}
+              </button>
             </div>
-          )}
-        </section>
-      )}
+            {isLoadingBracket ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+              </div>
+            ) : (
+              <BracketView
+                rounds={bracketRounds}
+                onMatchClick={isRegistered ? (id) => setActiveMatchId(id) : undefined}
+              />
+            )}
+          </section>
+        )}
+
+        {/* ── My Matches ────────────────────────────────────────────────────── */}
+        {isRegistered && showBracketSection && (
+          <section className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-5">
+            <h2 className="font-display text-base font-bold text-white mb-4 flex items-center gap-2">
+              <Swords className="w-4 h-4 text-orange-400" />
+              My Matches
+            </h2>
+            {myMatches.length === 0 ? (
+              <p className="text-sm text-slate-400">
+                No active matches yet. Your matches will appear here when your bracket match is ready.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {myMatches.map((match, index) => {
+                  const matchId = match._id ?? match.id ?? "";
+                  return (
+                    <button
+                      key={matchId || index}
+                      type="button"
+                      onClick={() => matchId && setActiveMatchId(matchId)}
+                      disabled={!matchId}
+                      className="w-full text-left rounded-xl border border-slate-700 bg-slate-900/70 p-4 hover:border-orange-500/40 hover:bg-orange-500/5 transition-all disabled:opacity-50"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-bold text-white">
+                            Match #{match.match_number ?? index + 1}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Round {match.round ?? match.round_number ?? 1} · Opponent: {getOpponentLabel(match, currentUserId, myInGameId)}
+                          </p>
+                        </div>
+                        <span className="text-[11px] uppercase tracking-wide font-bold text-slate-300 px-2.5 py-1 rounded-full border border-slate-600 bg-slate-800/60">
+                          {match.status ?? "pending"}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+      </div>
 
       {/* Modals */}
       {showRegisterModal && (
         <RegisterModal
           tournament={tournament}
           onClose={() => setShowRegisterModal(false)}
-          onSuccess={() => {
-            void handleRegisterSuccess();
-          }}
+          onSuccess={() => { void handleRegisterSuccess(); }}
         />
       )}
 
@@ -937,10 +901,7 @@ const TournamentDetail = () => {
           matchId={activeMatchId}
           currentUserId={currentUserId}
           onClose={() => setActiveMatchId(null)}
-          onActionComplete={() => {
-            setActiveMatchId(null);
-            void handleRefresh();
-          }}
+          onActionComplete={() => { setActiveMatchId(null); void handleRefresh(); }}
         />
       )}
 
@@ -950,13 +911,8 @@ const TournamentDetail = () => {
         reason={withdrawReason}
         onReasonChange={setWithdrawReason}
         isWithdrawing={isWithdrawing}
-        onClose={() => {
-          setShowWithdrawModal(false);
-          setWithdrawReason("");
-        }}
-        onConfirm={() => {
-          void handleWithdraw();
-        }}
+        onClose={() => { setShowWithdrawModal(false); setWithdrawReason(""); }}
+        onConfirm={() => { void handleWithdraw(); }}
       />
     </div>
   );
