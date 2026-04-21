@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   X, Loader2, AlertTriangle, Swords, Clock,
-  Shield, Trophy, CheckCheck, Flag, Timer,
+  Shield, Trophy, CheckCheck, Flag, Timer, Crown,
 } from 'lucide-react';
 import { tournamentService } from '../../services/tournament.service';
 import type { FullMatch } from '../../services/tournament.service';
@@ -10,12 +10,12 @@ import ImageUploadDropzone from '../ImageUploadDropzone';
 interface Props {
   matchId: string;
   currentUserId: string;
-  currentMatchweek?: number; // if provided, used to block submission for inactive matchweeks
+  currentMatchweek?: number;
   onClose: () => void;
   onActionComplete: () => void;
 }
 
-// ─── Countdown hook ──────────────────────────────────────────────────────────
+// ─── Countdown hook ───────────────────────────────────────────────────────────
 
 function useCountdown(deadline: string | undefined) {
   const remaining = () => {
@@ -23,11 +23,8 @@ function useCountdown(deadline: string | undefined) {
     const ms = new Date(deadline).getTime() - Date.now();
     return ms > 0 ? Math.ceil(ms / 1000) : 0;
   };
-
   const [seconds, setSeconds] = useState<number | null>(null);
-
   useEffect(() => {
-    // Update immediately when deadline changes
     setSeconds(remaining());
     if (!deadline) return;
     const id = setInterval(() => {
@@ -38,7 +35,6 @@ function useCountdown(deadline: string | undefined) {
     return () => clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deadline]);
-
   return seconds;
 }
 
@@ -48,15 +44,18 @@ function CountdownBadge({ seconds, label }: { seconds: number | null; label: str
   const secs = seconds % 60;
   const isUrgent = seconds <= 60;
   return (
-    <div className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-      ${isUrgent ? 'bg-red-900/40 border border-red-700/50 text-red-300' : 'bg-slate-800/60 border border-slate-700 text-slate-300'}`}>
-      <Timer className={`w-3.5 h-3.5 ${isUrgent ? 'text-red-400' : 'text-cyan-400'}`} />
+    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${
+      isUrgent
+        ? 'bg-red-500/10 border-red-500/30 text-red-300'
+        : 'bg-slate-800/60 border-slate-700 text-slate-300'
+    }`}>
+      <Timer className={`w-3.5 h-3.5 ${isUrgent ? 'text-red-400' : 'text-orange-400'}`} />
       {label} {mins}:{String(secs).padStart(2, '0')}
     </div>
   );
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
+// ─── Player Card ──────────────────────────────────────────────────────────────
 
 function PlayerCard({
   name, isWinner, isLoser, dimmed, highlight, selected, onClick,
@@ -65,45 +64,82 @@ function PlayerCard({
   highlight?: boolean; selected?: boolean; onClick?: () => void;
 }) {
   const initial = name.charAt(0).toUpperCase() || '?';
+
+  const containerCls = (() => {
+    if (selected)  return 'border-orange-500/70 bg-orange-500/8 shadow-[0_0_20px_rgba(249,115,22,0.12)]';
+    if (isWinner)  return 'border-amber-500/50 bg-amber-500/6 shadow-[0_0_20px_rgba(251,191,36,0.10)]';
+    if (isLoser)   return 'border-slate-700/30 opacity-40';
+    if (dimmed)    return 'border-slate-700/30 opacity-40';
+    return onClick ? 'border-slate-700 bg-slate-800/40 hover:border-slate-500 hover:bg-slate-800/60' : 'border-slate-700 bg-slate-800/40';
+  })();
+
+  const avatarCls = (() => {
+    if (selected)  return 'bg-linear-to-br from-orange-500 to-amber-400 text-slate-950 border-orange-400/50';
+    if (isWinner)  return 'bg-linear-to-br from-amber-500 to-orange-500 text-slate-950 border-amber-400/50';
+    return 'bg-linear-to-br from-slate-700 to-slate-800 text-white border-slate-600';
+  })();
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className={`flex-1 flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 transition-all
-        ${onClick ? 'cursor-pointer' : 'cursor-default'}
-        ${selected
-          ? 'border-cyan-500 bg-cyan-950/40'
-          : isWinner
-            ? 'border-emerald-500/60 bg-emerald-950/20'
-            : isLoser
-              ? 'border-red-500/30 bg-red-950/10 opacity-40'
-              : dimmed
-                ? 'border-slate-700/40 opacity-40'
-                : 'border-slate-700 bg-slate-900/40 hover:border-slate-500'
-        }
-        ${highlight ? 'ring-1 ring-cyan-500/40' : ''}
-      `}
+      className={`relative flex-1 flex flex-col items-center gap-2.5 py-5 px-3 rounded-xl border-2 transition-all duration-200 ${containerCls} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
     >
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-bold border
-        ${selected ? 'bg-cyan-500 text-slate-950 border-cyan-400'
-          : isWinner ? 'bg-emerald-800 text-white border-emerald-600'
-          : 'bg-gradient-to-br from-cyan-800 to-indigo-800 text-white border-slate-600'}
-      `}>
+      {/* Subtle grid */}
+      <div className="absolute inset-0 rounded-xl bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-size-[20px_20px] pointer-events-none" />
+
+      {/* Avatar */}
+      <div className={`relative w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold border-2 ${avatarCls}`}>
         {initial}
+        {isWinner && (
+          <div className="absolute -top-2 -right-1 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
+            <Crown className="w-3 h-3 text-slate-950" />
+          </div>
+        )}
       </div>
-      <span className={`text-xs font-semibold text-center truncate w-full
-        ${selected ? 'text-cyan-300' : isWinner ? 'text-emerald-300' : 'text-slate-300'}`}>
+
+      <span className={`text-xs font-bold text-center truncate w-full ${
+        selected ? 'text-orange-300' : isWinner ? 'text-amber-200' : 'text-slate-200'
+      }`}>
         {name}
       </span>
-      {highlight && <span className="text-[10px] text-cyan-500 font-semibold">(you)</span>}
-      {isWinner && <span className="text-[10px] text-emerald-400 font-semibold">Winner</span>}
-      {selected && <span className="text-[10px] text-cyan-400 font-semibold">Selected</span>}
+
+      {highlight && <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wide">You</span>}
+      {isWinner && <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wide">Winner</span>}
+      {selected && <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wide">Selected</span>}
     </button>
   );
 }
 
-// ─── Main Modal ──────────────────────────────────────────────────────────────
+// ─── Score Display ────────────────────────────────────────────────────────────
+
+function ScoreDisplay({ s1, s2, n1, n2 }: { s1: number; s2: number; n1: string; n2: string }) {
+  return (
+    <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 overflow-hidden">
+      <div className="grid grid-cols-[1fr_auto_1fr]">
+        {/* Player 1 */}
+        <div className={`flex flex-col items-center py-4 px-3 gap-1 ${s1 > s2 ? 'bg-amber-500/6' : ''}`}>
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate w-full text-center">{n1}</p>
+          <span className={`font-display text-5xl font-bold tabular-nums leading-none ${s1 > s2 ? 'text-amber-300' : 'text-slate-500'}`}>{s1}</span>
+        </div>
+
+        {/* Divider + separator */}
+        <div className="flex flex-col items-center justify-center px-3 border-x border-slate-700/60">
+          <span className="text-slate-600 font-bold text-sm">—</span>
+        </div>
+
+        {/* Player 2 */}
+        <div className={`flex flex-col items-center py-4 px-3 gap-1 ${s2 > s1 ? 'bg-amber-500/6' : ''}`}>
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate w-full text-center">{n2}</p>
+          <span className={`font-display text-5xl font-bold tabular-nums leading-none ${s2 > s1 ? 'text-amber-300' : 'text-slate-500'}`}>{s2}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Modal ───────────────────────────────────────────────────────────────
 
 export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onClose, onActionComplete }: Props) {
   const [match, setMatch] = useState<FullMatch | null>(null);
@@ -112,20 +148,16 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
   const [error, setError] = useState<string | null>(null);
   const autoConfirmedRef = useRef(false);
 
-  // Submit result state
   const [selectedWinnerId, setSelectedWinnerId] = useState<string | null>(null);
   const [isDraw, setIsDraw] = useState(false);
   const [score1, setScore1] = useState('');
   const [score2, setScore2] = useState('');
   const [screenshotUrl, setScreenshotUrl] = useState('');
-
-  // Dispute state
   const [showDisputeForm, setShowDisputeForm] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
   const [evidenceUrl, setEvidenceUrl] = useState('');
 
   const scoresEqual = score1 !== '' && score2 !== '' && Number(score1) === Number(score2);
-
   const countdown = useCountdown(match?.resultConfirmationDeadline);
   const playDeadlineCountdown = useCountdown(match?.playDeadline);
 
@@ -140,7 +172,6 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
 
   useEffect(() => { load(); }, [matchId]);
 
-  // Poll every 15s while a result is pending confirmation (so submitter sees when opponent confirms)
   useEffect(() => {
     if (!match?.resultReportedBy) return;
     if (match.status === 'completed' || match.status === 'disputed') return;
@@ -148,12 +179,8 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
     return () => clearInterval(id);
   }, [match?.resultReportedBy, match?.status]);
 
-  // Auto-clear draw selection if scores change to be unequal
-  useEffect(() => {
-    if (isDraw && !scoresEqual) setIsDraw(false);
-  }, [score1, score2]);
+  useEffect(() => { if (isDraw && !scoresEqual) setIsDraw(false); }, [score1, score2]);
 
-  // Auto-confirm when countdown hits exactly 0
   useEffect(() => {
     if (countdown !== 0 || autoConfirmedRef.current) return;
     if (!match?.resultReportedBy) return;
@@ -161,7 +188,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
     autoConfirmedRef.current = true;
     tournamentService.autoConfirmMatch(matchId)
       .then(() => { onActionComplete(); onClose(); })
-      .catch(() => { load(); }); // refresh state if it fails (e.g. already confirmed)
+      .catch(() => { load(); });
   }, [countdown]);
 
   async function doAction(action: () => Promise<void>) {
@@ -177,7 +204,6 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
     }
   }
 
-  // ── Derived state ──────────────────────────────────────────────────────────
   const isP1 = match?.player1Id === currentUserId;
   const isP2 = match?.player2Id === currentUserId;
   const iParticipant = isP1 || isP2;
@@ -189,120 +215,111 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
     reportedWinner === match?.player1Id ? match?.player1Name :
     reportedWinner === match?.player2Id ? match?.player2Name : 'Unknown';
 
-  // ── Render helpers ─────────────────────────────────────────────────────────
-
   function renderContent() {
     if (!match) return null;
 
-    // ── COMPLETED ─────────────────────────────────────────────────────────
+    // ── COMPLETED ──────────────────────────────────────────────────────────
     if (match.status === 'completed') {
       const p1Won = match.winnerId === match.player1Id;
       const p2Won = match.winnerId === match.player2Id;
       return (
         <div className="space-y-4">
-          <div className="flex items-center justify-center gap-3 py-2">
-            <Trophy className="w-5 h-5 text-amber-400" />
-            <span className="text-sm font-semibold text-white">Final Result</span>
+          <div className="flex items-center justify-center gap-2">
+            <Trophy className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-amber-300">Final Result</span>
           </div>
+
+          {/* Players row */}
           <div className="flex gap-3">
-            <PlayerCard name={match.player1Name} isWinner={p1Won} isLoser={p2Won}
-              highlight={isP1} />
-            <div className="flex flex-col items-center justify-center gap-1 shrink-0">
-              <span className="text-2xl font-bold text-white tabular-nums">
-                {match.player1Score}
-              </span>
-              <span className="text-slate-600 text-xs">–</span>
-              <span className="text-2xl font-bold text-white tabular-nums">
-                {match.player2Score}
-              </span>
-            </div>
-            <PlayerCard name={match.player2Name} isWinner={p2Won} isLoser={p1Won}
-              highlight={isP2} />
+            <PlayerCard name={match.player1Name} isWinner={p1Won} isLoser={p2Won} highlight={isP1} />
+            <PlayerCard name={match.player2Name} isWinner={p2Won} isLoser={p1Won} highlight={isP2} />
           </div>
-          <p className="text-center text-xs text-slate-500 pt-1">Match finalised.</p>
+
+          {/* Scoreboard */}
+          <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} />
+
+          <p className="text-center text-[11px] text-slate-600 uppercase tracking-widest">Match finalised</p>
         </div>
       );
     }
 
-    // ── DISPUTED ──────────────────────────────────────────────────────────
+    // ── DISPUTED ───────────────────────────────────────────────────────────
     if (match.status === 'disputed') {
       return (
-        <div className="flex flex-col items-center gap-3 py-4 text-center">
-          <Shield className="w-10 h-10 text-amber-400" />
-          <p className="text-sm font-semibold text-white">Dispute Under Review</p>
-          <p className="text-xs text-slate-400 max-w-xs">
-            The organizer has been notified and will review the evidence to determine the winner.
-          </p>
+        <div className="flex flex-col items-center gap-4 py-6 text-center">
+          <div className="w-14 h-14 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+            <Shield className="w-7 h-7 text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white">Dispute Under Review</p>
+            <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+              The organizer has been notified and will review the evidence to determine the winner.
+            </p>
+          </div>
         </div>
       );
     }
 
-    // ── CANCELLED ─────────────────────────────────────────────────────────
+    // ── CANCELLED ──────────────────────────────────────────────────────────
     if (match.status === 'cancelled') {
       return (
-        <div className="flex flex-col items-center gap-3 py-4 text-center">
-          <X className="w-10 h-10 text-slate-500" />
+        <div className="flex flex-col items-center gap-3 py-6 text-center">
+          <div className="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+            <X className="w-7 h-7 text-slate-500" />
+          </div>
           <p className="text-sm text-slate-400">This match was cancelled.</p>
         </div>
       );
     }
 
-    // ready_check status no longer used — treat same as ongoing
-
-    // ── ONGOING / SCHEDULED / PENDING ─────────────────────────────────────
+    // ── ONGOING / SCHEDULED / PENDING ──────────────────────────────────────
     if (match.status === 'ongoing' || match.status === 'scheduled' || match.status === 'pending') {
-      // Non-participant view
       if (!iParticipant) {
         return (
-          <div className="flex flex-col items-center gap-2 py-4 text-center">
-            <Swords className="w-8 h-8 text-cyan-500" />
+          <div className="flex flex-col items-center gap-3 py-8 text-center">
+            <div className="w-14 h-14 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+              <Swords className="w-7 h-7 text-orange-400" />
+            </div>
             <p className="text-sm text-slate-400">Match is currently in progress.</p>
           </div>
         );
       }
 
-      // ── Opponent submitted — confirm or dispute ────────────────────────
+      // ── Opponent submitted ──────────────────────────────────────────────
       if (opponentSubmitted && !showDisputeForm) {
         const isReportedDraw = !reportedWinner;
         const opponentSaysIWon = reportedWinner === currentUserId;
         return (
           <div className="space-y-4">
-            {/* Result summary */}
-            <div className={`rounded-xl p-3 border text-center text-sm
-              ${isReportedDraw
+            <div className={`rounded-xl px-4 py-3 border text-sm text-center font-medium ${
+              isReportedDraw
                 ? 'border-slate-600/40 bg-slate-800/40 text-slate-300'
                 : opponentSaysIWon
-                  ? 'border-emerald-600/40 bg-emerald-950/20 text-emerald-300'
-                  : 'border-amber-600/40 bg-amber-950/20 text-amber-300'}`}>
-              {opponentName} reported:{' '}
+                  ? 'border-emerald-500/30 bg-emerald-500/8 text-emerald-300'
+                  : 'border-amber-500/30 bg-amber-500/8 text-amber-300'
+            }`}>
+              <span className="text-slate-400">{opponentName} reported: </span>
               <span className="font-bold">{isReportedDraw ? 'Draw' : `${reportedWinnerName} won`}</span>
             </div>
 
-            {/* Submitted scores */}
             {(match.player1Score > 0 || match.player2Score > 0) && (
-              <div className="flex items-center justify-center gap-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                <span className="text-xs text-slate-400">{match.player1Name}</span>
-                <span className="text-xl font-bold text-white tabular-nums">
-                  {match.player1Score} – {match.player2Score}
-                </span>
-                <span className="text-xs text-slate-400">{match.player2Name}</span>
-              </div>
+              <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} />
             )}
 
-            {/* Countdown */}
-            <div className="flex justify-center">
-              {countdown !== null && countdown > 0 ? (
-                <CountdownBadge seconds={countdown} label="Auto-confirms in" />
-              ) : countdown === 0 ? (
-                <div className="text-xs text-slate-400 text-center">Auto-confirming…</div>
-              ) : null}
-            </div>
+            {countdown !== null && (
+              <div className="flex justify-center">
+                {countdown > 0
+                  ? <CountdownBadge seconds={countdown} label="Auto-confirms in" />
+                  : <p className="text-xs text-slate-500">Auto-confirming…</p>
+                }
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button
                 onClick={() => doAction(() => tournamentService.confirmMatchResult(matchId))}
                 disabled={submitting}
-                className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-3 rounded-xl bg-linear-to-r from-emerald-600 to-emerald-500 text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
                 Confirm
@@ -310,7 +327,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
               <button
                 onClick={() => setShowDisputeForm(true)}
                 disabled={submitting}
-                className="flex-1 py-3 rounded-xl bg-red-800/60 hover:bg-red-700/60 border border-red-700/50 text-red-300 font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-3 rounded-xl border border-red-500/30 bg-red-500/8 text-red-400 font-bold text-sm transition-all hover:bg-red-500/15 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <Flag className="w-4 h-4" />
                 Dispute
@@ -320,34 +337,31 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
         );
       }
 
-      // ── Dispute form ──────────────────────────────────────────────────
+      // ── Dispute form ────────────────────────────────────────────────────
       if (showDisputeForm) {
         return (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-red-400 text-sm font-semibold">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-red-400 text-sm font-bold">
               <Flag className="w-4 h-4" />
               Dispute Result
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-slate-400 font-medium">Reason <span className="text-red-400">*</span></label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
+                Reason <span className="text-red-400">*</span>
+              </label>
               <textarea
                 value={disputeReason}
                 onChange={e => setDisputeReason(e.target.value)}
                 placeholder="Explain why you're disputing this result..."
                 rows={3}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-500 resize-none"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-500/70 resize-none transition-colors"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-slate-400 font-medium">
-                Evidence screenshot <span className="text-slate-600 text-[10px]">optional</span>
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
+                Evidence <span className="text-slate-600 text-[10px] normal-case">optional</span>
               </label>
-              <ImageUploadDropzone
-                value={evidenceUrl}
-                onChange={setEvidenceUrl}
-                folder={`match-dispute/${matchId}`}
-                disabled={submitting}
-              />
+              <ImageUploadDropzone value={evidenceUrl} onChange={setEvidenceUrl} folder={`match-dispute/${matchId}`} disabled={submitting} />
             </div>
             <div className="flex gap-2 pt-1">
               <button
@@ -357,15 +371,9 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
                 Back
               </button>
               <button
-                onClick={() => doAction(() =>
-                  tournamentService.disputeMatchResult(
-                    matchId,
-                    disputeReason,
-                    evidenceUrl ? [evidenceUrl] : undefined,
-                  )
-                )}
+                onClick={() => doAction(() => tournamentService.disputeMatchResult(matchId, disputeReason, evidenceUrl ? [evidenceUrl] : undefined))}
                 disabled={submitting || !disputeReason.trim()}
-                className="flex-1 py-2.5 rounded-xl bg-red-700 hover:bg-red-600 text-white font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
                 Submit Dispute
@@ -375,181 +383,128 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
         );
       }
 
-      // ── I submitted — waiting for opponent ────────────────────────────
+      // ── I submitted — waiting ───────────────────────────────────────────
       if (iSubmitted) {
         const submittedAsDraw = !match.winnerId && !!match.resultReportedBy;
         return (
           <div className="space-y-4">
-            {/* Submitted scores / result */}
-            <div className="flex items-center justify-center gap-3 py-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
-              {submittedAsDraw ? (
-                <span className="text-sm font-bold text-slate-300">⚖️ Draw</span>
-              ) : (
-                <>
-                  <div className="text-center">
-                    <p className="text-[10px] text-slate-500 mb-1">{match.player1Name}</p>
-                    <span className="text-2xl font-bold text-white tabular-nums">{match.player1Score}</span>
-                  </div>
-                  <span className="text-slate-600 font-bold">–</span>
-                  <div className="text-center">
-                    <p className="text-[10px] text-slate-500 mb-1">{match.player2Name}</p>
-                    <span className="text-2xl font-bold text-white tabular-nums">{match.player2Score}</span>
-                  </div>
-                </>
-              )}
-            </div>
-
+            {submittedAsDraw
+              ? <div className="flex items-center justify-center gap-2 py-4 rounded-xl bg-slate-800/50 border border-slate-700/60 text-sm font-bold text-slate-300">⚖️ Draw</div>
+              : <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} />
+            }
             <div className="flex flex-col items-center gap-2 text-center">
-              <p className="text-sm font-semibold text-white">Result Submitted</p>
+              <p className="text-sm font-bold text-white">Result Submitted</p>
               <p className="text-xs text-slate-400">
                 Waiting for <span className="text-slate-200">{opponentName}</span> to confirm or dispute.
               </p>
-              {countdown !== null && countdown > 0 ? (
-                <CountdownBadge seconds={countdown} label="Auto-confirms in" />
-              ) : countdown === 0 ? (
-                <div className="text-xs text-cyan-400">Auto-confirming…</div>
-              ) : null}
+              {countdown !== null && (
+                countdown > 0
+                  ? <CountdownBadge seconds={countdown} label="Auto-confirms in" />
+                  : <p className="text-xs text-orange-400">Auto-confirming…</p>
+              )}
             </div>
           </div>
         );
       }
 
-      // ── TBD participant — opponent not yet assigned ───────────────────
-      const hasTbd = !match.player1Id || !match.player2Id ||
-        match.player1Name === 'TBD' || match.player2Name === 'TBD';
-
+      // ── TBD / no opponent ───────────────────────────────────────────────
+      const hasTbd = !match.player1Id || !match.player2Id || match.player1Name === 'TBD' || match.player2Name === 'TBD';
       if (hasTbd) {
         return (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <Clock className="w-10 h-10 text-slate-500" />
-            <p className="text-sm font-semibold text-white">Waiting for Opponent</p>
-            <p className="text-xs text-slate-400 max-w-xs">
-              Your opponent hasn't been assigned yet. Results can only be submitted once both players are confirmed.
-            </p>
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
+            <div className="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+              <Clock className="w-7 h-7 text-slate-500" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Waiting for Opponent</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">Your opponent hasn't been assigned yet.</p>
+            </div>
           </div>
         );
       }
 
-      // ── Matchweek not yet activated ───────────────────────────────────
-      const matchweekNotActive =
-        currentMatchweek !== undefined &&
-        match.matchweek !== undefined &&
-        match.matchweek > currentMatchweek;
-
+      // ── Matchweek not active ────────────────────────────────────────────
+      const matchweekNotActive = currentMatchweek !== undefined && match.matchweek !== undefined && match.matchweek > currentMatchweek;
       if (matchweekNotActive) {
         return (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <Clock className="w-10 h-10 text-slate-500" />
-            <p className="text-sm font-semibold text-white">Matchweek Not Active</p>
-            <p className="text-xs text-slate-400 max-w-xs">
-              The organizer hasn't advanced to Week {match.matchweek} yet. Results can only be
-              submitted once the organizer activates this matchweek.
-            </p>
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
+            <div className="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+              <Clock className="w-7 h-7 text-slate-500" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Matchweek Not Active</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+                The organizer hasn't advanced to Week {match.matchweek} yet.
+              </p>
+            </div>
           </div>
         );
       }
 
-      // ── Submit result form ────────────────────────────────────────────
+      // ── Submit result form ──────────────────────────────────────────────
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 text-center">Select the winner — or mark as a draw</p>
+          <p className="text-xs text-slate-500 text-center">Select the winner of this match</p>
+
           <div className="flex gap-3">
-            <PlayerCard
-              name={match.player1Name}
-              highlight={isP1}
-              selected={!isDraw && selectedWinnerId === match.player1Id}
-              dimmed={isDraw}
-              onClick={() => { setIsDraw(false); setSelectedWinnerId(match.player1Id); }}
-            />
+            <PlayerCard name={match.player1Name} highlight={isP1} selected={!isDraw && selectedWinnerId === match.player1Id} dimmed={isDraw}
+              onClick={() => { setIsDraw(false); setSelectedWinnerId(match.player1Id); }} />
             <div className="flex items-center justify-center shrink-0">
-              <span className="text-slate-600 font-bold text-sm">VS</span>
+              <span className="text-slate-600 font-bold text-xs uppercase tracking-widest">VS</span>
             </div>
-            <PlayerCard
-              name={match.player2Name}
-              highlight={isP2}
-              selected={!isDraw && selectedWinnerId === match.player2Id}
-              dimmed={isDraw}
-              onClick={() => { setIsDraw(false); setSelectedWinnerId(match.player2Id); }}
-            />
+            <PlayerCard name={match.player2Name} highlight={isP2} selected={!isDraw && selectedWinnerId === match.player2Id} dimmed={isDraw}
+              onClick={() => { setIsDraw(false); setSelectedWinnerId(match.player2Id); }} />
           </div>
 
-          {/* Draw button */}
-          <button
-            type="button"
-            onClick={() => { setIsDraw(true); setSelectedWinnerId(null); }}
+          {/* Score inputs */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
+              Score <span className="text-red-400">*</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 space-y-1">
+                <p className="text-[10px] text-slate-500 text-center truncate">{match.player1Name}</p>
+                <input type="number" min="0" value={score1} onChange={e => setScore1(e.target.value)} placeholder="0"
+                  className="w-full text-center bg-slate-800/60 border border-slate-700 rounded-xl px-2 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/70 transition-colors" />
+              </div>
+              <span className="text-slate-600 font-bold text-sm shrink-0 mt-5">—</span>
+              <div className="flex-1 space-y-1">
+                <p className="text-[10px] text-slate-500 text-center truncate">{match.player2Name}</p>
+                <input type="number" min="0" value={score2} onChange={e => setScore2(e.target.value)} placeholder="0"
+                  className="w-full text-center bg-slate-800/60 border border-slate-700 rounded-xl px-2 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/70 transition-colors" />
+              </div>
+            </div>
+          </div>
+
+          {/* Draw toggle */}
+          <button type="button" onClick={() => { setIsDraw(true); setSelectedWinnerId(null); }}
             disabled={!scoresEqual}
-            title={!scoresEqual ? 'Enter equal scores to mark as a draw (e.g. 1–1, 2–2)' : undefined}
+            title={!scoresEqual ? 'Enter equal scores to mark as a draw' : undefined}
             className={`w-full py-2 rounded-xl border text-sm font-semibold transition-all ${
               isDraw
-                ? 'border-cyan-500 bg-cyan-950/40 text-cyan-300'
+                ? 'border-orange-500/50 bg-orange-500/10 text-orange-300'
                 : scoresEqual
-                  ? 'border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300'
-                  : 'border-slate-800 text-slate-700 cursor-not-allowed opacity-50'
-            }`}
-          >
+                  ? 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300'
+                  : 'border-slate-800 text-slate-700 cursor-not-allowed opacity-40'
+            }`}>
             {isDraw ? '⚖️ Draw Selected' : 'It was a Draw'}
             {!scoresEqual && score1 !== '' && score2 !== '' && (
               <span className="ml-2 text-[10px] font-normal">(scores must be equal)</span>
             )}
           </button>
 
-          {/* Scores */}
-          <div className="space-y-1">
-            <label className="text-[11px] text-slate-400 font-medium">
-              Score <span className="text-red-400">*</span>
-            </label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-[10px] text-slate-500 truncate w-full text-center">{match.player1Name}</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={score1}
-                  onChange={e => setScore1(e.target.value)}
-                  placeholder="0"
-                  className="w-full text-center bg-slate-800/60 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
-                />
-              </div>
-              <span className="text-slate-600 font-bold text-sm shrink-0 mt-4">–</span>
-              <div className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-[10px] text-slate-500 truncate w-full text-center">{match.player2Name}</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={score2}
-                  onChange={e => setScore2(e.target.value)}
-                  placeholder="0"
-                  className="w-full text-center bg-slate-800/60 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[11px] text-slate-400 font-medium">
+          {/* Screenshot */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
               Screenshot proof <span className="text-red-400">*</span>
             </label>
-            <ImageUploadDropzone
-              value={screenshotUrl}
-              onChange={setScreenshotUrl}
-              folder={`match-proof/${matchId}`}
-              disabled={submitting}
-            />
+            <ImageUploadDropzone value={screenshotUrl} onChange={setScreenshotUrl} folder={`match-proof/${matchId}`} disabled={submitting} />
           </div>
 
           <button
-            onClick={() =>
-              doAction(() =>
-                tournamentService.submitMatchResult(
-                  matchId,
-                  isDraw ? null : selectedWinnerId!,
-                  { screenshots: [screenshotUrl] },
-                  { player1: Number(score1), player2: Number(score2) },
-                )
-              )
-            }
+            onClick={() => doAction(() => tournamentService.submitMatchResult(matchId, isDraw ? null : selectedWinnerId!, { screenshots: [screenshotUrl] }, { player1: Number(score1), player2: Number(score2) }))}
             disabled={submitting || (!isDraw && !selectedWinnerId) || !screenshotUrl || score1 === '' || score2 === ''}
-            className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 font-bold text-sm transition-all hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
             Submit Result
@@ -559,7 +514,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
     }
 
     return (
-      <div className="flex flex-col items-center gap-2 py-4 text-center">
+      <div className="flex flex-col items-center gap-2 py-6 text-center">
         <Clock className="w-8 h-8 text-slate-600" />
         <p className="text-sm text-slate-500">Match status: {match.status}</p>
       </div>
@@ -569,30 +524,38 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
   // ── Modal wrapper ──────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl shadow-black/70 overflow-hidden">
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+
+      <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-slate-700/60 bg-slate-950 shadow-2xl shadow-black/80">
+        {/* Ambient glows */}
+        <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-orange-500/8 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <Swords className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-semibold text-white">
+        <div className="relative flex items-center justify-between px-5 py-4 border-b border-slate-800/80">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-size-[24px_24px] pointer-events-none" />
+          <div className="relative flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
+              <Swords className="w-3.5 h-3.5 text-orange-400" />
+            </div>
+            <span className="text-sm font-bold text-white">
               {match?.matchweek !== undefined ? `Matchweek ${match.matchweek}` : 'Match'}
             </span>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-1">
+          <button onClick={onClose} className="relative text-slate-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-800">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Play deadline banner */}
         {!loading && match?.playDeadline && match.status !== 'completed' && match.status !== 'cancelled' && match.status !== 'disputed' && (
-          <div className={`px-5 py-2 flex items-center justify-center gap-1.5 text-xs font-medium border-b
-            ${playDeadlineCountdown !== null && playDeadlineCountdown <= 0
-              ? 'bg-red-950/40 border-red-900/50 text-red-400'
+          <div className={`px-5 py-2 flex items-center justify-center gap-1.5 text-xs font-medium border-b ${
+            playDeadlineCountdown !== null && playDeadlineCountdown <= 0
+              ? 'bg-red-500/10 border-red-500/20 text-red-400'
               : playDeadlineCountdown !== null && playDeadlineCountdown < 3600
-                ? 'bg-amber-950/30 border-amber-900/40 text-amber-400'
-                : 'bg-slate-800/40 border-slate-800 text-slate-400'
-            }`}>
+                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                : 'bg-slate-800/40 border-slate-800/60 text-slate-400'
+          }`}>
             <Clock className="w-3.5 h-3.5 shrink-0" />
             {playDeadlineCountdown !== null && playDeadlineCountdown <= 0
               ? 'Play deadline has passed'
@@ -610,22 +573,21 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
         )}
 
         {/* Body */}
-        <div className="px-5 py-5">
+        <div className="relative px-5 py-5">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
-              <Loader2 className="w-5 h-5 animate-spin" />
+            <div className="flex items-center justify-center gap-2 py-10 text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin text-orange-400" />
               <span className="text-sm">Loading match…</span>
             </div>
           ) : error ? (
-            <div className="text-center py-6 space-y-2">
-              <AlertTriangle className="w-8 h-8 text-red-400 mx-auto" />
+            <div className="text-center py-8 space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-6 h-6 text-red-400" />
+              </div>
               <p className="text-sm text-red-400">{error}</p>
             </div>
-          ) : (
-            renderContent()
-          )}
+          ) : renderContent()}
 
-          {/* Inline error (after actions) */}
           {!loading && error && match && (
             <p className="mt-3 text-xs text-red-400 text-center">{error}</p>
           )}
