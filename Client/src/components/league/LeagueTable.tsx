@@ -58,17 +58,17 @@ function Podium({ top3, highlightUserId }: { top3: LeagueTableRow[]; highlightUs
   return (
     <div className="flex items-end justify-center gap-2 px-4 pb-0">
       {slots.map(({ row, medal, pedHeight, bg, pts, pad }, i) => {
-        if (!row) return <div key={i} className="flex-1 max-w-[120px]" />;
+        if (!row) return <div key={i} className="flex-1 max-w-30" />;
         const isMe = !!highlightUserId && (row.userId === highlightUserId || row.teamId === highlightUserId);
         return (
-          <div key={row.position} className={`flex flex-col items-center gap-2 flex-1 max-w-[120px] ${pad}`}>
+          <div key={row.position} className={`flex flex-col items-center gap-2 flex-1 max-w-30 ${pad}`}>
             {/* Avatar */}
             <div className="relative">
               <Avatar avatarUrl={row.avatarUrl} displayName={row.displayName} size={i === 1 ? 'lg' : 'md'} />
               <span className="absolute -bottom-1 -right-1 text-sm leading-none">{medal}</span>
             </div>
             {/* Name */}
-            <p className={`text-xs font-bold truncate max-w-[96px] text-center ${isMe ? 'text-orange-300' : i === 1 ? 'text-white' : 'text-slate-300'}`}>
+            <p className={`text-xs font-bold truncate max-w-24 text-center ${isMe ? 'text-orange-300' : i === 1 ? 'text-white' : 'text-slate-300'}`}>
               {row.displayName}
               {isMe && <span className="ml-1 text-[10px] text-orange-500"> (you)</span>}
             </p>
@@ -117,7 +117,7 @@ export function LeagueTable({ table, highlightUserId }: LeagueTableProps) {
       {/* Table */}
       <div className="rounded-2xl border border-slate-800 overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-sm min-w-[540px]">
+          <table className="w-full text-sm min-w-135">
             <thead>
               <tr className="bg-slate-900 border-b border-slate-800 text-slate-500 uppercase text-[10px] tracking-widest">
                 <th className="pl-4 pr-2 py-3 text-left w-12">#</th>
@@ -166,7 +166,7 @@ export function LeagueTable({ table, highlightUserId }: LeagueTableProps) {
                       <div className="flex items-center gap-2.5">
                         <Avatar avatarUrl={row.avatarUrl} displayName={row.displayName} size="sm" />
                         <div className="min-w-0">
-                          <span className={`font-semibold text-sm block truncate max-w-[120px] sm:max-w-none ${isMe ? 'text-orange-300' : 'text-slate-200'}`}>
+                          <span className={`font-semibold text-sm block truncate max-w-30 sm:max-w-none ${isMe ? 'text-orange-300' : 'text-slate-200'}`}>
                             {row.displayName}
                             {isMe && <span className="ml-1.5 text-[10px] text-orange-500 font-bold">(you)</span>}
                           </span>
