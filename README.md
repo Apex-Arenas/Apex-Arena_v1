@@ -1,10 +1,10 @@
-# 🎮 Apex Arenas — Esports Tournament Platform
+# Apex Arenas — Esports Tournament Platform
 
 A web-based esports tournament hosting and management platform designed to professionalize competitive gaming in Ghana and scale across West Africa. The platform provides secure tournament infrastructure, mandatory prize escrow, automated prize distribution, and player career-building tools.
 
 ---
 
-## 📌 Overview
+## Overview
 
 Apex Arenas is a **technology and infrastructure provider**, not a gaming or betting operator.  
 Independent organizers use the platform to create and manage esports tournaments, while players compete in a trusted environment with **guaranteed prizes secured via escrow**.
@@ -13,7 +13,7 @@ The platform addresses major challenges in the local esports ecosystem, includin
 
 ---
 
-## 🎯 Core Value Proposition
+## Core Value Proposition
 
 - **Mandatory Prize Escrow** – All prizes are locked before tournaments go live
 - **Automated Prize Distribution** – Winners are paid instantly after tournament completion
@@ -24,7 +24,7 @@ The platform addresses major challenges in the local esports ecosystem, includin
 
 ---
 
-## 👥 Platform Roles
+## Platform Roles
 
 ### Players
 
@@ -50,7 +50,7 @@ The platform addresses major challenges in the local esports ecosystem, includin
 
 ---
 
-## 🔄 System Workflow
+## System Workflow
 
 ### Player Journey
 
@@ -74,7 +74,7 @@ The platform addresses major challenges in the local esports ecosystem, includin
 
 ---
 
-## 🏆 Tournament Lifecycle
+## Tournament Lifecycle
 
 - **Draft** – Tournament being created
 - **Pending Escrow** – Awaiting prize deposit
@@ -86,27 +86,27 @@ The platform addresses major challenges in the local esports ecosystem, includin
 
 ---
 
-## 💰 Money Flow (Transparent & Automated)
+## Money Flow
 
 ### Entry Fees (Paid Tournaments)
 
-- 10% → Platform service fee
-- 90% → Organizer earnings
+- 10% — Platform service fee
+- 90% — Organizer earnings
 
 ### Prize Escrow
 
 - Organizer deposits full prize amount
-- 1% → Escrow service fee
-- 99% → Locked escrow account
+- 1% — Escrow service fee
+- 99% — Locked escrow account
 
 ### Prize Distribution
 
 - Triggered automatically when tournament is marked completed
-- Funds sent directly to winners’ Mobile Money or bank accounts
+- Funds sent directly to winners' Mobile Money or bank accounts
 
 ---
 
-## 🛠️ Key Features
+## Key Features
 
 ### Player Features
 
@@ -132,10 +132,10 @@ The platform addresses major challenges in the local esports ecosystem, includin
 
 ---
 
-## 🔐 Security & Compliance
+## Security and Compliance
 
 - Mandatory prize escrow
-- Role separation (platform ≠ organizer)
+- Role separation (platform vs organizer)
 - Audit trails for all transactions
 - Age verification (18+)
 - Compliance with Ghana Gaming Act 721
@@ -143,7 +143,7 @@ The platform addresses major challenges in the local esports ecosystem, includin
 
 ---
 
-## 🧠 Optional Intelligent Features
+## Intelligent Features
 
 - AI-assisted winner verification
 - Fraud and anomaly detection
@@ -152,7 +152,7 @@ The platform addresses major challenges in the local esports ecosystem, includin
 
 ---
 
-## 🧱 Tech Stack (Planned)
+## Tech Stack
 
 - **Frontend:** React + Tailwind CSS
 - **Backend:** Node.js + Express
@@ -163,17 +163,17 @@ The platform addresses major challenges in the local esports ecosystem, includin
 
 ---
 
-## 🚀 Launch Strategy
+## Launch Strategy
 
 - Closed beta with free tournaments
 - Gradual introduction of paid tournaments
-- Partnerships with gaming cafés and universities
+- Partnerships with gaming cafes and universities
 - Influencer and community-driven growth
 - Expansion across Ghana, then West Africa
 
 ---
 
-## 📄 Legal Positioning
+## Legal Positioning
 
 Apex Arenas operates strictly as a **technology service provider**:
 
@@ -185,27 +185,27 @@ This structure ensures regulatory compliance and long-term scalability.
 
 ---
 
-## 📜 License
+## License
 
 MIT License
 
 ---
 
-## ✨ Status
+## Status
 
 **In Active Development (MVP Phase)**  
-Confidential — Internal & Partner Use Only
+Confidential — Internal and Partner Use Only
 
 ---
 
-## 🧩 Current Implementation (Feb 2026)
+## Current Implementation
 
 ### Frontend Apps
 
 - `Client/` — Main user app (players + organizers)
-- `SuperAdmin/` — Super admin interface (separate Vite app)
+- `Admin/` — Admin interface (separate Vite app)
 
-### Auth Flows Implemented (Client)
+### Auth Flows Implemented
 
 - Registration with role selection (`player` / `organizer`)
 - Login with backend integration
@@ -216,45 +216,45 @@ Confidential — Internal & Partner Use Only
 - Token refresh fallback handling
 - Protected `/auth/*` routes
 - Auth-aware navbar (guest vs authenticated actions)
-- Dashboard now fetches authenticated profile data
+- Dashboard fetches authenticated profile data
 
 ### API Configuration
 
-- Auth API base URL is configured via:
-  - `VITE_AUTH_BASE_URL`
-- Default fallback in code:
-  - `https://api-apexarenas.onrender.com/api/v1/auth`
+- Auth API base URL configured via `VITE_AUTH_BASE_URL`
+- Default fallback: `https://api-apexarenas.onrender.com/api/v1/auth`
 
 ---
 
-## 🌐 Deployment Notes (Render)
+## Deployment (Render)
 
 ### Frontend (Static Site)
 
-- Service type: **Static Site**
+- Service type: Static Site
 - Root directory: `Client`
 - Build command: `npm install && npm run build`
 - Publish directory: `dist`
-- Required env var:
-  - `VITE_AUTH_BASE_URL=https://api-apexarenas.onrender.com/api/v1/auth`
+- Required env var: `VITE_AUTH_BASE_URL=https://api-apexarenas.onrender.com/api/v1/auth`
 
-### SPA Rewrite Rule (Required)
+### SPA Rewrite Rule
 
-- Add rewrite rule in Render:
-  - Source: `/*`
-  - Destination: `/index.html`
-  - Action: `Rewrite`
+Add a rewrite rule in Render:
 
-### Backend CORS (Required for Browser Requests)
+- Source: `/*`
+- Destination: `/index.html`
+- Action: Rewrite
 
-- Allow frontend origins in backend CORS config/env (example):
-  - `http://localhost:5173`
-  - `https://<your-render-frontend-domain>.onrender.com`
-- Ensure preflight responses include `Access-Control-Allow-Origin` and related CORS headers.
+### Backend CORS
+
+Allow frontend origins in backend CORS config:
+
+- `http://localhost:5173`
+- `https://<your-render-frontend-domain>.onrender.com`
+
+Ensure preflight responses include `Access-Control-Allow-Origin` and related CORS headers.
 
 ---
 
-## 🧪 Local Run (Client)
+## Local Development
 
 From `Client/`:
 
