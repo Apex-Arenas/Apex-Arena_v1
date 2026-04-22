@@ -7,6 +7,7 @@ export const API_BASE_URLS = {
   TOURNAMENT: "https://api-apexarenas.onrender.com/api/v1/tournament",
   FINANCE: "https://api-apexarenas.onrender.com/api/v1/finance",
   WEBHOOKS: "https://api-apexarenas.onrender.com/api/v1/webhooks",
+  SUPPORT: "https://api-apexarenas.onrender.com/api/v1/support",
 } as const;
 
 export const AUTH_ENDPOINTS = {
@@ -236,6 +237,10 @@ export const FINANCE_ENDPOINTS = {
   ADMIN_PAYOUT_APPROVE: `${API_BASE_URLS.FINANCE}/admin/payouts`,   // + /:id/approve (PATCH)
   ADMIN_PAYOUT_REJECT: `${API_BASE_URLS.FINANCE}/admin/payouts`,    // + /:id/reject (PATCH)
 
+} as const;
+
+export const SUPPORT_ENDPOINTS = {
+  CONTACT: `${API_BASE_URLS.SUPPORT}/contact`,
 } as const;
 
 export const WEBHOOK_ENDPOINTS = {
