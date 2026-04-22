@@ -17,6 +17,7 @@ import {
   Wallet,
   BarChart2,
   DollarSign,
+  Mail,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth-context";
@@ -29,6 +30,7 @@ const playerNavItems = [
   { to: "/auth/wallet",                 icon: Wallet,     label: "Wallet"                   },
   { to: "/auth/player/profile",         icon: UserCircle, label: "Profile"                  },
   { to: "/auth/notifications",          icon: Bell,       label: "Notifications"            },
+  { to: "/support/contact-us",          icon: Mail,       label: "Contact Us"               },
 ] as const;
 
 const organizerNavItems = [
@@ -39,6 +41,7 @@ const organizerNavItems = [
   { to: "/auth/transactions",              icon: Receipt,    label: "Transactions"              },
   { to: "/auth/organizer/profile",         icon: UserCircle, label: "Profile"                   },
   { to: "/auth/notifications",             icon: Bell,       label: "Notifications"             },
+  { to: "/support/contact-us",             icon: Mail,       label: "Contact Us"                },
 ] as const;
 
 interface SidebarProps {
