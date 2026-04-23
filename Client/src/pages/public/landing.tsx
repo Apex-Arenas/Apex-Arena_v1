@@ -130,37 +130,37 @@ const Landing = () => {
         <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 60% 60% at 115% 30%, rgba(99,102,241,0.18), transparent)" }} />
         <div className="absolute inset-0" style={{ backgroundImage: "linear-gradient(rgba(148,163,184,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.035) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 lg:pt-24 lg:pb-24">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 pt-14 pb-16 lg:pt-24 lg:pb-24">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
             {/* Left — text */}
             <div>
-              <motion.span {...fade(0)} className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-1.5 text-cyan-200 text-sm font-medium">
-                <Zap className="w-3.5 h-3.5" />
-                Next-gen esports infrastructure for West Africa
+              <motion.span {...fade(0)} className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-3.5 py-1.5 text-cyan-200 text-xs sm:text-sm font-medium">
+                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                <span>Next-gen esports infrastructure for West Africa</span>
               </motion.span>
 
-              <motion.h1 {...fade(0.05)} className="font-display text-5xl sm:text-6xl lg:text-[2.6rem] xl:text-6xl font-bold tracking-tight leading-[1.06] mt-6">
-                <span className="block">Build your legacy in a</span>
+              <motion.h1 {...fade(0.05)} className="font-display text-[2.2rem] sm:text-5xl lg:text-[2.2rem] xl:text-[2.8rem] font-bold tracking-tight leading-[1.1] mt-5">
+                <span className="block">Build your legacy in</span>
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-400 to-cyan-300">
-                  verified tournament
+                  a verified tournament
                 </span>
               </motion.h1>
 
-              <motion.p {...fade(0.1)} className="text-base text-slate-400 mt-4 leading-relaxed max-w-md">
+              <motion.p {...fade(0.1)} className="text-sm sm:text-base text-slate-400 mt-4 leading-relaxed max-w-md">
                 Prize pools in escrow. Instant Mobile Money payouts. Real results, every match.
               </motion.p>
 
-              <motion.div {...fade(0.15)} className="flex flex-col sm:flex-row gap-3 mt-7">
+              <motion.div {...fade(0.15)} className="flex flex-col sm:flex-row gap-3 mt-6">
                 <Link
                   to="/signup"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-xl hover:shadow-orange-500/25 hover:-translate-y-px transition-all duration-200"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-xl hover:shadow-orange-500/25 hover:-translate-y-px transition-all duration-200"
                 >
                   Start competing free <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
                   to="/login"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl border border-slate-700 text-slate-300 text-sm font-medium hover:border-slate-500 hover:text-white hover:bg-slate-800/40 transition-all duration-200"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-slate-700 text-slate-300 text-sm font-medium hover:border-slate-500 hover:text-white hover:bg-slate-800/40 transition-all duration-200"
                 >
                   Browse tournaments
                 </Link>
@@ -196,19 +196,19 @@ const Landing = () => {
       </section>
 
       {/* ── Stats strip ─────────────────────────────────────────────────────── */}
-      <section className="bg-slate-950 pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-slate-950 pb-10">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 rounded-2xl border border-slate-800/80 overflow-hidden divide-x divide-y md:divide-y-0 divide-slate-800/60">
             {[
-              { value: "100%",    label: "Prize security", sub: "Escrow guaranteed",   color: "text-cyan-300"   },
-              { value: "0%",      label: "Payment risk",   sub: "Protected payouts",   color: "text-emerald-300" },
-              { value: "10%",     label: "Platform fee",   sub: "Lowest in region",    color: "text-amber-300"  },
-              { value: "1%",      label: "Escrow fee",     sub: "Transparent charges", color: "text-violet-300" },
+              { value: "100%", label: "Prize security", sub: "Escrow guaranteed",   color: "text-cyan-300"    },
+              { value: "0%",   label: "Payment risk",   sub: "Protected payouts",   color: "text-emerald-300" },
+              { value: "10%",  label: "Platform fee",   sub: "Lowest in region",    color: "text-amber-300"   },
+              { value: "1%",   label: "Escrow fee",     sub: "Transparent charges", color: "text-violet-300"  },
             ].map((s, i) => (
-              <motion.div key={s.label} {...fade(i * 0.06)} className="bg-slate-900/70 px-6 py-7 text-center">
-                <p className={`font-display text-3xl font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-sm text-slate-200 mt-1 font-medium">{s.label}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{s.sub}</p>
+              <motion.div key={s.label} {...fade(i * 0.06)} className="bg-slate-900/70 px-4 py-6 sm:px-6 sm:py-7 text-center">
+                <p className={`font-display text-2xl sm:text-3xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-xs sm:text-sm text-slate-200 mt-1 font-medium">{s.label}</p>
+                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">{s.sub}</p>
               </motion.div>
             ))}
           </div>
@@ -216,19 +216,19 @@ const Landing = () => {
       </section>
 
       {/* ── Featured tournaments ─────────────────────────────────────────────── */}
-      <section className="bg-slate-950 py-20 border-t border-slate-800/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fade()} className="flex items-end justify-between flex-wrap gap-6 mb-10">
+      <section className="bg-slate-950 py-14 sm:py-20 border-t border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+          <motion.div {...fade()} className="flex items-end justify-between flex-wrap gap-4 mb-8 sm:mb-10">
             <div>
-              <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-3">Featured this week</p>
-              <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">Brackets dropping now</h2>
+              <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-2.5">Featured this week</p>
+              <h2 className="font-display text-3xl sm:text-5xl font-bold text-white tracking-tight">Brackets dropping now</h2>
             </div>
             <Link to="/auth/player/join-tournament" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors">
               View all <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-5">
             {featuredLoading ? (
               // Skeleton placeholders while loading
               Array.from({ length: 3 }).map((_, i) => (
@@ -305,21 +305,21 @@ const Landing = () => {
       </section>
 
       {/* ── Games showcase ───────────────────────────────────────────────────── */}
-      <section className="bg-slate-950 py-20 border-t border-slate-800/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fade()} className="flex items-end justify-between flex-wrap gap-6 mb-10">
+      <section className="bg-slate-950 py-14 sm:py-20 border-t border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+          <motion.div {...fade()} className="flex items-end justify-between flex-wrap gap-4 mb-8 sm:mb-10">
             <div>
-              <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-3">Supported titles</p>
-              <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">Compete in every title that matters</h2>
-              <p className="text-slate-400 text-lg mt-4 max-w-xl">From 5v5 MOBA to 1v1 fighters — if it's competitive in West Africa, there's a bracket here.</p>
+              <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-2.5">Supported titles</p>
+              <h2 className="font-display text-3xl sm:text-5xl font-bold text-white tracking-tight">Compete in every title that matters</h2>
+              <p className="text-slate-400 text-sm sm:text-lg mt-3 max-w-xl">From 5v5 MOBA to 1v1 fighters — if it's competitive in West Africa, there's a bracket here.</p>
             </div>
             <Link to="/signup" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors shrink-0">
               View all titles <ArrowRight className="w-4 h-4" />
             </Link>
           </motion.div>
 
-          {/* ── Featured trio mosaic ── */}
-          <motion.div {...fade(0.05)} className="grid grid-cols-3 grid-rows-2 gap-2 h-[420px] mb-3 rounded-2xl overflow-hidden border border-slate-800/80">
+          {/* ── Featured trio mosaic — hidden on mobile, too complex ── */}
+          <motion.div {...fade(0.05)} className="hidden sm:grid grid-cols-3 grid-rows-2 gap-2 h-[420px] mb-3 rounded-2xl overflow-hidden border border-slate-800/80">
             {/* FC 26 — large left (spans 2 cols × 2 rows) */}
             <div className="col-span-2 row-span-2 group relative overflow-hidden cursor-pointer">
               <img
@@ -375,7 +375,7 @@ const Landing = () => {
           </motion.div>
 
           {/* ── More games portrait row ── */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:mt-3">
             {GAMES.map((g, i) => (
               <motion.div key={g.title} {...fade(i * 0.05)}
                 className="group relative rounded-xl overflow-hidden border border-slate-800 bg-slate-900 cursor-pointer"
@@ -398,17 +398,17 @@ const Landing = () => {
       </section>
 
       {/* ── Features ─────────────────────────────────────────────────────────── */}
-      <section className="bg-slate-950 py-20 border-t border-slate-800/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fade()} className="max-w-2xl mb-12">
-            <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-3">Why Apex Arenas</p>
-            <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">
+      <section className="bg-slate-950 py-14 sm:py-20 border-t border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+          <motion.div {...fade()} className="max-w-2xl mb-10 sm:mb-12">
+            <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-2.5">Why Apex Arenas</p>
+            <h2 className="font-display text-3xl sm:text-5xl font-bold text-white tracking-tight">
               Built for players who{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-sky-400">
                 expect to get paid
               </span>
             </h2>
-            <p className="text-slate-400 text-lg mt-4">
+            <p className="text-slate-400 text-sm sm:text-lg mt-3">
               Every corner of the product is engineered for trust — not because it's a tagline, but because it's the only way competitive play works.
             </p>
           </motion.div>
@@ -429,12 +429,12 @@ const Landing = () => {
       </section>
 
       {/* ── How it works ─────────────────────────────────────────────────────── */}
-      <section className="bg-slate-950 py-20 border-t border-slate-800/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fade()} className="flex items-end justify-between flex-wrap gap-6 mb-12">
+      <section className="bg-slate-950 py-14 sm:py-20 border-t border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+          <motion.div {...fade()} className="flex items-end justify-between flex-wrap gap-4 mb-10 sm:mb-12">
             <div>
-              <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-3">How it works</p>
-              <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">Four steps, zero drama</h2>
+              <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-2.5">How it works</p>
+              <h2 className="font-display text-3xl sm:text-5xl font-bold text-white tracking-tight">Four steps, zero drama</h2>
             </div>
             <Link to="/signup" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors">
               Get started <ArrowRight className="w-4 h-4" />
@@ -458,11 +458,11 @@ const Landing = () => {
       </section>
 
       {/* ── Testimonials ─────────────────────────────────────────────────────── */}
-      <section className="bg-slate-950 py-20 border-t border-slate-800/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fade()} className="max-w-2xl mb-12">
-            <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-3">From the arena</p>
-            <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">Trusted by the scene</h2>
+      <section className="bg-slate-950 py-14 sm:py-20 border-t border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+          <motion.div {...fade()} className="max-w-2xl mb-10 sm:mb-12">
+            <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-2.5">From the arena</p>
+            <h2 className="font-display text-3xl sm:text-5xl font-bold text-white tracking-tight">Trusted by the scene</h2>
           </motion.div>
           <div className="grid md:grid-cols-3 gap-4">
             {TESTIMONIALS.map((t, i) => (
@@ -485,29 +485,29 @@ const Landing = () => {
       </section>
 
       {/* ── CTA ──────────────────────────────────────────────────────────────── */}
-      <section className="bg-slate-950 py-24 border-t border-slate-800/60">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-slate-950 py-14 sm:py-24 border-t border-slate-800/60">
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 lg:px-8">
           <motion.div {...fade()}
-            className="relative rounded-3xl border border-cyan-500/25 overflow-hidden p-10 md:p-14 text-center"
+            className="relative rounded-2xl sm:rounded-3xl border border-cyan-500/25 overflow-hidden p-8 sm:p-10 md:p-14 text-center"
             style={{ background: "radial-gradient(ellipse 70% 100% at 50% 0%, rgba(6,182,212,0.15), transparent), #0f172a" }}
           >
-            <Trophy className="w-10 h-10 mx-auto text-amber-400" />
-            <h2 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight mt-4">
+            <Trophy className="w-9 h-9 sm:w-10 sm:h-10 mx-auto text-amber-400" />
+            <h2 className="font-display text-3xl sm:text-5xl font-bold text-white tracking-tight mt-4">
               The next bracket is waiting
             </h2>
-            <p className="text-slate-300 mt-4 max-w-xl mx-auto">
+            <p className="text-sm sm:text-base text-slate-300 mt-3 max-w-xl mx-auto">
               Sign up free, verify your handle, and you're ready to compete within minutes.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-3 mt-8">
+            <div className="flex flex-col sm:flex-row justify-center gap-3 mt-7 sm:mt-8">
               <Link
                 to="/signup"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-base font-bold hover:shadow-2xl hover:shadow-orange-500/25 hover:-translate-y-px transition-all duration-200"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-400 text-slate-950 text-sm sm:text-base font-bold hover:shadow-2xl hover:shadow-orange-500/25 hover:-translate-y-px transition-all duration-200"
               >
-                Start competing free <ArrowRight className="w-5 h-5" />
+                Start competing free <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl border border-slate-700 text-slate-300 text-base font-medium hover:border-slate-500 hover:text-white hover:bg-slate-800/40 transition-all duration-200"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl border border-slate-700 text-slate-300 text-sm sm:text-base font-medium hover:border-slate-500 hover:text-white hover:bg-slate-800/40 transition-all duration-200"
               >
                 I already have an account
               </Link>
