@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   User,
   Camera,
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useAdminAuth } from "../../lib/admin-auth-context";
 import ImageUploadDropzone from "../../components/ImageUploadDropzone";
-import { apiPost, apiPut } from "../../utils/api.utils";
+import { apiPost, apiPut, apiGet } from "../../utils/api.utils";
 import { AUTH_ENDPOINTS } from "../../config/api.config";
 import { getAdminAccessToken } from "../../utils/auth.utils";
 
@@ -122,17 +122,32 @@ const AdminProfile = () => {
     msg: string;
   } | null>(null);
 
+  const [fetchedCreatedAt, setFetchedCreatedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!admin?.id) return;
+    apiGet(`${AUTH_ENDPOINTS.ADMIN_GET_USER_DETAILS}/${admin.id}`, adminOpts())
+      .then((res) => {
+        if (!res.success) return;
+        const raw = res.data as Record<string, unknown>;
+        const val = (raw.created_at ?? raw.createdAt) as string | undefined;
+        if (val) setFetchedCreatedAt(val);
+      })
+      .catch(() => {});
+  }, [admin?.id]);
+
   const displayName =
     `${firstName} ${lastName}`.trim() || admin?.username || "Admin";
 
   const memberSince = useMemo(() => {
-    if (!admin?.createdAt) return "N/A";
-    return new Date(admin.createdAt).toLocaleDateString("en-GB", {
+    const raw = fetchedCreatedAt ?? admin?.createdAt;
+    if (!raw) return null;
+    return new Date(raw).toLocaleDateString("en-GB", {
       day: "numeric",
       month: "short",
       year: "numeric",
     });
-  }, [admin?.createdAt]);
+  }, [fetchedCreatedAt, admin?.createdAt]);
 
   const handleSaveProfile = async () => {
     setIsSaving(true);
@@ -281,9 +296,11 @@ const AdminProfile = () => {
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize bg-amber-500/15 border border-amber-500/30 text-amber-300">
                   {admin?.role?.replace("_", " ") ?? "admin"}
                 </span>
-                <span className="text-xs text-slate-500">
-                  Member since {memberSince}
-                </span>
+                {memberSince && (
+                  <span className="text-xs text-slate-500">
+                    Member since {memberSince}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -505,15 +522,17 @@ const AdminProfile = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2.5 flex items-center gap-2.5">
-                  <CalendarDays className="w-4 h-4 text-slate-500 shrink-0" />
-                  <div>
-                    <p className="text-[11px] text-slate-500 uppercase tracking-wide">
-                      Member Since
-                    </p>
-                    <p className="text-sm text-white">{memberSince}</p>
+                {memberSince && (
+                  <div className="rounded-xl border border-slate-800 bg-slate-950/40 px-3 py-2.5 flex items-center gap-2.5">
+                    <CalendarDays className="w-4 h-4 text-slate-500 shrink-0" />
+                    <div>
+                      <p className="text-[11px] text-slate-500 uppercase tracking-wide">
+                        Member Since
+                      </p>
+                      <p className="text-sm text-white">{memberSince}</p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </SectionCard>
           </div>
