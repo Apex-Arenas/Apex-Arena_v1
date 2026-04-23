@@ -237,14 +237,11 @@ export default function DisputeManagement() {
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Full-bleed Hero */}
-      <div className="relative overflow-hidden border-b border-slate-800">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-500/8 via-transparent to-transparent" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/20 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-6 h-6 text-red-400" />
-              </div>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-slate-400 shrink-0" />
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-2xl font-display font-bold text-white">Dispute Management</h1>
