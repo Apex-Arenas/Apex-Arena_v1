@@ -114,7 +114,7 @@ export default function JoinedTournamentDetailsCard({ reg }: Props) {
       <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-linear-to-br from-cyan-500/8 via-transparent to-orange-500/10" />
 
       {/* ── Cover image ─────────────────────────────────────── */}
-      <div className="relative aspect-16/10 overflow-hidden shrink-0">
+      <div className="relative h-36 sm:aspect-16/10 sm:h-auto overflow-hidden shrink-0">
         {/* Neutral dark base so images render true-to-colour */}
         <div className="absolute inset-0 bg-slate-900" />
 
@@ -181,7 +181,7 @@ export default function JoinedTournamentDetailsCard({ reg }: Props) {
       </div>
 
       {/* ── Content ─────────────────────────────────────────── */}
-      <div className="relative px-4 pt-3.5 pb-4.5 flex flex-col gap-3">
+      <div className="relative px-4 pt-3 pb-4 flex flex-col gap-2.5">
         {/* Title + reg status */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
