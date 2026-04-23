@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Filter,
@@ -170,6 +171,7 @@ const JoinTournament = () => {
   const [withdrawReasonError, setWithdrawReasonError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const hasFetchedGames = useRef(false);
 
@@ -287,7 +289,7 @@ const JoinTournament = () => {
     <div className="max-w-7xl mx-auto">
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden border-b border-slate-800 bg-slate-900 px-6 sm:px-8 py-7">
+      <div className="relative overflow-hidden border-b border-slate-800 bg-slate-900 px-8 py-7">
         <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
