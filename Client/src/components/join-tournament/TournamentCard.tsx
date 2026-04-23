@@ -205,6 +205,11 @@ export function TournamentCard({
               <Lock className="w-3.5 h-3.5" />
               Full
             </div>
+          ) : tournament.status === "locked" ? (
+            <div className="w-full py-2.5 rounded-xl text-sm font-bold bg-transparent text-slate-500 border border-slate-700/40 flex items-center justify-center gap-2 cursor-default">
+              <Lock className="w-3.5 h-3.5" />
+              Locked
+            </div>
           ) : null}
         </div>
       </div>
