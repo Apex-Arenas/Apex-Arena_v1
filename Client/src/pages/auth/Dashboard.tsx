@@ -8,6 +8,7 @@ import {
   Wallet,
   ArrowRight,
   Swords,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import {
@@ -47,6 +48,7 @@ const Dashboard = () => {
   const [tournamentTab, setTournamentTab] = useState<"active" | "history">(
     "active",
   );
+  const [statsOpen, setStatsOpen] = useState(false);
   const hasFetched = useRef(false);
   const isOrganizer = user?.role === "organizer";
 
@@ -571,7 +573,7 @@ const Dashboard = () => {
   // ─── Player Dashboard ─────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+    <div className="max-w-7xl mx-auto px-8 sm:px-6 py-8 space-y-10">
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/55 backdrop-blur-xl">
         <div className="absolute inset-0 bg-linear-to-br from-cyan-500/8 via-transparent to-orange-500/8 pointer-events-none" />
@@ -631,7 +633,15 @@ const Dashboard = () => {
           </div>
 
           {/* Stats strip */}
-          <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800/60 rounded-xl overflow-hidden border border-slate-800/60">
+          {/* Mobile: toggle button */}
+          <button
+            onClick={() => setStatsOpen(!statsOpen)}
+            className="sm:hidden mt-5 w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-800/60 bg-slate-900 text-sm text-slate-300 font-medium"
+          >
+            <span>View stats</span>
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+          </button>
+          <div className={`mt-2 sm:mt-5 grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800/60 rounded-xl overflow-hidden border border-slate-800/60 sm:grid ${statsOpen ? "grid" : "hidden"}`}>
             {[
               {
                 label: "Tournaments",
@@ -705,7 +715,7 @@ const Dashboard = () => {
           </div>
 
           {tournamentTab === "active" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:px-0">
               {activeRegistrations.map((reg) => (
                 <JoinedTournamentDetailsCard key={reg.id} reg={reg} />
               ))}
@@ -730,7 +740,7 @@ const Dashboard = () => {
               </Link>
             </div>
           ) : completedRegistrations.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:px-0">
               {completedRegistrations.map((reg) => (
                 <JoinedTournamentDetailsCard key={reg.id} reg={reg} />
               ))}
