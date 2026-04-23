@@ -23,6 +23,7 @@ import Careers from "./pages/public/careers";
 import PrivacyPolicy from "./pages/public/privacy-policy";
 import TermsOfService from "./pages/public/terms-of-service";
 import PublicTournaments from "./pages/public/tournaments";
+import PublicLeaderboard from "./pages/auth/LeaderboardPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleRoute from "./components/RoleRoute";
 
@@ -100,6 +101,7 @@ const App = () => {
           <Route path="deposit/failed" element={<DepositResult />} />
           <Route path="deposit/pending" element={<DepositResult />} />
           <Route path="tournaments" element={<PublicTournaments />} />
+          <Route path="leaderboard" element={<PublicLeaderboard />} />
           <Route path="*" element={<NotFound />} />
         </Route>
 
