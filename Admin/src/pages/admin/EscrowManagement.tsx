@@ -87,14 +87,11 @@ export default function EscrowManagement() {
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Full-bleed Hero */}
-      <div className="relative overflow-hidden border-b border-slate-800">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/8 via-transparent to-transparent" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center shrink-0">
-                <Lock className="w-6 h-6 text-blue-400" />
-              </div>
+            <div className="flex items-center gap-3">
+              <Lock className="w-5 h-5 text-slate-400 shrink-0" />
               <div>
                 <h1 className="text-2xl font-display font-bold text-white">Escrow Management</h1>
                 <p className="text-sm text-slate-400 mt-0.5">Inspect and manage tournament escrow accounts.</p>
