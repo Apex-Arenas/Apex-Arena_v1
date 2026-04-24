@@ -67,6 +67,9 @@ export const AUTH_ENDPOINTS = {
   AUTH_METHODS: `${API_BASE_URLS.AUTH}/user/auth-methods`,
 
   // Admin (Super Admin) Routes
+  ADMIN_UPDATE_PROFILE: `${API_BASE_URLS.AUTH}/admin/profile`,
+  ADMIN_PASSWORD_CHANGE: `${API_BASE_URLS.AUTH}/admin/password/change`,
+
   ADMIN_BOOTSTRAP: `${API_BASE_URLS.AUTH}/admin/bootstrap`,
   ADMIN_GET_USERS: `${API_BASE_URLS.AUTH}/admin/users`,          // + filters, /:userId, etc.
   ADMIN_GET_USER_DETAILS: `${API_BASE_URLS.AUTH}/admin/users`,  // +/:userId
