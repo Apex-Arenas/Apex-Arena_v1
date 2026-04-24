@@ -38,12 +38,16 @@ const Navbar = () => {
 
   const navLinks = isAuthenticated
     ? [
+        { label: "Home", to: "/auth" },
         { label: "Tournaments", to: "/auth/player/join-tournament" },
         { label: "Leaderboard", to: "/auth/leaderboard" },
+        { label: "Contact Us", to: "/auth/contact-us" },
       ]
     : [
+        { label: "Home", to: "/" },
         { label: "Tournaments", to: "/tournaments" },
         { label: "Leaderboard", to: "/leaderboard" },
+        { label: "Contact Us", to: "/support/contact-us" },
       ];
 
   return (
