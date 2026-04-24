@@ -30,7 +30,7 @@ const playerNavItems = [
   { to: "/auth/wallet",                 icon: Wallet,     label: "Wallet"                   },
   { to: "/auth/player/profile",         icon: UserCircle, label: "Profile"                  },
   { to: "/auth/notifications",          icon: Bell,       label: "Notifications"            },
-  { to: "/support/contact-us",          icon: Mail,       label: "Contact Us"               },
+  { to: "/auth/contact-us",              icon: Mail,       label: "Contact Us"               },
 ] as const;
 
 const organizerNavItems = [
@@ -41,7 +41,7 @@ const organizerNavItems = [
   { to: "/auth/transactions",              icon: Receipt,    label: "Transactions"              },
   { to: "/auth/organizer/profile",         icon: UserCircle, label: "Profile"                   },
   { to: "/auth/notifications",             icon: Bell,       label: "Notifications"             },
-  { to: "/support/contact-us",             icon: Mail,       label: "Contact Us"                },
+  { to: "/auth/contact-us",                icon: Mail,       label: "Contact Us"                },
 ] as const;
 
 interface SidebarProps {
