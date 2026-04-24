@@ -114,6 +114,8 @@ const App = () => {
             <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
 
+            <Route path="contact-us" element={<ContactUs />} />
+
             {/* Player-only routes */}
             <Route element={<RoleRoute role="player" />}>
               <Route path="player/profile" element={<PlayerProfile />} />
