@@ -251,7 +251,7 @@ function Section({
   if (count === 0) return null;
   return (
     <section>
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center justify-center gap-3 mb-5 sm:justify-start">
         <h2 className="font-display text-xl font-bold text-white">{title}</h2>
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${badge}`}>
           {count}
@@ -293,17 +293,17 @@ const MyTournaments = () => {
   const past = tournaments.filter((t) => ["completed", "cancelled"].includes(t.status));
 
   return (
-    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto">
 
       {/* ── Header ──────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 px-6 py-7 sm:px-8 sm:py-8">
+      <div className="relative overflow-hidden bg-slate-900 border-b border-slate-800 px-6 py-7 sm:px-8 sm:py-8">
         {/* Ambient glows */}
         <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/12 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
         {/* Fine grid */}
         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
 
-        <div className="relative flex items-center justify-between gap-4 flex-wrap">
+        <div className="relative flex flex-col items-center text-center gap-4 sm:flex-row sm:items-center sm:justify-between sm:text-left">
           <div>
             <h1 className="font-display text-3xl font-bold text-white">My Tournaments</h1>
             <p className="text-sm text-slate-400 mt-1">
@@ -322,6 +322,7 @@ const MyTournaments = () => {
         </div>
       </div>
 
+      <div className="px-4 sm:px-6 py-6 space-y-8">
       {/* ── Loading ─────────────────────────────────────────── */}
       {isLoading && (
         <div className="flex items-center justify-center py-24">
@@ -358,7 +359,7 @@ const MyTournaments = () => {
             count={active.length}
             badge="bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-4 px-6 sm:px-0">
               {active.map((t) => <TournamentCard key={t.id} tournament={t} />)}
               <CreateCard />
             </div>
@@ -369,7 +370,7 @@ const MyTournaments = () => {
             count={drafts.length}
             badge="bg-amber-500/15 text-amber-400 border-amber-500/20"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-4 px-6 sm:px-0">
               {drafts.map((t) => <TournamentCard key={t.id} tournament={t} />)}
               <CreateCard />
             </div>
@@ -380,12 +381,13 @@ const MyTournaments = () => {
             count={past.length}
             badge="bg-slate-700/60 text-slate-400 border-slate-700"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-4 px-6 sm:px-0">
               {past.map((t) => <TournamentCard key={t.id} tournament={t} />)}
             </div>
           </Section>
         </div>
       )}
+      </div>
     </div>
   );
 };
