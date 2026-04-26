@@ -33,9 +33,9 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+    <div className="rounded-2xl border border-slate-800 bg-slate-900">
       {/* Section header */}
-      <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-800 bg-slate-900/80">
+      <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-800 bg-slate-900/80 rounded-t-2xl">
         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-500/15 border border-orange-500/25 shrink-0">
           <span className="font-display text-sm font-bold text-orange-400">{step}</span>
         </div>
@@ -815,14 +815,14 @@ const CreateTournament = () => {
   };
 
   return (
-    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto">
 
       {/* ── Header ────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 px-6 py-6 sm:px-8">
+      <div className="relative overflow-hidden bg-slate-900 border-b border-slate-800 px-6 py-6 sm:px-8">
         <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-orange-500/12 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
-        <div className="relative flex items-center gap-3">
+        <div className="relative flex flex-col items-center text-center gap-3 sm:flex-row sm:text-left">
           <button
             onClick={() => navigate("/auth/organizer/tournaments")}
             className="p-2 rounded-xl border border-slate-700 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800/60 transition-colors shrink-0"
@@ -842,6 +842,7 @@ const CreateTournament = () => {
         </div>
       </div>
 
+      <div className="px-4 sm:px-6 py-6 space-y-6">
       {isLoadingTournament && (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
@@ -1154,6 +1155,7 @@ const CreateTournament = () => {
           </div>
         </form>
       )}
+      </div>
     </div>
   );
 };
