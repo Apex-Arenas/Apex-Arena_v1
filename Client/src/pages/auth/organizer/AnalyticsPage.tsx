@@ -156,16 +156,16 @@ export default function AnalyticsPage() {
     .slice(0, 5);
 
   return (
-    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto">
 
       {/* ── Header ────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800">
+      <div className="relative overflow-hidden bg-slate-900 border-b border-slate-800">
         <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/12 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
 
         <div className="relative px-6 py-7 sm:px-8">
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex flex-col items-center text-center gap-3 mb-6 sm:flex-row sm:text-left">
             <div className="w-10 h-10 rounded-xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center shrink-0">
               <BarChart2 className="w-5 h-5 text-orange-400" />
             </div>
@@ -192,6 +192,8 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      <div className="px-4 sm:px-6 py-6 space-y-6">
+      <div className="px-6 sm:px-0">
       {loading ? (
         <div className="flex justify-center py-24">
           <div className="flex flex-col items-center gap-3 text-slate-500">
@@ -373,6 +375,8 @@ export default function AnalyticsPage() {
           </div>
         </div>
       )}
+      </div>
+      </div>
     </div>
   );
 }
