@@ -421,36 +421,37 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-      <h1 className="font-display text-2xl font-bold text-white">Wallet</h1>
+    <div>
 
-      {/* Success toast */}
-      {successMsg && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-sm">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span className="flex-1">{successMsg}</span>
-          <button onClick={() => setSuccessMsg("")}><X className="w-4 h-4 opacity-60 hover:opacity-100" /></button>
-        </div>
-      )}
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden border-b border-slate-800 bg-slate-900">
+        {/* Grid */}
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
+        {/* Amber glow top-right */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 90% at 90% -10%, rgba(251,191,36,0.18), transparent)" }} />
+        {/* Orange glow center-left */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 70% at -5% 60%, rgba(249,115,22,0.1), transparent)" }} />
 
-      {/* Balance card */}
-      <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 p-6 sm:p-8">
-        <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-cyan-500/[0.07] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-44 h-44 rounded-full bg-indigo-500/6 blur-3xl pointer-events-none" />
-
-        <div className="relative">
-          <div className="flex items-center gap-2 text-slate-400 text-sm mb-3">
-            <Wallet className="w-4 h-4" />
-            Available Balance
+        <div className="relative px-6 py-8 sm:px-8 sm:py-10">
+          {/* Icon + label */}
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center shrink-0">
+              <Wallet className="w-4.5 h-4.5 text-orange-400" />
+            </div>
+            <span className="text-xs font-bold text-orange-400 uppercase tracking-[0.18em]">Wallet</span>
           </div>
-          <p className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">
+
+          {/* Balance */}
+          <p className="text-xs text-slate-500 uppercase tracking-widest mb-1.5">Available Balance</p>
+          <p className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight leading-none">
             {fmtGhs(balance)}
           </p>
           {wallet?.lastUpdated && (
-            <p className="text-xs text-slate-500 mt-2">Updated {fmtDate(wallet.lastUpdated)}</p>
+            <p className="text-xs text-slate-600 mt-2">Updated {fmtDate(wallet.lastUpdated)}</p>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-3 mt-8">
+          {/* CTAs */}
+          <div className="flex gap-3 mt-7">
             <button
               onClick={() => setModal("deposit")}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 transition-all"
@@ -461,7 +462,7 @@ export default function WalletPage() {
             <button
               onClick={() => setModal("withdraw")}
               disabled={balance === 0}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-700 text-slate-300 font-semibold text-sm hover:border-slate-500 hover:bg-slate-800/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-700 bg-slate-800/40 text-slate-300 font-semibold text-sm hover:border-slate-600 hover:bg-slate-800/70 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
               <ArrowUpRight className="w-4 h-4" />
               Withdraw
@@ -470,69 +471,89 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Info strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-        {[
-          { icon: CreditCard, text: "MTN MoMo · Vodafone · AirtelTigo", sub: "Payment methods" },
-          { icon: CheckCircle2, text: "Escrow-secured", sub: "Tournament entry fees held safely" },
-          { icon: Clock, text: "1–2 business days", sub: "Withdrawal processing time" },
-        ].map(({ icon: Icon, text, sub }) => (
-          <div key={sub} className="flex items-start gap-3 px-4 py-3 rounded-xl border border-slate-800/80 bg-slate-900">
-            <Icon className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-white font-medium text-xs">{text}</p>
-              <p className="text-slate-500 text-[11px] mt-0.5">{sub}</p>
+      {/* ── Content ───────────────────────────────────────────────────────── */}
+      <div className="px-4 sm:px-6 py-6 space-y-6">
+        <div className="px-6 sm:px-0 space-y-6">
+
+          {/* Success toast */}
+          {successMsg && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-sm">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span className="flex-1">{successMsg}</span>
+              <button onClick={() => setSuccessMsg("")}><X className="w-4 h-4 opacity-60 hover:opacity-100" /></button>
             </div>
-          </div>
-        ))}
-      </div>
+          )}
 
-      {/* Payout history */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-          <h2 className="font-display text-sm font-semibold text-white">Withdrawal History</h2>
-          <button onClick={() => void load()} className="text-xs text-slate-400 hover:text-white transition-colors">Refresh</button>
+          {/* Info strip */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {[
+              { icon: CreditCard,   text: "MTN MoMo · Vodafone · AirtelTigo", sub: "Payment methods"                  },
+              { icon: CheckCircle2, text: "Escrow-secured",                    sub: "Entry fees held safely"            },
+              { icon: Clock,        text: "1–2 business days",                 sub: "Withdrawal processing time"        },
+            ].map(({ icon: Icon, text, sub }) => (
+              <div key={sub} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-800/80 bg-slate-900/60">
+                <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                  <Icon className="w-3.5 h-3.5 text-orange-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-white truncate">{text}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Withdrawal history */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+              <h2 className="font-display text-sm font-semibold text-white">Withdrawal History</h2>
+              <button onClick={() => void load()} className="text-xs text-slate-400 hover:text-white transition-colors">Refresh</button>
+            </div>
+
+            {payouts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-14 px-4 text-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+                  <ArrowUpRight className="w-5 h-5 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-slate-400 text-sm font-medium">No withdrawals yet</p>
+                  <p className="text-slate-600 text-xs mt-0.5">Requests you submit will appear here.</p>
+                </div>
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-800/70">
+                {payouts.map((p) => {
+                  const chip = STATUS_CHIP[p.status];
+                  return (
+                    <li key={p.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-800/30 transition-colors">
+                      <div className="shrink-0">{statusIcon(p.status)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-white">{fmtGhs(p.amount)}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${chip.cls}`}>
+                            {chip.label}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5 truncate">
+                          {p.momoNetwork && `${p.momoNetwork} · `}{p.momoNumber} · {fmtDate(p.createdAt)}
+                        </p>
+                        {p.rejectionReason && (
+                          <p className="text-xs text-red-400 mt-0.5">{p.rejectionReason}</p>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
         </div>
-
-        {payouts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-3">
-            <ArrowUpRight className="w-8 h-8 text-slate-700" />
-            <p className="text-slate-400 text-sm">No withdrawal requests yet.</p>
-            <p className="text-slate-600 text-xs">Requests you submit will appear here.</p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-800">
-            {payouts.map((p) => {
-              const chip = STATUS_CHIP[p.status];
-              return (
-                <li key={p.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-800/30 transition-colors">
-                  <div className="shrink-0">{statusIcon(p.status)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-white">{fmtGhs(p.amount)}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${chip.cls}`}>
-                        {chip.label}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {p.momoNetwork && `${p.momoNetwork} · `}{p.momoNumber} · {fmtDate(p.createdAt)}
-                    </p>
-                    {p.rejectionReason && (
-                      <p className="text-xs text-red-400 mt-0.5">{p.rejectionReason}</p>
-                    )}
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
-                </li>
-              );
-            })}
-          </ul>
-        )}
       </div>
 
       {/* Modals */}
-      {modal === "deposit" && (
-        <DepositModal onClose={() => setModal(null)} />
-      )}
+      {modal === "deposit" && <DepositModal onClose={() => setModal(null)} />}
       {modal === "withdraw" && (
         <WithdrawModal
           balance={balance}
