@@ -8,6 +8,7 @@ import {
   Wallet,
   ArrowRight,
   Swords,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import {
@@ -47,6 +48,7 @@ const Dashboard = () => {
   const [tournamentTab, setTournamentTab] = useState<"active" | "history">(
     "active",
   );
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const hasFetched = useRef(false);
   const isOrganizer = user?.role === "organizer";
@@ -639,19 +641,37 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Stats strip — always visible, 2×2 on mobile */}
-          <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800/50 rounded-xl overflow-hidden">
-            {[
-              { label: "Tournaments", value: String(stats.joinedTournaments), accent: "text-white" },
-              { label: "Total Wins",  value: String(stats.totalWins),         accent: "text-emerald-400" },
-              { label: "Prize Won",   value: stats.totalPrizeWon > 0 ? `GHS ${(stats.totalPrizeWon / 100).toFixed(2)}` : "GHS 0", accent: "text-amber-400" },
-              { label: "Checked In", value: String(stats.checkedInCount),     accent: "text-orange-400" },
-            ].map((s) => (
-              <div key={s.label} className="bg-slate-900/80 px-4 py-3">
-                <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
-                <p className={`font-display text-xl font-bold tabular-nums ${s.accent}`}>{s.value}</p>
-              </div>
-            ))}
+          {/* Stats strip — dropdown on mobile, always visible on sm+ */}
+          <div className="mt-5">
+            {/* Mobile toggle */}
+            <button
+              onClick={() => setStatsOpen((o) => !o)}
+              className="sm:hidden w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-700/60 bg-slate-800/50 text-xs font-semibold text-slate-300 hover:border-slate-600 transition-all"
+            >
+              <span>Your Stats</span>
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {/* Stats grid — hidden on mobile until open, always shown sm+ */}
+            <div
+              className={`grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800/50 rounded-xl overflow-hidden sm:mt-0 ${
+                statsOpen ? "mt-2" : "hidden sm:grid"
+              }`}
+            >
+              {[
+                { label: "Tournaments", value: String(stats.joinedTournaments), accent: "text-white" },
+                { label: "Total Wins",  value: String(stats.totalWins),         accent: "text-emerald-400" },
+                { label: "Prize Won",   value: stats.totalPrizeWon > 0 ? `GHS ${(stats.totalPrizeWon / 100).toFixed(2)}` : "GHS 0", accent: "text-amber-400" },
+                { label: "Checked In", value: String(stats.checkedInCount),     accent: "text-orange-400" },
+              ].map((s) => (
+                <div key={s.label} className="bg-slate-900/80 px-4 py-3">
+                  <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
+                  <p className={`font-display text-xl font-bold tabular-nums ${s.accent}`}>{s.value}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
