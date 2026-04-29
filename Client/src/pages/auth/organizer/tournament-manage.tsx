@@ -383,53 +383,53 @@ function RegistrantRow({
 
   return (
     <tr className="border-b border-slate-800 hover:bg-white/2 transition-colors">
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
+      <td className="px-4 py-4">
+        <div className="flex items-center gap-4">
           {registrant.avatarUrl ? (
             <img
               src={registrant.avatarUrl}
               alt=""
-              className="w-8 h-8 rounded-full object-cover border border-slate-700"
+              className="w-9 h-9 rounded-full object-cover border border-slate-700 shrink-0"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).style.display = "none";
               }}
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
+            <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-400 shrink-0">
               {registrant.displayName?.[0]?.toUpperCase() ?? "?"}
             </div>
           )}
-          <div>
-            <p className="text-sm font-medium text-white">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white truncate">
               {registrant.displayName}
             </p>
-            <p className="text-xs text-slate-500">@{registrant.username}</p>
+            <p className="text-xs text-slate-500 truncate">@{registrant.username}</p>
           </div>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-slate-300">
+      <td className="px-6 py-4 text-sm text-slate-300 min-w-40">
         {registrant.inGameId}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-6 py-4 min-w-40">
         <span
-          className={`text-xs px-2 py-0.5 rounded-full capitalize ${statusColor}`}
+          className={`text-xs px-3 py-2 rounded-full capitalize ${statusColor}`}
         >
           {registrant.status.replace(/_/g, " ")}
         </span>
       </td>
-      <td className="px-4 py-3 text-xs text-slate-400">
+      <td className="px-6 py-4 text-xs text-slate-400 min-w-52">
         {formatDate(registrant.registeredAt)}
       </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
+      <td className="px-4 py-4">
+        <div className="flex items-center gap-3">
           {registrant.checkedIn ? (
             <button
               onClick={() => onUndoCheckIn(registrant.userId)}
               disabled={isActionLoading}
               title="Undo check-in"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-700 text-slate-300 hover:bg-red-500/20 hover:text-red-300 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-slate-700 text-slate-300 hover:bg-red-500/20 hover:text-red-300 disabled:opacity-50 transition-colors"
             >
-              <XCircle className="w-3.5 h-3.5" />
+              <XCircle className="w-4 h-4" />
               Undo
             </button>
           ) : (
@@ -441,9 +441,9 @@ function RegistrantRow({
                 registrant.status === "withdrawn"
               }
               title="Check in player"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 text-green-400 hover:bg-green-500 hover:text-slate-950 disabled:opacity-40 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-green-500/10 text-green-400 hover:bg-green-500 hover:text-slate-950 disabled:opacity-40 transition-colors"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <CheckCircle2 className="w-4 h-4" />
               Check In
             </button>
           )}
@@ -2163,14 +2163,14 @@ const TournamentManage = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[520px]">
+              <table className="w-full min-w-[800px]">
                 <thead>
-                  <tr className="border-b border-slate-800">
-                    {["Player", "In-Game ID", "Status", "Registered", "Action"].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
-                        {h}
-                      </th>
-                    ))}
+                  <tr className="border-b border-slate-800 bg-slate-900/50">
+                    <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">Player</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide min-w-40">In-Game ID</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide min-w-40">Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide min-w-52">Registered</th>
+                    <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">Action</th>
                   </tr>
                 </thead>
                 <tbody>
