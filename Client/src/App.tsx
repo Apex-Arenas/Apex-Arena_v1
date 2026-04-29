@@ -1,5 +1,7 @@
 import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import PageTransition from "./components/PageTransition";
@@ -76,6 +78,29 @@ const App = () => {
   return (
     <>
       <ScrollToTop />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+        style={{
+          "--toastify-color-dark": "#1e293b",
+          "--toastify-color-light": "#94a3b8",
+          "--toastify-color-info": "#0ea5e9",
+          "--toastify-color-success": "#10b981",
+          "--toastify-color-warning": "#f59e0b",
+          "--toastify-color-error": "#ef4444",
+          "--toastify-text-color-light": "#f1f5f9",
+          "--toastify-text-color-dark": "#f1f5f9",
+          fontFamily: "'Space Grotesk', sans-serif",
+        } as React.CSSProperties}
+      />
       <Routes>
         {/* Public pages with Navbar + Footer */}
         <Route element={<PublicLayout />}>
