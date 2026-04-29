@@ -7,8 +7,6 @@ import {
   Lock,
   Globe,
   Gamepad2,
-  AlertCircle,
-  CheckCircle2,
   X,
   Plus,
   Trash2,
@@ -18,11 +16,70 @@ import { authService } from "../../services/auth.service";
 import ImageUploadDropzone from "../../components/ImageUploadDropzone";
 import { apiDelete, apiGet, apiPost, apiPut } from "../../utils/api.utils";
 import { AUTH_ENDPOINTS, TOURNAMENT_ENDPOINTS } from "../../config/api.config";
+import { showSuccess, showError } from "../../utils/toast.utils";
 import type {
   UpdateProfilePayload,
   UserGameProfile,
 } from "../../types/auth.types";
 import { tournamentService, type MyTournamentRegistration } from "../../services/tournament.service";
+
+// ─── Countries List (ISO 3166-1 alpha-2 codes) ────────────────────────────────
+
+const COUNTRIES = [
+  { code: "GH", name: "Ghana" },
+  { code: "NG", name: "Nigeria" },
+  { code: "KE", name: "Kenya" },
+  { code: "ZA", name: "South Africa" },
+  { code: "UG", name: "Uganda" },
+  { code: "TZ", name: "Tanzania" },
+  { code: "RW", name: "Rwanda" },
+  { code: "CM", name: "Cameroon" },
+  { code: "ET", name: "Ethiopia" },
+  { code: "SN", name: "Senegal" },
+  { code: "CI", name: "Côte d'Ivoire" },
+  { code: "ML", name: "Mali" },
+  { code: "BF", name: "Burkina Faso" },
+  { code: "ZM", name: "Zambia" },
+  { code: "ZW", name: "Zimbabwe" },
+  { code: "BW", name: "Botswana" },
+  { code: "NA", name: "Namibia" },
+  { code: "MU", name: "Mauritius" },
+  { code: "SC", name: "Seychelles" },
+  { code: "AO", name: "Angola" },
+  { code: "BJ", name: "Benin" },
+  { code: "BI", name: "Burundi" },
+  { code: "CV", name: "Cape Verde" },
+  { code: "CF", name: "Central African Republic" },
+  { code: "TD", name: "Chad" },
+  { code: "KM", name: "Comoros" },
+  { code: "CG", name: "Congo" },
+  { code: "CD", name: "Democratic Republic of the Congo" },
+  { code: "DJ", name: "Djibouti" },
+  { code: "EG", name: "Egypt" },
+  { code: "GQ", name: "Equatorial Guinea" },
+  { code: "ER", name: "Eritrea" },
+  { code: "SZ", name: "Eswatini" },
+  { code: "GA", name: "Gabon" },
+  { code: "GM", name: "Gambia" },
+  { code: "GN", name: "Guinea" },
+  { code: "GW", name: "Guinea-Bissau" },
+  { code: "LS", name: "Lesotho" },
+  { code: "LR", name: "Liberia" },
+  { code: "LY", name: "Libya" },
+  { code: "MG", name: "Madagascar" },
+  { code: "MW", name: "Malawi" },
+  { code: "MR", name: "Mauritania" },
+  { code: "MA", name: "Morocco" },
+  { code: "MZ", name: "Mozambique" },
+  { code: "NE", name: "Niger" },
+  { code: "SL", name: "Sierra Leone" },
+  { code: "SO", name: "Somalia" },
+  { code: "SS", name: "South Sudan" },
+  { code: "SD", name: "Sudan" },
+  { code: "TG", name: "Togo" },
+  { code: "TN", name: "Tunisia" },
+  { code: "EH", name: "Western Sahara" },
+];
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -33,36 +90,6 @@ function initials(first: string, last: string, username: string) {
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
-
-function Alert({
-  type,
-  message,
-  onClose,
-}: {
-  type: "success" | "error";
-  message: string;
-  onClose: () => void;
-}) {
-  return (
-    <div
-      className={`flex items-start gap-3 px-4 py-3 rounded-xl text-sm ${
-        type === "success"
-          ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
-          : "bg-red-500/10 border border-red-500/30 text-red-300"
-      }`}
-    >
-      {type === "success" ? (
-        <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
-      ) : (
-        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-      )}
-      <span className="flex-1">{message}</span>
-      <button onClick={onClose} className="shrink-0 opacity-60 hover:opacity-100">
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
 
 function SectionCard({
   icon: Icon,
@@ -230,8 +257,6 @@ const ProfilePage = () => {
   const [isSavingGameProfile, setIsSavingGameProfile] = useState(false);
   const [deletingGameId, setDeletingGameId] = useState<string | null>(null);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
-  const [alert, setAlert] = useState<{ type: "success" | "error"; msg: string } | null>(null);
-  const [passwordAlert, setPasswordAlert] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const [registrations, setRegistrations] = useState<MyTournamentRegistration[]>([]);
 
@@ -379,7 +404,6 @@ const ProfilePage = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    setAlert(null);
     try {
       const payload: UpdateProfilePayload = {
         firstName: form.firstName,
@@ -395,9 +419,9 @@ const ProfilePage = () => {
       };
       const result = await authService.updateProfile(payload);
       if (result.user && tokens) setSession(tokens, result.user);
-      setAlert({ type: "success", msg: "Profile updated successfully." });
+      showSuccess("Profile updated successfully.");
     } catch (err) {
-      setAlert({ type: "error", msg: err instanceof Error ? err.message : "Failed to save changes." });
+      showError(err instanceof Error ? err.message : "Failed to save changes.");
     } finally {
       setIsSaving(false);
     }
@@ -405,19 +429,18 @@ const ProfilePage = () => {
 
   const handleChangePassword = async () => {
     if (!passwordForm.current || !passwordForm.next) {
-      setPasswordAlert({ type: "error", msg: "Please fill in all password fields." });
+      showError("Please fill in all password fields.");
       return;
     }
     if (passwordForm.next !== passwordForm.confirm) {
-      setPasswordAlert({ type: "error", msg: "New passwords do not match." });
+      showError("New passwords do not match.");
       return;
     }
     if (passwordForm.next.length < 8) {
-      setPasswordAlert({ type: "error", msg: "New password must be at least 8 characters." });
+      showError("New password must be at least 8 characters.");
       return;
     }
     setIsSavingPassword(true);
-    setPasswordAlert(null);
     try {
       const response = await apiPost(AUTH_ENDPOINTS.PASSWORD_CHANGE, {
         current_password: passwordForm.current,
@@ -425,13 +448,13 @@ const ProfilePage = () => {
       });
       if (!response.success) {
         const msg = (response as { error?: { message?: string } }).error?.message ?? "Failed to change password.";
-        setPasswordAlert({ type: "error", msg });
+        showError(msg);
         return;
       }
-      setPasswordAlert({ type: "success", msg: "Password changed successfully." });
+      showSuccess("Password changed successfully.");
       setPasswordForm({ current: "", next: "", confirm: "" });
     } catch (err) {
-      setPasswordAlert({ type: "error", msg: err instanceof Error ? err.message : "Failed to change password." });
+      showError(err instanceof Error ? err.message : "Failed to change password.");
     } finally {
       setIsSavingPassword(false);
     }
@@ -462,11 +485,10 @@ const ProfilePage = () => {
     const draft = games[index];
     if (!draft) return;
     if (!draft.gameId || !draft.inGameId) {
-      setAlert({ type: "error", msg: "Select a game and enter an in-game ID before saving." });
+      showError("Select a game and enter an in-game ID before saving.");
       return;
     }
     setIsSavingGameProfile(true);
-    setAlert(null);
     try {
       const exists = savedGameProfiles.some((gp) => gp.gameId === draft.gameId);
       const resolvedGameName = draft.gameName || availableGames.find((game) => game.id === draft.gameId)?.name || "";
@@ -486,18 +508,18 @@ const ProfilePage = () => {
         try {
           await saveProfilesViaAuthProfile(nextProfiles);
           setGames((prev) => prev.filter((_, i) => i !== index));
-          setAlert({ type: "success", msg: exists ? "Game profile updated." : "Game profile saved." });
+          showSuccess(exists ? "Game profile updated." : "Game profile saved.");
           return;
         } catch { /* fall through */ }
-        setAlert({ type: "error", msg: response.error?.message ?? (exists ? "Failed to update game profile." : "Failed to save game profile.") });
+        showError(response.error?.message ?? (exists ? "Failed to update game profile." : "Failed to save game profile."));
         return;
       }
 
       await fetchSavedGameProfiles();
       setGames((prev) => prev.filter((_, i) => i !== index));
-      setAlert({ type: "success", msg: exists ? "Game profile updated." : "Game profile saved." });
+      showSuccess(exists ? "Game profile updated." : "Game profile saved.");
     } catch (err) {
-      setAlert({ type: "error", msg: err instanceof Error ? err.message : "Failed to save game profile." });
+      showError(err instanceof Error ? err.message : "Failed to save game profile.");
     } finally {
       setIsSavingGameProfile(false);
     }
@@ -509,7 +531,6 @@ const ProfilePage = () => {
 
   const deleteSavedGameProfile = async (gameId: string) => {
     setDeletingGameId(gameId);
-    setAlert(null);
     try {
       const response = await apiDelete(`${TOURNAMENT_ENDPOINTS.GAME_PROFILE_DETAIL}/${encodeURIComponent(gameId)}`);
       if (!response.success) {
@@ -517,17 +538,17 @@ const ProfilePage = () => {
           const nextProfiles = savedGameProfiles.filter((profile) => profile.gameId !== gameId);
           await saveProfilesViaAuthProfile(nextProfiles);
           setGames((prev) => prev.filter((g) => g.gameId !== gameId));
-          setAlert({ type: "success", msg: "Game profile deleted." });
+          showSuccess("Game profile deleted.");
           return;
         } catch { /* fall through */ }
-        setAlert({ type: "error", msg: response.error?.message ?? "Failed to delete game profile." });
+        showError(response.error?.message ?? "Failed to delete game profile.");
         return;
       }
       await fetchSavedGameProfiles();
       setGames((prev) => prev.filter((g) => g.gameId !== gameId));
-      setAlert({ type: "success", msg: "Game profile deleted." });
+      showSuccess("Game profile deleted.");
     } catch (err) {
-      setAlert({ type: "error", msg: err instanceof Error ? err.message : "Failed to delete game profile." });
+      showError(err instanceof Error ? err.message : "Failed to delete game profile.");
     } finally {
       setDeletingGameId(null);
     }
@@ -633,13 +654,6 @@ const ProfilePage = () => {
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       <div className="max-w-5xl mx-auto px-10 sm:px-6 py-8">
 
-        {/* Global alert */}
-        {alert && (
-          <div className="mb-6">
-            <Alert type={alert.type} message={alert.msg} onClose={() => setAlert(null)} />
-          </div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
 
           {/* ── Left column ─────────────────────────────────────────────── */}
@@ -661,7 +675,16 @@ const ProfilePage = () => {
                 </Field>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="Country">
-                    <Input value={form.country} onChange={(v) => setField("country", v)} placeholder="e.g. Ghana" />
+                    <select
+                      value={form.country}
+                      onChange={(e) => setField("country", e.target.value)}
+                      className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/70 transition-colors appearance-none cursor-pointer [&>option]:bg-slate-800 [&>option]:text-white"
+                    >
+                      <option value="">Select a country</option>
+                      {COUNTRIES.map((country) => (
+                        <option key={country.code} value={country.code}>{country.name}</option>
+                      ))}
+                    </select>
                   </Field>
                   <Field label="Phone">
                     <Input value={form.phone} onChange={(v) => setField("phone", v)} placeholder="e.g. +233 50 000 0000" />
@@ -827,11 +850,6 @@ const ProfilePage = () => {
 
             {/* Change Password */}
             <SectionCard icon={Lock} title="Change Password">
-              {passwordAlert && (
-                <div className="mb-4">
-                  <Alert type={passwordAlert.type} message={passwordAlert.msg} onClose={() => setPasswordAlert(null)} />
-                </div>
-              )}
               <div className="space-y-3">
                 <Field label="Current Password">
                   <Input type="password" value={passwordForm.current} onChange={(v) => setPasswordForm((p) => ({ ...p, current: v }))} placeholder="Current password" />
