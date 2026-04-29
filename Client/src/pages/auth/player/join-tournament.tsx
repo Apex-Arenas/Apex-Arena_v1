@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Filter,
@@ -172,6 +173,7 @@ const JoinTournament = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [] = useState(false);
 
+  const [statsOpen, setStatsOpen] = useState(false);
   const hasFetchedGames = useRef(false);
 
   const fetchMyRegistrations = useCallback(async () => {
@@ -309,19 +311,33 @@ const JoinTournament = () => {
             Browse open tournaments, track your registrations, and compete.
           </p>
 
-          {/* Stats strip */}
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            {[
-              { label: "Available",        value: isLoading ? "—" : String(tournaments.length),                       accent: "text-white",        sub: "open tournaments"  },
-              { label: "My Registrations", value: isLoadingRegistrations ? "—" : String(upcomingRegistrations.length), accent: "text-orange-400",  sub: "upcoming"          },
-              { label: "Active",           value: isLoadingRegistrations ? "—" : String(activeTournaments.length),     accent: "text-emerald-400", sub: "in progress"       },
-            ].map((s) => (
-              <div key={s.label} className="bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
-                <p className={`font-display text-2xl font-bold tabular-nums leading-none ${s.accent}`}>{s.value}</p>
-                <p className="text-[10px] text-slate-600 mt-1">{s.sub}</p>
-              </div>
-            ))}
+          {/* Stats strip — dropdown on mobile, always visible on sm+ */}
+          <div className="mt-6">
+            {/* Mobile toggle */}
+            <button
+              onClick={() => setStatsOpen((o) => !o)}
+              className="sm:hidden w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-700/60 bg-slate-800/50 text-xs font-semibold text-slate-300 hover:border-slate-600 transition-all"
+            >
+              <span>Overview</span>
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {/* Stats grid */}
+            <div className={`grid grid-cols-3 gap-3 sm:mt-0 ${statsOpen ? "mt-2" : "hidden sm:grid"}`}>
+              {[
+                { label: "Available",        value: isLoading ? "—" : String(tournaments.length),                        accent: "text-white",       sub: "open tournaments" },
+                { label: "My Registrations", value: isLoadingRegistrations ? "—" : String(upcomingRegistrations.length),  accent: "text-orange-400",  sub: "upcoming"         },
+                { label: "Active",           value: isLoadingRegistrations ? "—" : String(activeTournaments.length),      accent: "text-emerald-400", sub: "in progress"      },
+              ].map((s) => (
+                <div key={s.label} className="bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
+                  <p className={`font-display text-2xl font-bold tabular-nums leading-none ${s.accent}`}>{s.value}</p>
+                  <p className="text-[10px] text-slate-600 mt-1">{s.sub}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
