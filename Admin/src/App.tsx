@@ -16,6 +16,7 @@ import AuditLogs from "./pages/admin/AuditLogs";
 import AdminManagement from "./pages/admin/AdminManagement";
 import GameRequests from "./pages/admin/GameRequests";
 import DisputeManagement from "./pages/admin/DisputeManagement";
+import TournamentManagement from "./pages/admin/TournamentManagement";
 
 const App = () => {
   return (
@@ -53,6 +54,7 @@ const App = () => {
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="games" element={<GamesManagement />} />
+            <Route path="tournaments" element={<TournamentManagement />} />
             <Route path="verifications" element={<OrganizerVerifications />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="payouts" element={<PayoutsManagement />} />

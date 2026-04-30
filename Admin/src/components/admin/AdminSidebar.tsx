@@ -16,6 +16,7 @@ import {
   Puzzle,
   X,
   AlertTriangle,
+  Trophy,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
@@ -29,6 +30,7 @@ const NAV_GROUPS = [
     items: [
       { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
       { to: "/admin/users", icon: Users, label: "Users" },
+      { to: "/admin/tournaments", icon: Trophy, label: "Tournaments" },
       { to: "/admin/verifications", icon: BadgeCheck, label: "Verifications" },
       { to: "/admin/games", icon: Gamepad2, label: "Games" },
       { to: "/admin/game-requests", icon: Puzzle, label: "Game Requests" },

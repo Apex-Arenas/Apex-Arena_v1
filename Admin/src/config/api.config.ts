@@ -196,6 +196,9 @@ export const TOURNAMENT_ENDPOINTS = {
   ADMIN_CHECK_IN_BULK: `${API_BASE_URLS.TOURNAMENT}/admin/checkin/tournaments`, // + /:tournamentId/check-in/bulk
   ADMIN_CHECK_IN_FORCE: `${API_BASE_URLS.TOURNAMENT}/admin/checkin/tournaments`, // + /:tournamentId/check-in/force/:userId
   ADMIN_CHECK_IN_UNDO: `${API_BASE_URLS.TOURNAMENT}/admin/checkin/tournaments`, // + /:tournamentId/check-in/undo/:userId
+
+  // Admin Tournament Management
+  ADMIN_TOURNAMENTS: `${API_BASE_URLS.TOURNAMENT}/admin/tournaments`, // GET (list), DELETE + /:tournamentId
 } as const;
 
 

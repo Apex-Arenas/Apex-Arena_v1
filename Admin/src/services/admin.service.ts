@@ -951,4 +951,39 @@ export const adminService = {
     const data = response.data as Record<string, unknown>;
     return (Array.isArray(data) ? data : (data.disputes ?? [])) as Record<string, unknown>[];
   },
+
+  // ─── Tournament Admin ─────────────────────────────────────────────────────
+
+  async listTournaments(
+    filters?: { status?: string; search?: string; page?: number; limit?: number },
+  ): Promise<{ data: Record<string, unknown>[]; total: number; page: number; limit: number }> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.page) params.append('page', String(filters.page));
+    if (filters?.limit) params.append('limit', String(filters.limit));
+
+    const url = `${TOURNAMENT_ENDPOINTS.ADMIN_TOURNAMENTS}${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await apiGet(url, adminHeaders());
+
+    if (!response.success) {
+      return { data: [], total: 0, page: 1, limit: 20 };
+    }
+
+    const data = response.data as Record<string, unknown>;
+    const tournaments = (Array.isArray(data) ? data : (data.data ?? [])) as Record<string, unknown>[];
+    const total = Number(data.total ?? tournaments.length);
+    const page = Number(data.page ?? 1);
+    const limit = Number(data.limit ?? 20);
+
+    return { data: tournaments, total, page, limit };
+  },
+
+  async deleteTournament(tournamentId: string): Promise<boolean> {
+    const response = await apiDelete(
+      `${TOURNAMENT_ENDPOINTS.ADMIN_TOURNAMENTS}/${tournamentId}`,
+      adminHeaders(),
+    );
+    return response.success;
+  },
 };
