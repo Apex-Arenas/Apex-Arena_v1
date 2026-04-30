@@ -112,7 +112,7 @@ const AdminSidebar = ({ mobileOpen, onMobileClose }: AdminSidebarProps) => {
       {/* Nav */}
       <nav
         ref={navRef}
-        className={`relative flex-1 py-2 space-y-3 px-2 ${isMobile ? "overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden" : "overflow-hidden"}`}
+        className="relative flex-1 py-2 space-y-3 px-2 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
         {NAV_GROUPS.map((group, index) => (
           <div key={group.label}>
