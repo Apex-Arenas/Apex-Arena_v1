@@ -19,6 +19,64 @@ import { TOURNAMENT_ENDPOINTS } from "../../../config/api.config";
 import ImageUploadDropzone from "../../../components/ImageUploadDropzone";
 import { DateTimePicker } from "../../../components/DateTimePicker";
 
+// ─── Countries List (ISO 3166-1 alpha-2 codes) ────────────────────────────────
+
+const COUNTRIES = [
+  { code: "GH", name: "Ghana" },
+  { code: "NG", name: "Nigeria" },
+  { code: "KE", name: "Kenya" },
+  { code: "ZA", name: "South Africa" },
+  { code: "UG", name: "Uganda" },
+  { code: "TZ", name: "Tanzania" },
+  { code: "RW", name: "Rwanda" },
+  { code: "CM", name: "Cameroon" },
+  { code: "ET", name: "Ethiopia" },
+  { code: "SN", name: "Senegal" },
+  { code: "CI", name: "Côte d'Ivoire" },
+  { code: "ML", name: "Mali" },
+  { code: "BF", name: "Burkina Faso" },
+  { code: "ZM", name: "Zambia" },
+  { code: "ZW", name: "Zimbabwe" },
+  { code: "BW", name: "Botswana" },
+  { code: "NA", name: "Namibia" },
+  { code: "MU", name: "Mauritius" },
+  { code: "SC", name: "Seychelles" },
+  { code: "AO", name: "Angola" },
+  { code: "BJ", name: "Benin" },
+  { code: "BI", name: "Burundi" },
+  { code: "CV", name: "Cape Verde" },
+  { code: "CF", name: "Central African Republic" },
+  { code: "TD", name: "Chad" },
+  { code: "KM", name: "Comoros" },
+  { code: "CG", name: "Congo" },
+  { code: "CD", name: "Democratic Republic of the Congo" },
+  { code: "DJ", name: "Djibouti" },
+  { code: "EG", name: "Egypt" },
+  { code: "GQ", name: "Equatorial Guinea" },
+  { code: "ER", name: "Eritrea" },
+  { code: "SZ", name: "Eswatini" },
+  { code: "GA", name: "Gabon" },
+  { code: "GM", name: "Gambia" },
+  { code: "GN", name: "Guinea" },
+  { code: "GW", name: "Guinea-Bissau" },
+  { code: "LS", name: "Lesotho" },
+  { code: "LR", name: "Liberia" },
+  { code: "LY", name: "Libya" },
+  { code: "MG", name: "Madagascar" },
+  { code: "MW", name: "Malawi" },
+  { code: "MR", name: "Mauritania" },
+  { code: "MA", name: "Morocco" },
+  { code: "MZ", name: "Mozambique" },
+  { code: "NE", name: "Niger" },
+  { code: "SL", name: "Sierra Leone" },
+  { code: "SO", name: "Somalia" },
+  { code: "SS", name: "South Sudan" },
+  { code: "SD", name: "Sudan" },
+  { code: "TG", name: "Togo" },
+  { code: "TN", name: "Tunisia" },
+  { code: "EH", name: "Western Sahara" },
+];
+
 // ─── Small UI helpers ────────────────────────────────────────────────────────
 
 function SectionCard({
@@ -480,14 +538,14 @@ const CreateTournament = () => {
     const trimmedTitle = title.trim();
     const trimmedRules = rules.trim();
     const trimmedContactEmail = contactEmail.trim();
-    const trimmedRegion = region.trim().toUpperCase();
+    const trimmedRegion = region.trim();
     const mapPoolValues = mapPool
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
     const allowedRegionValues = allowedRegions
       .split(",")
-      .map((item) => item.trim().toUpperCase())
+      .map((item) => item.trim())
       .filter(Boolean);
     const timezoneValue = timezone.trim() || "Africa/Accra";
 
@@ -968,8 +1026,16 @@ const CreateTournament = () => {
                     </Field>
                   )}
                   <Field label="Region">
-                    <input type="text" value={region} onChange={(e) => setRegion(e.target.value)}
-                      placeholder="e.g. Ghana, Global" className={inputCls} />
+                    <select
+                      value={region}
+                      onChange={(e) => setRegion(e.target.value)}
+                      className={`${selectCls} appearance-none cursor-pointer [&>option]:bg-slate-800 [&>option]:text-white`}
+                    >
+                      <option value="">Select a region</option>
+                      {COUNTRIES.map((country) => (
+                        <option key={country.code} value={country.code}>{country.name}</option>
+                      ))}
+                    </select>
                   </Field>
                   <Field label="Timezone">
                     <input type="text" value={timezone} onChange={(e) => setTimezone(e.target.value)}
