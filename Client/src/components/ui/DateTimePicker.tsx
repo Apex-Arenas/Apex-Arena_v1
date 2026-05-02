@@ -157,11 +157,16 @@ export function DateTimePicker({
                   className="w-9 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors flex items-center justify-center">
                   <ChevronLeft className="w-3.5 h-3.5 -rotate-90" />
                 </button>
-                <div className="w-14 h-11 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center">
-                  <span className="text-xl font-bold text-white tabular-nums">
-                    {String(hour).padStart(2, "0")}
-                  </span>
-                </div>
+                <input
+                  type="number" min={0} max={23}
+                  value={String(hour).padStart(2, "0")}
+                  onChange={(e) => {
+                    const v = Math.min(23, Math.max(0, Number(e.target.value)));
+                    if (!isNaN(v)) handleHour(v);
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  className="w-14 h-11 bg-slate-800 border border-slate-700 rounded-xl text-xl font-bold text-white text-center tabular-nums focus:outline-none focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
                 <button type="button" onClick={() => handleHour((hour - 1 + 24) % 24)}
                   className="w-9 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors flex items-center justify-center">
                   <ChevronLeft className="w-3.5 h-3.5 rotate-90" />
@@ -177,11 +182,16 @@ export function DateTimePicker({
                   className="w-9 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors flex items-center justify-center">
                   <ChevronLeft className="w-3.5 h-3.5 -rotate-90" />
                 </button>
-                <div className="w-14 h-11 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center">
-                  <span className="text-xl font-bold text-white tabular-nums">
-                    {String(minute).padStart(2, "0")}
-                  </span>
-                </div>
+                <input
+                  type="number" min={0} max={59}
+                  value={String(minute).padStart(2, "0")}
+                  onChange={(e) => {
+                    const v = Math.min(59, Math.max(0, Number(e.target.value)));
+                    if (!isNaN(v)) handleMinute(v);
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  className="w-14 h-11 bg-slate-800 border border-slate-700 rounded-xl text-xl font-bold text-white text-center tabular-nums focus:outline-none focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
                 <button type="button" onClick={() => handleMinute((Math.round(minute / 5) * 5 - 5 + 60) % 60)}
                   className="w-9 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors flex items-center justify-center">
                   <ChevronLeft className="w-3.5 h-3.5 rotate-90" />
