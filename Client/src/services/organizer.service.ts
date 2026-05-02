@@ -883,6 +883,17 @@ export const organizerService = {
     }
   },
 
+  async removePlayer(tournamentId: string, userId: string, reason?: string): Promise<void> {
+    const response = await apiDelete(
+      `${TOURNAMENT_ENDPOINTS.TOURNAMENT_REGISTRATIONS}/${tournamentId}/players/${userId}`,
+      reason ? { reason } : {},
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to remove player';
+      throw new Error(msg);
+    }
+  },
+
   async deleteTournament(tournamentId: string): Promise<void> {
     const response = await apiDelete(
       `${TOURNAMENT_ENDPOINTS.TOURNAMENT_DETAIL}/${tournamentId}`,
