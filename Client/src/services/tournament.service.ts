@@ -526,7 +526,7 @@ export const tournamentService = {
     const body = reason && reason.trim().length > 0 ? { reason: reason.trim() } : undefined;
     const response = await apiDelete(
       `${TOURNAMENT_ENDPOINTS.UNREGISTER}/${tournamentId}/unregister`,
-      body ? { body: JSON.stringify(body) } : undefined,
+      body,
     );
     if (!response.success) {
       const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to unregister';
