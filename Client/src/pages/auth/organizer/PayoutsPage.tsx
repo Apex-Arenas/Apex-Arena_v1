@@ -2,12 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AlertCircle, CheckCircle2, Clock3, Loader2,
   Send, X, DollarSign, Banknote, ArrowDownToLine, Trash2,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { organizerService, type PayoutRequest, type WalletBalance } from "../../../services/organizer.service";
+import { showSuccess, showError } from "../../../utils/toast.utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const NETWORKS = ["MTN", "Vodafone", "AirtelTigo"] as const;
+const PAGE_SIZE = 10;
 
 const NETWORK_COLORS: Record<string, string> = {
   MTN:        "bg-yellow-400/15 text-yellow-300 border-yellow-400/20",
@@ -31,6 +34,13 @@ function fmtDate(iso?: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function validateMomo(number: string): string | null {
+  const cleaned = number.trim().replace(/\s/g, "");
+  if (!cleaned) return "Enter your mobile money number.";
+  if (!/^0[0-9]{9}$/.test(cleaned)) return "MoMo number must be 10 digits starting with 0 (e.g. 0241234567).";
+  return null;
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PayoutsPage() {
@@ -38,12 +48,12 @@ export default function PayoutsPage() {
   const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const [showForm, setShowForm] = useState(false);
   const [amount, setAmount] = useState("");
   const [momoNumber, setMomoNumber] = useState("");
+  const [momoError, setMomoError] = useState<string | null>(null);
   const [network, setNetwork] = useState<typeof NETWORKS[number]>("MTN");
   const [accountName, setAccountName] = useState("");
   const [notes, setNotes] = useState("");
@@ -60,6 +70,7 @@ export default function PayoutsPage() {
       setWallet(bal);
     } catch {
       setRequests([]);
+      showError("Failed to load payout data. Please refresh.");
     } finally {
       setLoading(false);
     }
@@ -69,10 +80,10 @@ export default function PayoutsPage() {
     setCancelling(id);
     try {
       await organizerService.cancelPayoutRequest(id);
-      showMsg("Request cancelled.");
+      showSuccess("Request cancelled.");
       void load();
     } catch (e) {
-      showMsg(e instanceof Error ? e.message : "Failed to cancel.", true);
+      showError(e instanceof Error ? e.message : "Failed to cancel.");
     } finally {
       setCancelling(null);
     }
@@ -80,17 +91,13 @@ export default function PayoutsPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const showMsg = (msg: string, isError = false) => {
-    if (isError) { setError(msg); setSuccess(null); }
-    else { setSuccess(msg); setError(null); }
-    setTimeout(() => { setSuccess(null); setError(null); }, 5000);
-  };
-
   const submit = async () => {
     const amt = parseFloat(amount);
-    if (!amt || amt < 1) { showMsg("Enter a valid amount (min GHS 1).", true); return; }
-    if (!momoNumber.trim()) { showMsg("Enter your mobile money number.", true); return; }
-    if (!accountName.trim()) { showMsg("Enter account holder name.", true); return; }
+    if (!amt || amt < 1) { showError("Enter a valid amount (min GHS 1)."); return; }
+    const momoErr = validateMomo(momoNumber);
+    if (momoErr) { setMomoError(momoErr); return; }
+    if (!accountName.trim()) { showError("Enter account holder name."); return; }
+    setMomoError(null);
     setSubmitting(true);
     try {
       await organizerService.requestPayout({
@@ -101,12 +108,12 @@ export default function PayoutsPage() {
         accountName: accountName.trim(),
         notes: notes.trim() || undefined,
       });
-      showMsg("Payout request submitted. Processing typically takes 1–3 business days.");
+      showSuccess("Payout request submitted. Processing typically takes 1–3 business days.");
       setShowForm(false);
-      setAmount(""); setMomoNumber(""); setAccountName(""); setNotes("");
+      setAmount(""); setMomoNumber(""); setAccountName(""); setNotes(""); setMomoError(null);
       void load();
     } catch (e) {
-      showMsg(e instanceof Error ? e.message : "Request failed.", true);
+      showError(e instanceof Error ? e.message : "Request failed.");
     } finally {
       setSubmitting(false);
     }
@@ -119,6 +126,10 @@ export default function PayoutsPage() {
   const totalPending = requests
     .filter(r => r.status === "pending" || r.status === "approved")
     .reduce((s, r) => s + r.amountGhs, 0);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(requests.length / PAGE_SIZE));
+  const pageRequests = requests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -170,22 +181,6 @@ export default function PayoutsPage() {
       <div className="px-4 sm:px-6 py-6">
       <div className="px-6 sm:px-0 space-y-6">
 
-      {/* ── Alerts ────────────────────────────────────────────── */}
-      {success && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span className="flex-1">{success}</span>
-          <button onClick={() => setSuccess(null)}><X className="w-4 h-4 opacity-50 hover:opacity-100" /></button>
-        </div>
-      )}
-      {error && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span className="flex-1">{error}</span>
-          <button onClick={() => setError(null)}><X className="w-4 h-4 opacity-50 hover:opacity-100" /></button>
-        </div>
-      )}
-
       {/* ── New Request Form ───────────────────────────────────── */}
       {showForm && (
         <div className="rounded-2xl border border-orange-500/20 bg-slate-900 overflow-hidden">
@@ -220,8 +215,19 @@ export default function PayoutsPage() {
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide block mb-2">MoMo Number <span className="text-orange-400">*</span></label>
-                <input value={momoNumber} onChange={e => setMomoNumber(e.target.value)}
-                  placeholder="e.g. 0241234567" className={inputCls} />
+                <input
+                  value={momoNumber}
+                  onChange={e => { setMomoNumber(e.target.value); if (momoError) setMomoError(null); }}
+                  onBlur={() => setMomoError(validateMomo(momoNumber))}
+                  placeholder="e.g. 0241234567"
+                  className={`${inputCls} ${momoError ? "border-red-500/60" : ""}`}
+                />
+                {momoError && (
+                  <p className="flex items-center gap-1.5 mt-1.5 text-xs text-red-400">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    {momoError}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide block mb-2">Account Name <span className="text-orange-400">*</span></label>
@@ -276,77 +282,104 @@ export default function PayoutsPage() {
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-slate-800/60">
-            {requests.map(req => {
-              const meta = STATUS_META[req.status] ?? STATUS_META.cancelled;
-              const netColor = NETWORK_COLORS[req.network] ?? "bg-slate-700/40 text-slate-400 border-slate-700";
-              return (
-                <div key={req.id} className="px-6 py-5 flex items-start gap-4">
-                  {/* Icon */}
-                  <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center justify-center shrink-0 mt-0.5">
-                    <ArrowDownToLine className="w-4 h-4 text-slate-400" />
-                  </div>
+          <>
+            <div className="divide-y divide-slate-800/60">
+              {pageRequests.map(req => {
+                const meta = STATUS_META[req.status] ?? STATUS_META.cancelled;
+                const netColor = NETWORK_COLORS[req.network] ?? "bg-slate-700/40 text-slate-400 border-slate-700";
+                return (
+                  <div key={req.id} className="px-6 py-5 flex items-start gap-4">
+                    {/* Icon */}
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center justify-center shrink-0 mt-0.5">
+                      <ArrowDownToLine className="w-4 h-4 text-slate-400" />
+                    </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-display text-lg font-bold text-white">
-                        GHS {req.amountGhs.toFixed(2)}
-                      </span>
-                      <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${meta.bg} ${meta.text}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                        {meta.label}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${netColor}`}>
-                        {req.network}
-                      </span>
-                      <span className="text-xs text-slate-500">{req.momoNumber}</span>
-                      <span className="text-slate-700">·</span>
-                      <span className="text-xs text-slate-500">{req.accountName}</span>
-                    </div>
-                    {req.notes && (
-                      <p className="text-xs text-slate-500 italic">"{req.notes}"</p>
-                    )}
-                    {req.rejectionReason && (
-                      <div className="flex items-center gap-1.5 text-xs text-red-400">
-                        <AlertCircle className="w-3 h-3 shrink-0" />
-                        {req.rejectionReason}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-display text-lg font-bold text-white">
+                          GHS {req.amountGhs.toFixed(2)}
+                        </span>
+                        <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${meta.bg} ${meta.text}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
+                          {meta.label}
+                        </span>
                       </div>
-                    )}
-                  </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${netColor}`}>
+                          {req.network}
+                        </span>
+                        <span className="text-xs text-slate-500">{req.momoNumber}</span>
+                        <span className="text-slate-700">·</span>
+                        <span className="text-xs text-slate-500">{req.accountName}</span>
+                      </div>
+                      {req.notes && (
+                        <p className="text-xs text-slate-500 italic">"{req.notes}"</p>
+                      )}
+                      {req.rejectionReason && (
+                        <div className="flex items-center gap-1.5 text-xs text-red-400">
+                          <AlertCircle className="w-3 h-3 shrink-0" />
+                          {req.rejectionReason}
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Date + actions */}
-                  <div className="text-right shrink-0 space-y-1.5">
-                    <p className="text-xs text-slate-500">{fmtDate(req.createdAt)}</p>
-                    {req.status === "completed" && (
-                      <p className="text-[10px] text-emerald-400 flex items-center gap-1 justify-end">
-                        <CheckCircle2 className="w-3 h-3" /> Paid
-                      </p>
-                    )}
-                    {(req.status === "pending" || req.status === "approved") && (
-                      <>
-                        <p className="text-[10px] text-amber-400 flex items-center gap-1 justify-end">
-                          <Clock3 className="w-3 h-3" /> Processing
+                    {/* Date + actions */}
+                    <div className="text-right shrink-0 space-y-1.5">
+                      <p className="text-xs text-slate-500">{fmtDate(req.createdAt)}</p>
+                      {req.status === "completed" && (
+                        <p className="text-[10px] text-emerald-400 flex items-center gap-1 justify-end">
+                          <CheckCircle2 className="w-3 h-3" /> Paid
                         </p>
-                        <button
-                          onClick={() => { void cancel(req.id); }}
-                          disabled={cancelling === req.id}
-                          className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-red-400 transition-colors ml-auto disabled:opacity-50"
-                        >
-                          {cancelling === req.id
-                            ? <Loader2 className="w-3 h-3 animate-spin" />
-                            : <Trash2 className="w-3 h-3" />}
-                          Cancel
-                        </button>
-                      </>
-                    )}
+                      )}
+                      {(req.status === "pending" || req.status === "approved") && (
+                        <>
+                          <p className="text-[10px] text-amber-400 flex items-center gap-1 justify-end">
+                            <Clock3 className="w-3 h-3" /> Processing
+                          </p>
+                          <button
+                            onClick={() => { void cancel(req.id); }}
+                            disabled={cancelling === req.id}
+                            className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-red-400 transition-colors ml-auto disabled:opacity-50"
+                          >
+                            {cancelling === req.id
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <Trash2 className="w-3 h-3" />}
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-slate-800 flex items-center justify-between">
+                <span className="text-xs text-slate-500">
+                  Page {page} of {totalPages} · {requests.length} requests
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </div>
       </div>
