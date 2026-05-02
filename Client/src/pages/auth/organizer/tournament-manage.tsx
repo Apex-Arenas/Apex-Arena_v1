@@ -1466,7 +1466,7 @@ const TournamentManage = () => {
 
       {/* Registration Shortfall Alert */}
       {registrationShortfall && showRegistrationAlert && (
-        <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-amber-500/5 p-4 flex gap-3">
+        <div className="rounded-2xl border border-amber-500/30 bg-linear-to-r from-amber-500/10 to-amber-500/5 p-4 flex gap-3">
           <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center shrink-0">
             <AlertCircle className="w-4 h-4 text-amber-400" />
           </div>
