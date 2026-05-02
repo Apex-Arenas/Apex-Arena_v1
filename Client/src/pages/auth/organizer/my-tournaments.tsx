@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { organizerService } from "../../../services/organizer.service";
 import type { Tournament } from "../../../services/tournament.service";
+import { showError } from "../../../utils/toast.utils";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
   const liveStatuses = new Set(["open", "started", "ongoing", "in_progress"]);
   const isLive = liveStatuses.has(tournament.status);
 
-  const canEdit = ["draft", "awaiting_deposit", "open", "locked"].includes(tournament.status);
+  const canEdit = ["draft", "awaiting_deposit", "published", "open", "locked"].includes(tournament.status);
   const needsDeposit = tournament.status === "awaiting_deposit" && !tournament.isFree;
 
   const coverImage = tournament.thumbnailUrl ?? tournament.bannerUrl ?? null;
@@ -275,6 +276,7 @@ const MyTournaments = () => {
       setTournaments(await organizerService.getMyTournaments());
     } catch {
       setTournaments([]);
+      showError("Failed to load tournaments. Please refresh.");
     } finally {
       setIsLoading(false);
     }
@@ -359,7 +361,7 @@ const MyTournaments = () => {
             count={active.length}
             badge="bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-4 px-6 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 sm:px-0">
               {active.map((t) => <TournamentCard key={t.id} tournament={t} />)}
               <CreateCard />
             </div>
@@ -370,7 +372,7 @@ const MyTournaments = () => {
             count={drafts.length}
             badge="bg-amber-500/15 text-amber-400 border-amber-500/20"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-4 px-6 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 sm:px-0">
               {drafts.map((t) => <TournamentCard key={t.id} tournament={t} />)}
               <CreateCard />
             </div>
@@ -381,7 +383,7 @@ const MyTournaments = () => {
             count={past.length}
             badge="bg-slate-700/60 text-slate-400 border-slate-700"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-4 px-6 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 sm:px-0">
               {past.map((t) => <TournamentCard key={t.id} tournament={t} />)}
             </div>
           </Section>
