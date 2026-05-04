@@ -2156,7 +2156,7 @@ const TournamentManage = () => {
           }`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30">
+          <div className="flex flex-col gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center shrink-0">
                 <Users className="w-4 h-4 text-cyan-400" />
@@ -2175,14 +2175,14 @@ const TournamentManage = () => {
             </div>
             <div className="flex items-center gap-2">
               {/* Search */}
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-none">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search players..."
-                  className="bg-slate-800/60 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 focus:bg-slate-800 transition-colors w-36 sm:w-44"
+                  className="w-full sm:w-44 bg-slate-800/60 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 focus:bg-slate-800 transition-colors"
                 />
               </div>
               {/* Bulk Check-In */}
