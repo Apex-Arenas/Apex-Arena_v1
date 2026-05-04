@@ -18,12 +18,16 @@ import {
   MapPin,
   Zap,
   Activity,
-  Lock,
   Eye,
   Shield,
   Hash,
+  Search,
+  UserCheck,
 } from "lucide-react";
 import { adminService } from "../../services/admin.service";
+import { apiGet } from "../../utils/api.utils";
+import { TOURNAMENT_ENDPOINTS } from "../../config/api.config";
+import { getAdminAccessToken } from "../../utils/auth.utils";
 import { toast } from "react-toastify";
 
 const STATUS_META: Record<string, { label: string; dot: string; badge: string; glow: string }> = {
@@ -167,6 +171,204 @@ function DeleteModal({ tournament, onClose, onConfirm, loading }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+const REGISTRANT_STATUS_COLORS: Record<string, string> = {
+  registered:      "bg-cyan-500/20 text-cyan-300 border-cyan-500/25",
+  checked_in:      "bg-emerald-500/20 text-emerald-300 border-emerald-500/25",
+  pending_payment: "bg-amber-500/20 text-amber-300 border-amber-500/25",
+  disqualified:    "bg-red-500/20 text-red-400 border-red-500/25",
+  withdrawn:       "bg-slate-600/20 text-slate-400 border-slate-600/25",
+  cancelled:       "bg-slate-600/20 text-slate-400 border-slate-600/25",
+  waitlist:        "bg-violet-500/20 text-violet-300 border-violet-500/25",
+};
+
+function ParticipantsSection({ tournamentId }: { tournamentId: string }) {
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (!tournamentId) return;
+    setLoading(true);
+    const token = getAdminAccessToken();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    apiGet(
+      `${TOURNAMENT_ENDPOINTS.TOURNAMENT_REGISTRATIONS}/${tournamentId}/registrations`,
+      { headers },
+    )
+      .then((res: any) => {
+        if (!res.success) return;
+        const raw = res.data;
+        const list = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw?.registrations)
+            ? raw.registrations
+            : Array.isArray(raw?.data)
+              ? raw.data
+              : [];
+        setParticipants(list);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [tournamentId]);
+
+  const filtered = participants.filter((p) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      String(p.display_name ?? p.displayName ?? "").toLowerCase().includes(q) ||
+      String(p.username ?? "").toLowerCase().includes(q) ||
+      String(p.in_game_id ?? p.inGameId ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const checkedInCount = participants.filter(
+    (p) => p.checked_in || p.checkedIn || p.status === "checked_in",
+  ).length;
+
+  return (
+    <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden">
+      {/* Header */}
+      <div className="flex flex-col gap-3 px-5 py-4 border-b border-slate-800 bg-slate-800/30 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-amber-400/15 border border-amber-400/25 flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4 text-amber-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              Participants
+              <span className="text-xs font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded-full">
+                {participants.length}
+              </span>
+            </h2>
+            <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
+              <UserCheck className="w-3 h-3" />
+              {checkedInCount} checked in
+            </p>
+          </div>
+        </div>
+
+        <div className="relative flex-1 sm:flex-none sm:w-52">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search players…"
+            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/50 focus:bg-slate-800 transition-colors"
+          />
+        </div>
+      </div>
+
+      {/* Body */}
+      {loading ? (
+        <div className="flex items-center justify-center py-14 text-slate-500 gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">Loading participants…</span>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-14 text-center px-6 gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center">
+            <Users className="w-5 h-5 text-slate-600" />
+          </div>
+          <p className="text-sm text-slate-400 font-medium">
+            {search ? "No players match your search" : "No players registered yet"}
+          </p>
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="text-xs text-amber-500 hover:text-amber-400 transition-colors"
+            >
+              Clear search
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px]">
+            <thead>
+              <tr className="border-b border-slate-800/60 bg-slate-950/20">
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Player</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">In-Game ID</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Registered</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Check-in</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((p, i) => {
+                const displayName = String(p.display_name ?? p.displayName ?? p.username ?? "—");
+                const username    = String(p.username ?? "");
+                const avatarUrl   = String(p.avatar_url ?? p.avatarUrl ?? "");
+                const inGameId    = String(p.in_game_id ?? p.inGameId ?? "");
+                const status      = String(p.status ?? "registered");
+                const isCheckedIn = Boolean(p.checked_in ?? p.checkedIn ?? status === "checked_in");
+                const registeredAt = String(p.registered_at ?? p.registeredAt ?? p.created_at ?? "");
+                const statusColor = REGISTRANT_STATUS_COLORS[status] ?? "bg-slate-700/50 text-slate-400 border-slate-700/50";
+                const initials = displayName[0]?.toUpperCase() ?? "?";
+
+                return (
+                  <tr key={p.registration_id ?? p.registrationId ?? p._id ?? i}
+                    className="border-b border-slate-800/60 hover:bg-slate-800/20 transition-colors">
+                    {/* Player */}
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
+                          {avatarUrl ? (
+                            <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-700" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-500/30 border border-slate-700 flex items-center justify-center text-xs font-bold text-amber-300">
+                              {initials}
+                            </div>
+                          )}
+                          {isCheckedIn && (
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-900" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-white truncate leading-tight">{displayName}</p>
+                          {username && <p className="text-[11px] text-slate-500 truncate">@{username}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    {/* In-Game ID */}
+                    <td className="px-5 py-3.5">
+                      <span className="text-xs font-mono text-slate-300 bg-slate-800/60 px-2 py-1 rounded-md border border-slate-700/50">
+                        {inGameId || <span className="text-slate-600 italic">—</span>}
+                      </span>
+                    </td>
+                    {/* Status */}
+                    <td className="px-5 py-3.5">
+                      <span className={`inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full border capitalize ${statusColor}`}>
+                        {status.replace(/_/g, " ")}
+                      </span>
+                    </td>
+                    {/* Registered At */}
+                    <td className="px-5 py-3.5">
+                      <span className="text-xs text-slate-500">{registeredAt ? formatDate(registeredAt) : "—"}</span>
+                    </td>
+                    {/* Check-in */}
+                    <td className="px-5 py-3.5">
+                      {isCheckedIn ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Checked in
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-600">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -466,6 +668,9 @@ const TournamentDetail = () => {
                 )}
               </div>
             </Section>
+
+            {/* Participants */}
+            <ParticipantsSection tournamentId={id} />
 
             {/* Description */}
             {tournament.description && (
