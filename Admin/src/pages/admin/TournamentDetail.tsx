@@ -197,16 +197,10 @@ function ParticipantsSection({ tournamentId }: { tournamentId: string }) {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const urls = [
-      `${API_BASE_URLS.TOURNAMENT}/tournaments/${tournamentId}/registrations`,
-      `${API_BASE_URLS.TOURNAMENT}/registration/${tournamentId}/registrations`,
-    ];
+    const url = `${API_BASE_URLS.TOURNAMENT}/admin/tournaments/${tournamentId}/registrations`;
 
-    const tryFetch = async () => {
-      for (const url of urls) {
-        const res = await apiGet(url, { headers }) as any;
-        console.log("[Admin Participants] URL:", url, "| success:", res.success, "| data:", res.data);
-        if (!res.success) continue;
+    apiGet(url, { headers })
+      .then((res: any) => {
         const raw = res.data;
         const list = Array.isArray(raw)
           ? raw
@@ -215,14 +209,8 @@ function ParticipantsSection({ tournamentId }: { tournamentId: string }) {
             : Array.isArray(raw?.data)
               ? raw.data
               : [];
-        if (list.length > 0 || urls.indexOf(url) === urls.length - 1) {
-          setParticipants(list);
-          return;
-        }
-      }
-    };
-
-    tryFetch()
+        setParticipants(list);
+      })
       .finally(() => setLoading(false));
   }, [tournamentId]);
 
