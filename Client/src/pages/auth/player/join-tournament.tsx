@@ -281,8 +281,8 @@ const JoinTournament = () => {
   };
 
   const isConfirmingWithdraw = withdrawTarget !== null && withdrawingTournamentId === withdrawTarget.tournamentId;
-  const upcomingRegistrations = myRegistrations.filter((r) => UPCOMING_TOURNAMENT_STATUSES.has(r.tournamentStatus));
-  const activeTournaments = myRegistrations.filter((r) => ACTIVE_TOURNAMENT_STATUSES.has(r.tournamentStatus));
+  const upcomingRegistrations = myRegistrations.filter((r) => UPCOMING_TOURNAMENT_STATUSES.has(r.tournamentStatus) && r.status !== "withdrawn" && r.status !== "disqualified");
+  const activeTournaments = myRegistrations.filter((r) => ACTIVE_TOURNAMENT_STATUSES.has(r.tournamentStatus) && r.status !== "withdrawn" && r.status !== "disqualified");
 
   const activeFilterCount = [statusFilter !== "", freeFilter !== "", gameFilter !== ""].filter(Boolean).length;
 
