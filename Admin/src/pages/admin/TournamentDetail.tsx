@@ -289,7 +289,7 @@ function ParticipantsSection({ tournamentId }: { tournamentId: string }) {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px]">
+          <table className="w-full min-w-160">
             <thead>
               <tr className="border-b border-slate-800/60 bg-slate-950/20">
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Player</th>
@@ -327,7 +327,7 @@ function ParticipantsSection({ tournamentId }: { tournamentId: string }) {
                           {avatarUrl ? (
                             <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-700" />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-500/30 border border-slate-700 flex items-center justify-center text-xs font-bold text-amber-300">
+                            <div className="w-8 h-8 rounded-full bg-linear-to-br from-amber-500/30 to-orange-500/30 border border-slate-700 flex items-center justify-center text-xs font-bold text-amber-300">
                               {initials}
                             </div>
                           )}
