@@ -7,6 +7,9 @@ import {
   Loader2,
   AlertCircle,
   Trash2,
+  Pencil,
+  Save,
+  X,
   Trophy,
   Calendar,
   Users,
@@ -25,7 +28,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { adminService } from "../../services/admin.service";
-import { apiGet } from "../../utils/api.utils";
+import { apiGet, apiPatch } from "../../utils/api.utils";
 import { API_BASE_URLS } from "../../config/api.config";
 import { getAdminAccessToken } from "../../utils/auth.utils";
 import { toast } from "react-toastify";
@@ -169,6 +172,258 @@ function DeleteModal({ tournament, onClose, onConfirm, loading }) {
               </button>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Helpers ───────────────────────────────────────────── */
+function toDatetimeLocal(iso?: string) {
+  if (!iso) return "";
+  try { return new Date(iso).toISOString().slice(0, 16); } catch { return ""; }
+}
+function fromDatetimeLocal(val: string) {
+  if (!val) return undefined;
+  return new Date(val).toISOString();
+}
+
+/* ── Edit Modal ────────────────────────────────────────── */
+const EDIT_TABS = ["Basic", "Schedule", "Settings"] as const;
+type EditTab = typeof EDIT_TABS[number];
+
+function EditModal({ tournament, onClose, onSaved }: {
+  tournament: Record<string, unknown>;
+  onClose: () => void;
+  onSaved: (updated: Record<string, unknown>) => void;
+}) {
+  const id       = String(tournament._id ?? tournament.id ?? "");
+  const schedule = (tournament.schedule ?? {}) as Record<string, unknown>;
+  const capacity = (tournament.capacity ?? {}) as Record<string, unknown>;
+
+  const [tab, setTab]     = useState<EditTab>("Basic");
+  const [saving, setSaving] = useState(false);
+
+  const [form, setForm] = useState({
+    // Basic
+    title:         String(tournament.title ?? ""),
+    description:   String(tournament.description ?? ""),
+    visibility:    String(tournament.visibility ?? "public"),
+    region:        String(tournament.region ?? ""),
+    thumbnail_url: String(tournament.thumbnail_url ?? ""),
+    banner_url:    String(tournament.banner_url ?? ""),
+    rules:         String(tournament.rules ?? ""),
+    // Schedule
+    reg_start:      toDatetimeLocal(String(schedule.registration_start ?? "")),
+    reg_end:        toDatetimeLocal(String(schedule.registration_end ?? "")),
+    tourn_start:    toDatetimeLocal(String(schedule.tournament_start ?? "")),
+    tourn_end:      toDatetimeLocal(String(schedule.tournament_end ?? "")),
+    checkin_start:  toDatetimeLocal(String(schedule.check_in_start ?? "")),
+    checkin_end:    toDatetimeLocal(String(schedule.check_in_end ?? "")),
+    // Settings
+    max_participants: String(capacity.max_participants ?? ""),
+    waitlist_enabled: Boolean(capacity.waitlist_enabled ?? false),
+  });
+
+  function set(key: string, value: string | boolean) {
+    setForm(f => ({ ...f, [key]: value }));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    const payload: Record<string, unknown> = {
+      title:         form.title.trim(),
+      description:   form.description.trim(),
+      visibility:    form.visibility,
+      region:        form.region.trim(),
+      thumbnail_url: form.thumbnail_url.trim() || undefined,
+      banner_url:    form.banner_url.trim() || undefined,
+      rules:         form.rules.trim() || undefined,
+      schedule: {
+        ...(schedule as object),
+        registration_start: fromDatetimeLocal(form.reg_start),
+        registration_end:   fromDatetimeLocal(form.reg_end),
+        tournament_start:   fromDatetimeLocal(form.tourn_start),
+        tournament_end:     fromDatetimeLocal(form.tourn_end),
+      },
+      capacity: {
+        ...(capacity as object),
+        max_participants: form.max_participants ? Number(form.max_participants) : undefined,
+        waitlist_enabled: form.waitlist_enabled,
+      },
+    };
+
+    // strip undefined
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
+    const url = `${API_BASE_URLS.TOURNAMENT}/admin/tournaments/${id}`;
+    const res = await apiPatch(url, payload) as any;
+
+    if (!res.success) {
+      toast.error(res.error?.message ?? "Failed to save changes");
+      setSaving(false);
+      return;
+    }
+
+    toast.success("Tournament updated");
+    onSaved(res.data ?? { ...tournament, ...payload });
+    setSaving(false);
+    onClose();
+  }
+
+  const inputCls = "w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/60 focus:bg-slate-800 transition-colors";
+  const labelCls = "block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+      <div className="bg-slate-900 border border-slate-700/60 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-amber-400/15 border border-amber-400/25 flex items-center justify-center">
+              <Pencil className="w-4 h-4 text-amber-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white">Edit Tournament</h3>
+              <p className="text-[11px] text-slate-500 truncate max-w-80">{String(tournament.title ?? "")}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-slate-800 px-6 shrink-0">
+          {EDIT_TABS.map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-3 text-xs font-semibold transition-colors border-b-2 -mb-px ${
+                tab === t
+                  ? "text-amber-400 border-amber-400"
+                  : "text-slate-500 border-transparent hover:text-slate-300"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {tab === "Basic" && (
+            <>
+              <div>
+                <label className={labelCls}>Title</label>
+                <input className={inputCls} value={form.title} onChange={e => set("title", e.target.value)} placeholder="Tournament title" />
+              </div>
+              <div>
+                <label className={labelCls}>Description</label>
+                <textarea className={`${inputCls} resize-none`} rows={4} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Describe the tournament…" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Visibility</label>
+                  <select className={inputCls} value={form.visibility} onChange={e => set("visibility", e.target.value)}>
+                    <option value="public">Public</option>
+                    <option value="private">Private</option>
+                    <option value="invite_only">Invite Only</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Region</label>
+                  <input className={inputCls} value={form.region} onChange={e => set("region", e.target.value)} placeholder="e.g. West Africa" />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Thumbnail URL</label>
+                <input className={inputCls} value={form.thumbnail_url} onChange={e => set("thumbnail_url", e.target.value)} placeholder="https://…" />
+              </div>
+              <div>
+                <label className={labelCls}>Banner URL</label>
+                <input className={inputCls} value={form.banner_url} onChange={e => set("banner_url", e.target.value)} placeholder="https://…" />
+              </div>
+              <div>
+                <label className={labelCls}>Rules</label>
+                <textarea className={`${inputCls} resize-none`} rows={5} value={form.rules} onChange={e => set("rules", e.target.value)} placeholder="Tournament rules…" />
+              </div>
+            </>
+          )}
+
+          {tab === "Schedule" && (
+            <>
+              <div className="p-3.5 bg-amber-400/8 border border-amber-400/20 rounded-xl">
+                <p className="text-xs text-amber-300">Times are shown and saved in your local timezone. The server stores them as UTC.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Registration Opens</label>
+                  <input type="datetime-local" className={inputCls} value={form.reg_start} onChange={e => set("reg_start", e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>Registration Closes</label>
+                  <input type="datetime-local" className={inputCls} value={form.reg_end} onChange={e => set("reg_end", e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>Tournament Start</label>
+                  <input type="datetime-local" className={inputCls} value={form.tourn_start} onChange={e => set("tourn_start", e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>Tournament End</label>
+                  <input type="datetime-local" className={inputCls} value={form.tourn_end} onChange={e => set("tourn_end", e.target.value)} />
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === "Settings" && (
+            <>
+              <div>
+                <label className={labelCls}>Max Participants</label>
+                <input
+                  type="number"
+                  min={2}
+                  className={inputCls}
+                  value={form.max_participants}
+                  onChange={e => set("max_participants", e.target.value)}
+                  placeholder="e.g. 64"
+                />
+                <p className="text-[11px] text-slate-500 mt-1.5">Cannot be reduced below the current registered count.</p>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-slate-800/40 border border-slate-700/50 rounded-xl">
+                <div>
+                  <p className="text-sm font-semibold text-white">Waitlist</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Allow players to join a waitlist when the tournament is full.</p>
+                </div>
+                <button
+                  onClick={() => set("waitlist_enabled", !form.waitlist_enabled)}
+                  className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${form.waitlist_enabled ? "bg-amber-500" : "bg-slate-700"}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${form.waitlist_enabled ? "left-6" : "left-1"}`} />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-800 shrink-0">
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-xl border border-slate-700 text-sm text-slate-300 hover:text-white hover:border-slate-600 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-sm font-semibold hover:bg-amber-400 transition-colors disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
         </div>
       </div>
     </div>
@@ -389,6 +644,7 @@ const TournamentDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<Record<string, unknown> | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -501,19 +757,28 @@ const TournamentDetail = () => {
               <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
               <span className="hidden sm:inline">Back to Tournaments</span>
             </button>
-            <button
-              onClick={() => setDeleteTarget(tournament)}
-              disabled={isBlocked}
-              title={isBlocked ? "Cannot delete active tournaments" : "Delete tournament"}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
-                isBlocked
-                  ? "text-slate-600 border-slate-800 cursor-not-allowed opacity-40"
-                  : "text-red-400 bg-red-500/10 border-red-500/25 hover:bg-red-500/20 hover:border-red-500/40"
-              }`}
-            >
-              <Trash2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Delete</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border text-amber-400 bg-amber-400/10 border-amber-400/25 hover:bg-amber-400/20 hover:border-amber-400/40 transition-all"
+              >
+                <Pencil className="w-4 h-4" />
+                <span className="hidden sm:inline">Edit</span>
+              </button>
+              <button
+                onClick={() => setDeleteTarget(tournament)}
+                disabled={isBlocked}
+                title={isBlocked ? "Cannot delete active tournaments" : "Delete tournament"}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+                  isBlocked
+                    ? "text-slate-600 border-slate-800 cursor-not-allowed opacity-40"
+                    : "text-red-400 bg-red-500/10 border-red-500/25 hover:bg-red-500/20 hover:border-red-500/40"
+                }`}
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Delete</span>
+              </button>
+            </div>
           </div>
 
           {/* Title block — centered on mobile, left on desktop */}
@@ -834,6 +1099,15 @@ const TournamentDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Edit Modal ── */}
+      {editOpen && tournament && (
+        <EditModal
+          tournament={tournament}
+          onClose={() => setEditOpen(false)}
+          onSaved={(updated) => setTournament(prev => ({ ...prev, ...updated }))}
+        />
+      )}
 
       {/* ── Delete Modal ── */}
       <DeleteModal
