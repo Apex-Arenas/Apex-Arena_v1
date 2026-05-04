@@ -476,7 +476,7 @@ const TournamentDetail = () => {
               )}
               {tournament.region && (
                 <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800 border border-slate-700 text-slate-300">
-                  {tournament.region}
+                  {tournament.region === "GLOBAL" ? "Global" : tournament.region}
                 </span>
               )}
               <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
@@ -680,7 +680,7 @@ const TournamentDetail = () => {
                 {[
                   { icon: <Swords className="w-4 h-4 text-orange-400" />,       label: "Format",      value: tournament.format                   },
                   { icon: <Trophy className="w-4 h-4 text-amber-400" />,        label: "Type",        value: tournament.tournamentType           },
-                  { icon: <Globe className="w-4 h-4 text-cyan-400" />,          label: "Region",      value: tournament.region                   },
+                  { icon: <Globe className="w-4 h-4 text-cyan-400" />,          label: "Region",      value: tournament.region === "GLOBAL" ? "Global" : tournament.region },
                   { icon: <Users className="w-4 h-4 text-orange-400" />,        label: "Min Players", value: tournament.minParticipants > 0 ? String(tournament.minParticipants) : null },
                   { icon: <Shield className="w-4 h-4 text-violet-400" />,       label: "Visibility",  value: tournament.visibility ? tournament.visibility.charAt(0).toUpperCase() + tournament.visibility.slice(1) : null },
                 ].filter((r) => Boolean(r.value)).map((r) => (
@@ -839,7 +839,7 @@ const TournamentDetail = () => {
                 {[
                   { label: "Format",      value: tournament.format ?? "Solo"             },
                   { label: "Type",        value: tournament.tournamentType ?? "Standard" },
-                  ...(tournament.region ? [{ label: "Region", value: tournament.region }] : []),
+                  ...(tournament.region ? [{ label: "Region", value: tournament.region === "GLOBAL" ? "Global" : tournament.region }] : []),
                   { label: "Min Players", value: String(tournament.minParticipants)      },
                 ].map((r) => (
                   <div key={r.label} className="flex items-center justify-between px-5 py-3">
