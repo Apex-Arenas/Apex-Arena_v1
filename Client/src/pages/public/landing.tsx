@@ -13,19 +13,19 @@ import { tournamentService, type Tournament } from "../../services/tournament.se
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 const FEATURES = [
-  { icon: Shield,     color: "text-cyan-400",   bg: "bg-cyan-400/10",   title: "Escrow-locked prizes",  desc: "Every prize pool is secured before a bracket goes live. Zero payout drama, ever." },
-  { icon: Cpu,        color: "text-indigo-400", bg: "bg-indigo-400/10", title: "Dispute resolution",    desc: "Verified mods, clear rules, match-evidence workflows — decisions in under 24 h." },
-  { icon: Smartphone, color: "text-emerald-400",bg: "bg-emerald-400/10",title: "Mobile money payouts",  desc: "MTN MoMo, Vodafone Cash, AirtelTigo. Winners get paid the moment results confirm." },
-  { icon: Users,      color: "text-violet-400", bg: "bg-violet-400/10", title: "Player careers",        desc: "Profiles, stats, highlights, and a ranking that actually travels across operators." },
-  { icon: Globe,      color: "text-sky-400",    bg: "bg-sky-400/10",    title: "Hybrid tournaments",    desc: "Online, LAN, hybrid — one bracket tool across Mobile Legends, CODM, FIFA, PUBG." },
-  { icon: Award,      color: "text-amber-400",  bg: "bg-amber-400/10",  title: "Built for organizers",  desc: "Brackets, check-ins, streaming overlays, and prize distribution in a single cockpit." },
+  { icon: Shield,     color: "text-cyan-400",   bg: "bg-cyan-400/10",   title: "Guaranteed prize pools",  desc: "Every prize is locked in escrow before registration opens. You compete knowing the reward is real." },
+  { icon: Cpu,        color: "text-indigo-400", bg: "bg-indigo-400/10", title: "Fair dispute resolution",  desc: "Verified moderators, match-evidence workflows, and clear rules — so every result stands on merit." },
+  { icon: Smartphone, color: "text-emerald-400",bg: "bg-emerald-400/10",title: "Instant winner payouts",   desc: "MTN MoMo, Vodafone Cash, AirtelTigo. Your win is confirmed, your money moves — no waiting." },
+  { icon: Users,      color: "text-violet-400", bg: "bg-violet-400/10", title: "Build your player career", desc: "Profiles, stats, highlights, and a ranking system that tracks your growth across every tournament." },
+  { icon: Globe,      color: "text-sky-400",    bg: "bg-sky-400/10",    title: "Every format, one arena",  desc: "Online, LAN, hybrid — a single bracket tool built for Mobile Legends, CODM, EA FC, PUBG, and more." },
+  { icon: Award,      color: "text-amber-400",  bg: "bg-amber-400/10",  title: "Verified organizers",      desc: "Every organizer on the platform is vetted. Legit tournaments, clear rules, and real accountability." },
 ];
 
 const STEPS = [
-  { n: "01", title: "Create your handle",    desc: "Set up your account in minutes. Lock in the IGN that'll carry your legacy." },
-  { n: "02", title: "Pick a verified arena", desc: "Join tournaments with secured prize pools, clear rules, and trusted operators." },
-  { n: "03", title: "Compete with proof",    desc: "Play, submit results with evidence, and keep every match on the record." },
-  { n: "04", title: "Cash out instantly",    desc: "Automatic Mobile Money payouts the moment your win is verified." },
+  { n: "01", title: "Claim your handle",      desc: "Set up your account in minutes. Lock in the IGN that'll carry your legacy across every bracket." },
+  { n: "02", title: "Pick your arena",        desc: "Browse verified tournaments with clear rules, trusted organizers, and brackets that actually run." },
+  { n: "03", title: "Compete with proof",     desc: "Play, submit match evidence, and have every result logged — no disputes, no he-said-she-said." },
+  { n: "04", title: "Win and get paid",       desc: "Verified win = automatic Mobile Money payout. The moment it's confirmed, it's yours." },
 ];
 
 // ─── Game image fallbacks (used when tournament has no thumbnail) ─────────────
@@ -69,9 +69,9 @@ const GAMES = [
 ];
 
 const TESTIMONIALS = [
-  { quote: "Got paid in under 10 minutes after the final. Actually wild.", name: "Phoenix GG",   role: "MLBB · 3× tournament winner", avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?q=80&w=200&auto=format&fit=crop" },
-  { quote: "Finally a platform where the prize is real before you hit register.", name: "Ada Boateng", role: "CODM · Team Captain",        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop" },
-  { quote: "We've run 40+ brackets on Apex. Best organizer tools in the region.", name: "Nana Asante", role: "Organizer · Accra Esports",   avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" },
+  { quote: "This is the first platform where my rank actually means something. Every win is on the record — that's legacy.", name: "Phoenix GG",   role: "MLBB · 3× tournament winner", avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?q=80&w=200&auto=format&fit=crop" },
+  { quote: "The bracket ran clean, results were verified, and no one could dispute our win. That's how it should always be.", name: "Ada Boateng", role: "CODM · Team Captain",          avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop" },
+  { quote: "We've run 40+ brackets on Apex. The organizer tools are unmatched — our players trust every tournament we post.", name: "Nana Asante", role: "Organizer · Accra Esports",   avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" },
 ];
 
 const STATUS_CHIP: Record<string, { cls: string; label: string }> = {
@@ -143,12 +143,12 @@ const Landing = () => {
               <motion.h1 {...fade(0.05)} className="font-display text-[2.2rem] sm:text-5xl lg:text-[2.2rem] xl:text-[2.8rem] font-bold tracking-tight leading-[1.1] mt-5">
                 <span className="block">Build your legacy in</span>
                 <span className="block text-transparent bg-clip-text bg-linear-to-r from-cyan-300 via-sky-400 to-cyan-300">
-                  a verified tournament
+                  verified esports tournaments
                 </span>
               </motion.h1>
 
               <motion.p {...fade(0.1)} className="text-sm sm:text-base text-slate-400 mt-4 leading-relaxed max-w-md">
-                Prize pools in escrow. Instant Mobile Money payouts. Real results, every match.
+                Escrow-backed prizes, instant payouts, verified organizers, and real results — every match, every time.
               </motion.p>
 
               <motion.div {...fade(0.15)} className="flex flex-col sm:flex-row gap-3 mt-6">
@@ -200,10 +200,10 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 rounded-2xl border border-slate-800/80 overflow-hidden divide-x divide-y md:divide-y-0 divide-slate-800/60">
             {[
-              { value: "100%", label: "Prize security", sub: "Escrow guaranteed",   color: "text-cyan-300"    },
-              { value: "0%",   label: "Payment risk",   sub: "Protected payouts",   color: "text-emerald-300" },
-              { value: "10%",  label: "Platform fee",   sub: "Lowest in region",    color: "text-amber-300"   },
-              { value: "1%",   label: "Escrow fee",     sub: "Transparent charges", color: "text-violet-300"  },
+              { value: "100%", label: "Prize security",         sub: "Escrow guaranteed",       color: "text-cyan-300"    },
+              { value: "0%",   label: "Payout risk",            sub: "Winners always get paid",  color: "text-emerald-300" },
+              { value: "100%", label: "Verified organizers",    sub: "Every tournament vetted",  color: "text-amber-300"   },
+              { value: "100%", label: "Fee transparency",       sub: "No hidden charges",        color: "text-violet-300"  },
             ].map((s, i) => (
               <motion.div key={s.label} {...fade(i * 0.06)} className="bg-slate-900/70 px-4 py-6 sm:px-6 sm:py-7 text-center">
                 <p className={`font-display text-2xl sm:text-3xl font-bold ${s.color}`}>{s.value}</p>
@@ -405,11 +405,11 @@ const Landing = () => {
             <h2 className="font-display text-3xl sm:text-5xl font-bold text-white tracking-tight">
               Built for players who{" "}
               <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-300 to-sky-400">
-                expect to get paid
+                compete to leave a mark
               </span>
             </h2>
             <p className="text-slate-400 text-sm sm:text-lg mt-3">
-              Every corner of the product is engineered for trust — not because it's a tagline, but because it's the only way competitive play works.
+              Every corner of the platform is built to keep the game honest — so your skill, your results, and your name mean something real.
             </p>
           </motion.div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -434,7 +434,7 @@ const Landing = () => {
           <motion.div {...fade()} className="flex items-end justify-between flex-wrap gap-4 mb-10 sm:mb-12">
             <div>
               <p className="text-xs font-semibold text-cyan-400 uppercase tracking-[0.2em] mb-2.5">How it works</p>
-              <h2 className="font-display text-3xl sm:text-5xl font-bold text-white tracking-tight">Four steps, zero drama</h2>
+              <h2 className="font-display text-3xl sm:text-5xl font-bold text-white tracking-tight">From signup to champion — four steps</h2>
             </div>
             <Link to="/signup" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors">
               Get started <ArrowRight className="w-4 h-4" />
@@ -493,10 +493,10 @@ const Landing = () => {
           >
             <Trophy className="w-9 h-9 sm:w-10 sm:h-10 mx-auto text-amber-400" />
             <h2 className="font-display text-3xl sm:text-5xl font-bold text-white tracking-tight mt-4">
-              The next bracket is waiting
+              Your next bracket is live
             </h2>
             <p className="text-sm sm:text-base text-slate-300 mt-3 max-w-xl mx-auto">
-              Sign up free, verify your handle, and you're ready to compete within minutes.
+              Sign up free, lock in your handle, and step into verified competition — your legacy starts here.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-3 mt-7 sm:mt-8">
               <Link
