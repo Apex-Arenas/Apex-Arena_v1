@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { adminService } from "../../services/admin.service";
 import { apiGet } from "../../utils/api.utils";
-import { TOURNAMENT_ENDPOINTS } from "../../config/api.config";
+import { API_BASE_URLS } from "../../config/api.config";
 import { getAdminAccessToken } from "../../utils/auth.utils";
 import { toast } from "react-toastify";
 
@@ -198,7 +198,7 @@ function ParticipantsSection({ tournamentId }: { tournamentId: string }) {
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
     apiGet(
-      `${TOURNAMENT_ENDPOINTS.TOURNAMENT_REGISTRATIONS}/${tournamentId}/registrations`,
+      `${API_BASE_URLS.TOURNAMENT}/registration/${tournamentId}/registrations`,
       { headers },
     )
       .then((res: any) => {
@@ -220,16 +220,18 @@ function ParticipantsSection({ tournamentId }: { tournamentId: string }) {
   const filtered = participants.filter((p) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return (
-      String(p.display_name ?? p.displayName ?? "").toLowerCase().includes(q) ||
-      String(p.username ?? "").toLowerCase().includes(q) ||
-      String(p.in_game_id ?? p.inGameId ?? "").toLowerCase().includes(q)
-    );
+    const user    = (p.user_id ?? {}) as Record<string, unknown>;
+    const profile = (user.profile ?? {}) as Record<string, unknown>;
+    const fullName = `${user.first_name ?? profile.first_name ?? ""} ${user.last_name ?? profile.last_name ?? ""}`.trim();
+    const username = String(user.username ?? p.username ?? "");
+    const inGameId = String(p.in_game_id ?? "");
+    return fullName.toLowerCase().includes(q) || username.toLowerCase().includes(q) || inGameId.toLowerCase().includes(q);
   });
 
-  const checkedInCount = participants.filter(
-    (p) => p.checked_in || p.checkedIn || p.status === "checked_in",
-  ).length;
+  const checkedInCount = participants.filter((p) => {
+    const checkInObj = (p.check_in ?? {}) as Record<string, unknown>;
+    return Boolean(checkInObj.checked_in) || p.status === "checked_in";
+  }).length;
 
   return (
     <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden">
@@ -302,13 +304,19 @@ function ParticipantsSection({ tournamentId }: { tournamentId: string }) {
             </thead>
             <tbody>
               {filtered.map((p, i) => {
-                const displayName = String(p.display_name ?? p.displayName ?? p.username ?? "—");
-                const username    = String(p.username ?? "");
-                const avatarUrl   = String(p.avatar_url ?? p.avatarUrl ?? "");
+                // API returns user_id as a populated object, check_in as nested
+                const user        = (p.user_id ?? {}) as Record<string, unknown>;
+                const checkInObj  = (p.check_in ?? {}) as Record<string, unknown>;
+                const profile     = (user.profile ?? {}) as Record<string, unknown>;
+                const firstName   = String(user.first_name ?? profile.first_name ?? "");
+                const lastName    = String(user.last_name ?? profile.last_name ?? "");
+                const displayName = `${firstName} ${lastName}`.trim() || String(user.username ?? p.username ?? "—");
+                const username    = String(user.username ?? p.username ?? "");
+                const avatarUrl   = String(user.avatar_url ?? profile.avatar_url ?? p.avatar_url ?? "");
                 const inGameId    = String(p.in_game_id ?? p.inGameId ?? "");
                 const status      = String(p.status ?? "registered");
-                const isCheckedIn = Boolean(p.checked_in ?? p.checkedIn ?? status === "checked_in");
-                const registeredAt = String(p.registered_at ?? p.registeredAt ?? p.created_at ?? "");
+                const isCheckedIn = Boolean(checkInObj.checked_in ?? p.checked_in ?? p.checkedIn ?? status === "checked_in");
+                const registeredAt = String(p.created_at ?? p.registered_at ?? p.registeredAt ?? "");
                 const statusColor = REGISTRANT_STATUS_COLORS[status] ?? "bg-slate-700/50 text-slate-400 border-slate-700/50";
                 const initials = displayName[0]?.toUpperCase() ?? "?";
 
