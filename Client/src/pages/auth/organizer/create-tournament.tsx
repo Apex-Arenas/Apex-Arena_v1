@@ -585,7 +585,8 @@ const CreateTournament = () => {
           contactEmail: trimmedContactEmail,
           ...(canEditThumbnailAfterPublish ? { thumbnailUrl: thumbnailUrl.trim() } : {}),
           ...(canEditTitle && title.trim() ? { title: title.trim() } : {}),
-          ...(canEditVisibility ? { visibility, region } : {}),
+          ...(canEditVisibility ? { visibility } : {}),
+          region,
           ...(canEditRules ? { rules: trimmedRules, mapPool: mapPool.trim() ? mapPool.trim().split(",").map((s) => s.trim()).filter(Boolean) : undefined } : {}),
           ...(canEditSchedule ? {
             registrationEnd:  toIsoString(registrationEnd)  ?? undefined,
@@ -979,8 +980,8 @@ const CreateTournament = () => {
                     <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)}
                       placeholder="organizer@example.com" className={inputCls} />
                   </Field>
-                  {canEditVisibility && (
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {canEditVisibility && (
                       <Field label="Visibility">
                         <select value={visibility} onChange={(e) => setVisibility(e.target.value)} className={selectCls}>
                           <option value="public">Public</option>
@@ -988,16 +989,16 @@ const CreateTournament = () => {
                           <option value="invite_only">Invite Only</option>
                         </select>
                       </Field>
-                      <Field label="Region">
-                        <select value={region} onChange={(e) => setRegion(e.target.value)} className={inputCls}>
-                          <option value="GLOBAL">Global (Open to Everyone)</option>
-                          {COUNTRIES.map((c) => (
-                            <option key={c.code} value={c.code}>{c.name}</option>
-                          ))}
-                        </select>
-                      </Field>
-                    </div>
-                  )}
+                    )}
+                    <Field label="Region">
+                      <select value={region} onChange={(e) => setRegion(e.target.value)} className={inputCls}>
+                        <option value="GLOBAL">Global (Open to Everyone)</option>
+                        {COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code}>{c.name}</option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
                   {canEditThumbnailAfterPublish && (
                     <Field label="Thumbnail Image">
                       <ImageUploadDropzone value={thumbnailUrl} onChange={setThumbnailUrl}
