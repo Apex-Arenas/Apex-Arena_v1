@@ -22,6 +22,7 @@ import {
   Gavel,
   List,
   ChevronDown,
+  Share2,
 } from "lucide-react";
 import {
   organizerService,
@@ -1305,7 +1306,7 @@ const TournamentManage = () => {
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2.5">
                     <h1 className="font-display text-2xl sm:text-3xl font-bold text-white leading-tight truncate min-w-0">
@@ -1337,7 +1338,7 @@ const TournamentManage = () => {
                   )}
                 </div>
                 {/* Action buttons */}
-                <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                <div className="flex items-center gap-2 flex-wrap sm:shrink-0 sm:justify-end">
             {canPublish && (
               <button onClick={handlePublish} disabled={isPublishing}
                 className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-xs sm:text-sm font-bold hover:shadow-lg hover:shadow-orange-500/20 disabled:opacity-60 transition-all">
@@ -1419,6 +1420,20 @@ const TournamentManage = () => {
                 Cancel
               </button>
             )}
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/tournaments/${tournament.id}`;
+                if (navigator.share) {
+                  void navigator.share({ title: tournament.title, url });
+                } else {
+                  void navigator.clipboard.writeText(url);
+                  showSuccess("Link copied to clipboard");
+                }
+              }}
+              title="Share tournament"
+              className="p-1.5 sm:p-2 rounded-xl border border-slate-700 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 transition-colors">
+              <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
             {tournament.status === "draft" && (
               <button onClick={() => setShowDeleteConfirm(true)}
                 className="p-1.5 sm:p-2 rounded-xl border border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500/40 transition-colors">
