@@ -235,7 +235,9 @@ function EditModal({ tournament, onClose, onSaved }: {
       title:         form.title.trim(),
       description:   form.description.trim(),
       visibility:    form.visibility,
-      region:        form.region.trim(),
+      region:        form.region,
+      // Global tournaments have no region restrictions
+      ...(form.region === "GLOBAL" ? { requirements: { allowed_regions: [] } } : {}),
       thumbnail_url: form.thumbnail_url.trim() || undefined,
       banner_url:    form.banner_url.trim() || undefined,
       rules:         form.rules.trim() || undefined,
@@ -245,6 +247,8 @@ function EditModal({ tournament, onClose, onSaved }: {
         registration_end:   fromDatetimeLocal(form.reg_end),
         tournament_start:   fromDatetimeLocal(form.tourn_start),
         tournament_end:     fromDatetimeLocal(form.tourn_end),
+        check_in_start:     fromDatetimeLocal(form.checkin_start),
+        check_in_end:       fromDatetimeLocal(form.checkin_end),
       },
       capacity: {
         ...(capacity as object),
@@ -334,7 +338,19 @@ function EditModal({ tournament, onClose, onSaved }: {
                 </div>
                 <div>
                   <label className={labelCls}>Region</label>
-                  <input className={inputCls} value={form.region} onChange={e => set("region", e.target.value)} placeholder="e.g. West Africa" />
+                  <select className={inputCls} value={form.region} onChange={e => set("region", e.target.value)}>
+                    <option value="GLOBAL">Global (Open to Everyone)</option>
+                    <option value="GH">Ghana</option>
+                    <option value="NG">Nigeria</option>
+                    <option value="KE">Kenya</option>
+                    <option value="ZA">South Africa</option>
+                    <option value="NA">North America</option>
+                    <option value="EU">Europe</option>
+                    <option value="ASIA">Asia</option>
+                    <option value="LATAM">Latin America</option>
+                    <option value="OCE">Oceania</option>
+                    <option value="ME">Middle East</option>
+                  </select>
                 </div>
               </div>
               <div>
@@ -373,6 +389,20 @@ function EditModal({ tournament, onClose, onSaved }: {
                 <div>
                   <label className={labelCls}>Tournament End</label>
                   <input type="datetime-local" className={inputCls} value={form.tourn_end} onChange={e => set("tourn_end", e.target.value)} />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-800">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Check-in Window</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelCls}>Check-in Opens</label>
+                    <input type="datetime-local" className={inputCls} value={form.checkin_start} onChange={e => set("checkin_start", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Check-in Closes</label>
+                    <input type="datetime-local" className={inputCls} value={form.checkin_end} onChange={e => set("checkin_end", e.target.value)} />
+                  </div>
                 </div>
               </div>
             </>
@@ -728,7 +758,13 @@ const TournamentDetail = () => {
   const platformFee     = Number(prizeStruct?.platform_fee_amount ?? 0);
   const fundingType     = String(tournament.funding_type ?? "free");
   const format          = String(tournament.format ?? "—");
-  const region          = String(tournament.region ?? "—");
+  const REGION_LABELS: Record<string, string> = {
+    GLOBAL: "Global", GH: "Ghana", NG: "Nigeria", KE: "Kenya", ZA: "South Africa",
+    NA: "North America", EU: "Europe", ASIA: "Asia", LATAM: "Latin America",
+    OCE: "Oceania", ME: "Middle East",
+  };
+  const regionRaw       = String(tournament.region ?? "");
+  const region          = REGION_LABELS[regionRaw] ?? (regionRaw || "—");
   const visibility      = String(tournament.visibility ?? "public");
   const tournamentType  = String(tournament.tournament_type ?? "—");
   const fillPct         = maxParticipants > 0 ? Math.round((currentCount / maxParticipants) * 100) : 0;
