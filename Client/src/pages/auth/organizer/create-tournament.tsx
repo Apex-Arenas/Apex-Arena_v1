@@ -828,11 +828,13 @@ const CreateTournament = () => {
         thumbnailUrl: thumbnailUrl.trim() || undefined,
         contactEmail: trimmedContactEmail || undefined,
         allowedRegions:
-          allowedRegionValues.length > 0
-            ? allowedRegionValues
-            : trimmedRegion
-              ? [trimmedRegion]
-              : undefined,
+          trimmedRegion === 'GLOBAL'
+            ? []
+            : allowedRegionValues.length > 0
+              ? allowedRegionValues
+              : trimmedRegion
+                ? [trimmedRegion]
+                : undefined,
         verifiedEmailRequired,
         leagueSettings: tournamentType === 'league'
           ? { legs: Number(leagueLegs) }
@@ -987,8 +989,12 @@ const CreateTournament = () => {
                         </select>
                       </Field>
                       <Field label="Region">
-                        <input type="text" value={region} onChange={(e) => setRegion(e.target.value)}
-                          placeholder="e.g. West Africa" className={inputCls} />
+                        <select value={region} onChange={(e) => setRegion(e.target.value)} className={inputCls}>
+                          <option value="GLOBAL">Global (Open to Everyone)</option>
+                          {COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.code}>{c.name}</option>
+                          ))}
+                        </select>
                       </Field>
                     </div>
                   )}
@@ -1161,6 +1167,7 @@ const CreateTournament = () => {
                       className={`${selectCls} appearance-none cursor-pointer [&>option]:bg-slate-800 [&>option]:text-white`}
                     >
                       <option value="">Select a region</option>
+                      <option value="GLOBAL">Global (Open to Everyone)</option>
                       {COUNTRIES.map((country) => (
                         <option key={country.code} value={country.code}>{country.name}</option>
                       ))}
