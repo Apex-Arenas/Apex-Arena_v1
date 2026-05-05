@@ -941,6 +941,19 @@ export const organizerService = {
     }
   },
 
+  async getMyDisputes(options?: { limit?: number; skip?: number }): Promise<{ disputes: any[]; total: number }> {
+    const params = new URLSearchParams();
+    if (options?.limit) params.set('limit', String(options.limit));
+    if (options?.skip) params.set('skip', String(options.skip));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.MATCH_ORGANIZER_DISPUTES}${query}`);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to fetch disputes';
+      throw new Error(msg);
+    }
+    return (response as { success: true; data: { disputes: any[]; total: number } }).data;
+  },
+
   async resolveDispute(matchId: string, winnerId: string, resolution: string): Promise<void> {
     const response = await apiPost(
       `${TOURNAMENT_ENDPOINTS.MATCH_DISPUTE_RESOLVE}/${matchId}/dispute/resolve`,
