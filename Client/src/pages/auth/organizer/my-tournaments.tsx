@@ -142,8 +142,8 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
       </Link>
 
       {/* ── Content ───────────────────────────────────────── */}
-      <Link to={href} className="px-4 pt-3 pb-4 flex flex-col gap-3 flex-1">
-        <div>
+      <div className="px-4 pt-3 pb-4 flex flex-col gap-3 flex-1">
+        <Link to={href}>
           <h3 className="font-display text-sm font-bold text-white leading-tight truncate group-hover:text-orange-300 transition-colors">
             {tournament.title}
           </h3>
@@ -151,7 +151,7 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
             {tournament.game?.name ?? "Unknown Game"} · {tournament.format ?? "Solo"}
             {tournament.region ? ` · ${tournament.region === "GLOBAL" ? "Global" : tournament.region}` : ""}
           </p>
-        </div>
+        </Link>
 
         {/* Detail grid */}
         <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
@@ -194,7 +194,19 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
             <span className="text-[11px] font-semibold text-amber-400">{prizeGhs} prize pool</span>
           </div>
         )}
-      </Link>
+
+        {/* CTA button */}
+        <Link
+          to={href}
+          className={`mt-auto w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+            isLive
+              ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 hover:shadow-lg hover:shadow-orange-500/25"
+              : "border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 hover:text-white"
+          }`}
+        >
+          {isLive ? "Manage Live" : "View Details"}
+        </Link>
+      </div>
 
       {/* ── Deposit banner ────────────────────────────────── */}
       {needsDeposit && (
