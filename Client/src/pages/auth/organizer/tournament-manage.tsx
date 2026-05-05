@@ -1290,29 +1290,31 @@ const TournamentManage = () => {
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden border-b border-slate-800/80 bg-slate-900">
         {/* Glows */}
-        <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-orange-500/8 blur-3xl pointer-events-none" />
-        <div className="absolute top-0 left-1/3 w-96 h-48 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/6 blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-[500px] h-[500px] rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-0 left-1/3 w-[500px] h-64 rounded-full bg-cyan-500/8 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-[500px] h-[500px] rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
         {/* Grid */}
         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-size-[48px_48px]" />
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 inset-x-0 h-px bg-linear-to-r from-transparent via-slate-600/40 to-transparent pointer-events-none" />
 
-        <div className="relative px-6 py-6 sm:px-8 sm:py-7 space-y-5">
+        <div className="relative px-6 pt-8 pb-7 sm:px-10 sm:pt-10 sm:pb-8 space-y-7">
           {/* Back + title + actions row */}
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-4">
             <button
               onClick={() => navigate("/auth/organizer/tournaments")}
-              className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors mt-0.5"
+              className="shrink-0 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-slate-700/60 transition-all mt-0.5"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex-1 min-w-0">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2.5">
-                    <h1 className="font-display text-2xl sm:text-3xl font-bold text-white leading-tight truncate min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="font-display text-3xl sm:text-4xl font-bold text-white leading-tight tracking-tight truncate min-w-0">
                       {tournament.title}
                     </h1>
-                    <span className={`shrink-0 text-xs px-2.5 py-0.5 rounded-full font-semibold capitalize ${
+                    <span className={`shrink-0 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wide ${
                       tournament.status === "open"       ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/25"
                       : tournament.status === "awaiting_deposit" || tournament.status === "published" ? "bg-amber-500/20 text-amber-300 border border-amber-500/25"
                       : tournament.status === "draft"    ? "bg-slate-600/20 text-slate-400 border border-slate-600/25"
@@ -1322,14 +1324,19 @@ const TournamentManage = () => {
                       {tournament.status.replace(/_/g, " ")}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-400 mt-1">
-                    {tournament.game?.name ?? "Unknown Game"} &middot; {tournament.format ?? "Solo"} &middot;{" "}
-                    {tournament.isFree ? "Free" : `GHS ${(tournament.entryFee / 100).toFixed(2)}`}
+                  <p className="text-sm text-slate-400 mt-2 flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-slate-300">{tournament.game?.name ?? "Unknown Game"}</span>
+                    <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
+                    <span>{tournament.format ?? "Solo"}</span>
+                    <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
+                    <span className={tournament.isFree ? "text-emerald-400 font-semibold" : "text-amber-400 font-semibold"}>
+                      {tournament.isFree ? "Free Entry" : `GHS ${(tournament.entryFee / 100).toFixed(2)}`}
+                    </span>
                   </p>
                   {/* Fixtures Generated badge */}
                   {leagueSettings?.fixturesGenerated && !canGenerateLeagueFixtures && (
-                    <span className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
-                      <CheckCircle2 className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
                       Fixtures Generated
                       {leagueSettings?.currentMatchweek != null && leagueSettings?.totalMatchweeks != null && (
                         <span className="text-emerald-400/70">· Wk {leagueSettings.currentMatchweek}/{leagueSettings.totalMatchweeks}</span>
@@ -1448,27 +1455,27 @@ const TournamentManage = () => {
           {/* Stats strip */}
           <button
             onClick={() => setStatsOpen((o) => !o)}
-            className="sm:hidden w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-700/50 bg-slate-800/40 text-xs font-semibold text-slate-300 hover:border-slate-600 transition-all"
+            className="sm:hidden w-full flex items-center justify-between px-4 py-3 rounded-xl border border-slate-700/50 bg-slate-800/40 text-xs font-semibold text-slate-300 hover:border-slate-600 transition-all"
           >
             <span>Tournament Stats</span>
             <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
           </button>
           <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 sm:mt-0 ${statsOpen ? "mt-2" : "hidden sm:grid"}`}>
             {[
-              { icon: Users,        label: "Registrants", value: String(activeRegistrants.length), accent: "text-white",        iconBg: "bg-slate-700/60 border-slate-600/50" },
-              { icon: UserCheck,    label: "Checked In",  value: String(checkedInCount),           accent: "text-emerald-400",  iconBg: "bg-emerald-500/15 border-emerald-500/25" },
-              { icon: Trophy,       label: "Capacity",    value: `${tournament.currentCount}/${tournament.maxParticipants}`, accent: "text-cyan-400", iconBg: "bg-cyan-500/15 border-cyan-500/25" },
+              { icon: Users,        label: "Registrants", value: String(activeRegistrants.length), accent: "text-white",        iconBg: "bg-slate-700/60 border-slate-600/50",    glow: "" },
+              { icon: UserCheck,    label: "Checked In",  value: String(checkedInCount),           accent: "text-emerald-400",  iconBg: "bg-emerald-500/15 border-emerald-500/25", glow: "hover:border-emerald-500/30" },
+              { icon: Trophy,       label: "Capacity",    value: `${tournament.currentCount}/${tournament.maxParticipants}`, accent: "text-cyan-400", iconBg: "bg-cyan-500/15 border-cyan-500/25", glow: "hover:border-cyan-500/30" },
               { icon: CalendarDays, label: "Starts",      value: tournament.schedule.tournamentStart
                   ? new Date(tournament.schedule.tournamentStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                  : "TBD", accent: "text-orange-400", iconBg: "bg-orange-500/15 border-orange-500/25" },
-            ].map(({ icon: Icon, label, value, accent, iconBg }) => (
-              <div key={label} className="flex items-center gap-3 bg-slate-800/40 border border-slate-700/40 rounded-xl px-4 py-3">
-                <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}`}>
-                  <Icon className={`w-4 h-4 ${accent}`} />
+                  : "TBD", accent: "text-orange-400", iconBg: "bg-orange-500/15 border-orange-500/25", glow: "hover:border-orange-500/30" },
+            ].map(({ icon: Icon, label, value, accent, iconBg, glow }) => (
+              <div key={label} className={`flex items-center gap-4 bg-slate-800/50 border border-slate-700/40 rounded-2xl px-5 py-4 transition-colors ${glow}`}>
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
+                  <Icon className={`w-5 h-5 ${accent}`} />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">{label}</p>
-                  <p className={`font-display text-lg font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
+                  <p className={`font-display text-2xl font-bold tabular-nums leading-tight mt-0.5 ${accent}`}>{value}</p>
                 </div>
               </div>
             ))}

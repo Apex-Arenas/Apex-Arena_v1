@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   X, Loader2, AlertTriangle, Shield, Trophy, CheckCircle2,
-  ExternalLink, Gavel, Clock, Swords,
+  ExternalLink, Gavel, Clock, Swords, Play, UserX, XCircle, ChevronDown,
 } from 'lucide-react';
 import { tournamentService } from '../../services/tournament.service';
 import type { FullMatch } from '../../services/tournament.service';
+import { organizerService } from '../../services/organizer.service';
 
 interface Props {
   matchId: string;
@@ -57,6 +58,11 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
   const [resolveWinnerId, setResolveWinnerId] = useState<string | null>(null);
   const [resolution, setResolution] = useState('');
 
+  // Organizer action state
+  const [forfeitPlayerId, setForfeitPlayerId] = useState<string | null>(null);
+  const [showForfeit, setShowForfeit] = useState(false);
+  const [showCancel, setShowCancel] = useState(false);
+
   useEffect(() => {
     tournamentService.getMatch(matchId).then(data => {
       if (!data) setError('Could not load match details.');
@@ -75,6 +81,46 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
       onClose();
     } catch (e: any) {
       setError(e.message ?? 'Failed to resolve dispute.');
+      setSubmitting(false);
+    }
+  }
+
+  async function handleStart() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await organizerService.startMatch(matchId);
+      onActionComplete();
+      onClose();
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to start match.');
+      setSubmitting(false);
+    }
+  }
+
+  async function handleForfeit() {
+    if (!forfeitPlayerId) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await organizerService.forfeitMatch(matchId, forfeitPlayerId);
+      onActionComplete();
+      onClose();
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to forfeit match.');
+      setSubmitting(false);
+    }
+  }
+
+  async function handleCancel() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await organizerService.cancelMatchById(matchId);
+      onActionComplete();
+      onClose();
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to cancel match.');
       setSubmitting(false);
     }
   }
@@ -215,19 +261,23 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
     }
 
     // ── DEFAULT (pending / scheduled / ongoing) ──────────────────────────
-    const statusIcons: Record<string, React.ReactNode> = {
-      ongoing: <Swords className="w-8 h-8 text-cyan-400" />,
-      ready_check: <Swords className="w-8 h-8 text-cyan-400" />, // legacy — treated as ongoing
-      scheduled: <Clock className="w-8 h-8 text-slate-500" />,
-      pending: <Clock className="w-8 h-8 text-slate-500" />,
-    };
+    const isOngoing = match.status === 'ongoing' || match.status === 'ready_check';
+    const StatusIcon = isOngoing ? Swords : Clock;
+    const statusColor = isOngoing ? 'text-cyan-400' : 'text-slate-400';
 
     return (
       <div className="space-y-4">
-        <div className="flex flex-col items-center gap-2 py-2">
-          {statusIcons[match.status] ?? <Clock className="w-8 h-8 text-slate-500" />}
+        {/* Status + players */}
+        <div className="flex flex-col items-center gap-1.5 py-1">
+          <StatusIcon className={`w-7 h-7 ${statusColor}`} />
           <p className="text-sm font-semibold text-white capitalize">{match.status.replace('_', ' ')}</p>
+          {match.scheduledAt && (
+            <p className="text-xs text-slate-500">
+              {new Date(match.scheduledAt).toLocaleString()}
+            </p>
+          )}
         </div>
+
         <div className="flex gap-3">
           <PlayerCard name={match.player1Name} />
           <div className="flex items-center justify-center shrink-0">
@@ -235,11 +285,97 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
           </div>
           <PlayerCard name={match.player2Name} />
         </div>
-        {match.scheduledAt && (
-          <p className="text-center text-xs text-slate-500">
-            Scheduled: {new Date(match.scheduledAt).toLocaleString()}
-          </p>
-        )}
+
+        {/* ── Organizer actions ── */}
+        <div className="border-t border-slate-800 pt-4 space-y-2">
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3">Organizer Actions</p>
+
+          {/* Start match */}
+          {!isOngoing && (
+            <button
+              onClick={handleStart}
+              disabled={submitting}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-sm font-semibold hover:bg-cyan-500/25 hover:border-cyan-500/50 disabled:opacity-50 transition-all"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+              Start Match Now
+            </button>
+          )}
+
+          {/* Forfeit (no-show) */}
+          <div>
+            <button
+              onClick={() => setShowForfeit((v) => !v)}
+              className="w-full flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-sm font-semibold hover:bg-amber-500/20 hover:border-amber-500/40 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <UserX className="w-4 h-4" />
+                Forfeit — No Show
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${showForfeit ? 'rotate-180' : ''}`} />
+            </button>
+            {showForfeit && (
+              <div className="mt-2 p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 space-y-2">
+                <p className="text-xs text-slate-400">Which player failed to show up?</p>
+                <div className="flex gap-2">
+                  {[
+                    { id: match.player1Id, name: match.player1Name },
+                    { id: match.player2Id, name: match.player2Name },
+                  ].map(({ id, name }) => (
+                    <button
+                      key={id}
+                      onClick={() => setForfeitPlayerId(id)}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                        forfeitPlayerId === id
+                          ? 'bg-amber-500/20 border-amber-500/50 text-amber-200'
+                          : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500'
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleForfeit}
+                  disabled={submitting || !forfeitPlayerId}
+                  className="w-full py-2 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-400 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserX className="w-3.5 h-3.5" />}
+                  Confirm Forfeit
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Cancel match */}
+          <div>
+            <button
+              onClick={() => setShowCancel((v) => !v)}
+              className="w-full flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold hover:bg-red-500/15 hover:border-red-500/35 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <XCircle className="w-4 h-4" />
+                Cancel Match
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${showCancel ? 'rotate-180' : ''}`} />
+            </button>
+            {showCancel && (
+              <div className="mt-2 p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 space-y-2">
+                <p className="text-xs text-slate-400">This will void the match result. Are you sure?</p>
+                <button
+                  onClick={handleCancel}
+                  disabled={submitting}
+                  className="w-full py-2 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                  Yes, Cancel Match
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-red-400 pt-1">{error}</p>}
       </div>
     );
   }

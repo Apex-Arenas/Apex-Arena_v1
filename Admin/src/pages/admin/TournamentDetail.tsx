@@ -123,10 +123,16 @@ function Section({ title, icon: Icon, children }: { title: string; icon?: React.
 
 /* ── Delete Modal ──────────────────────────────────────── */
 function DeleteModal({ tournament, onClose, onConfirm, loading }) {
+  const [nameInput, setNameInput] = useState("");
+  const [reason, setReason] = useState("");
+
   if (!tournament) return null;
   const status = String(tournament.status || "");
   const isBlocked = BLOCKED_STATUSES.has(status);
   const title = String(tournament.title || "Tournament");
+
+  const nameMatches = nameInput.trim() === title.trim();
+  const canDelete = !isBlocked && nameMatches && reason.trim().length >= 10;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
@@ -138,7 +144,7 @@ function DeleteModal({ tournament, onClose, onConfirm, loading }) {
             </div>
             <div>
               <h3 className="text-base font-bold text-white">Delete Tournament</h3>
-              <p className="text-xs text-slate-400 truncate max-w-65">{title}</p>
+              <p className="text-xs text-slate-400 truncate max-w-[260px]">{title}</p>
             </div>
           </div>
 
@@ -150,9 +156,43 @@ function DeleteModal({ tournament, onClose, onConfirm, loading }) {
               </p>
             </div>
           ) : (
-            <p className="text-sm text-slate-400 leading-relaxed">
-              This will permanently remove the tournament and all associated data. This action cannot be undone.
-            </p>
+            <>
+              <div className="flex items-start gap-3 p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-300 leading-relaxed">
+                  This will permanently remove the tournament and <strong>all associated data</strong> including matches, registrations, and payouts. This cannot be undone.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-400">
+                  Type <span className="text-white font-semibold">{title}</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder="Tournament name"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-red-500/60 transition-colors"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-400">
+                  Reason for deletion <span className="text-slate-600">(min 10 chars)</span>
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Explain why this tournament is being deleted…"
+                  rows={3}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-red-500/60 transition-colors resize-none"
+                />
+                {reason.trim().length > 0 && reason.trim().length < 10 && (
+                  <p className="text-[11px] text-red-400">{10 - reason.trim().length} more characters required</p>
+                )}
+              </div>
+            </>
           )}
 
           <div className="flex gap-3 pt-1">
@@ -164,9 +204,9 @@ function DeleteModal({ tournament, onClose, onConfirm, loading }) {
             </button>
             {!isBlocked && (
               <button
-                onClick={onConfirm}
-                disabled={loading}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                onClick={() => onConfirm(reason.trim())}
+                disabled={loading || !canDelete}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Deleting…</> : "Delete Tournament"}
               </button>
@@ -700,12 +740,13 @@ const TournamentDetail = () => {
 
   useEffect(() => { void load(); }, [load]);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (reason: string) => {
     if (!tournament || !tournamentId) return;
     setIsDeleting(true);
     try {
       const success = await adminService.deleteTournament(tournamentId);
       if (success) {
+        console.info(`[Admin] Tournament "${String(tournament.title)}" deleted. Reason: ${reason}`);
         toast.success("Tournament deleted successfully");
         navigate("/admin/tournaments");
       } else {
