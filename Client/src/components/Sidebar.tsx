@@ -17,10 +17,12 @@ import {
   BarChart2,
   DollarSign,
   Mail,
+  ShieldAlert,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth-context";
 import { notificationService } from "../services/notification.service";
+import { organizerService } from "../services/organizer.service";
 
 const playerNavItems = [
   { to: "/auth",                        icon: Home,       label: "Home",         end: true },
@@ -33,15 +35,16 @@ const playerNavItems = [
 ] as const;
 
 const organizerNavItems = [
-  { to: "/auth",                           icon: Home,       label: "Home",           end: true },
-  { to: "/auth/organizer/tournaments",     icon: ListTodo,   label: "My Tournaments"            },
-  { to: "/auth/player/join-tournament",    icon: Swords,     label: "Join Tournament"           },
-  { to: "/auth/leaderboard",              icon: Trophy,     label: "Leaderboard"               },
-  { to: "/auth/organizer/analytics",       icon: BarChart2,  label: "Analytics"                 },
-  { to: "/auth/organizer/payouts",         icon: DollarSign, label: "Payouts"                   },
-  { to: "/auth/organizer/profile",         icon: UserCircle, label: "Profile"                   },
-  { to: "/auth/notifications",             icon: Bell,       label: "Notifications"             },
-  { to: "/auth/contact-us",                icon: Mail,       label: "Contact Us"                },
+  { to: "/auth",                           icon: Home,        label: "Home",           end: true },
+  { to: "/auth/organizer/tournaments",     icon: ListTodo,    label: "My Tournaments"            },
+  { to: "/auth/organizer/disputes",        icon: ShieldAlert, label: "Disputes",       badge: "disputes" as const },
+  { to: "/auth/player/join-tournament",    icon: Swords,      label: "Join Tournament"           },
+  { to: "/auth/leaderboard",              icon: Trophy,      label: "Leaderboard"               },
+  { to: "/auth/organizer/analytics",       icon: BarChart2,   label: "Analytics"                 },
+  { to: "/auth/organizer/payouts",         icon: DollarSign,  label: "Payouts"                   },
+  { to: "/auth/organizer/profile",         icon: UserCircle,  label: "Profile"                   },
+  { to: "/auth/notifications",             icon: Bell,        label: "Notifications"             },
+  { to: "/auth/contact-us",               icon: Mail,        label: "Contact Us"                },
 ] as const;
 
 interface SidebarProps {
@@ -52,6 +55,7 @@ interface SidebarProps {
 const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingDisputeCount, setPendingDisputeCount] = useState(0);
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,6 +69,16 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
   }, []);
 
   const isOrganizer = user?.role === "organizer";
+
+  useEffect(() => {
+    if (!isOrganizer) return;
+    let cancelled = false;
+    organizerService.getMyDisputes({ limit: 1 })
+      .then((r) => { if (!cancelled) setPendingDisputeCount(r.total); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isOrganizer]);
+
   const navItems = isOrganizer ? organizerNavItems : playerNavItems;
 
   useEffect(() => {
@@ -170,6 +184,11 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
                 {to === "/auth/notifications" && unreadCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1 leading-none">
                     {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+                {"badge" in rest && rest.badge === "disputes" && pendingDisputeCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[9px] font-bold flex items-center justify-center px-1 leading-none">
+                    {pendingDisputeCount > 99 ? "99+" : pendingDisputeCount}
                   </span>
                 )}
               </div>
