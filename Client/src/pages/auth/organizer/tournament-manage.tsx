@@ -1847,9 +1847,6 @@ const TournamentManage = () => {
                     currentMatchweek={leagueSettings.currentMatchweek}
                     totalMatchweeks={leagueSettings.totalMatchweeks}
                     legs={leagueSettings.legs}
-                    pointsPerWin={leagueSettings.pointsPerWin}
-                    pointsPerDraw={leagueSettings.pointsPerDraw}
-                    pointsPerLoss={leagueSettings.pointsPerLoss}
                     highlightUserId={user?.id}
                     isOrganizer
                   />

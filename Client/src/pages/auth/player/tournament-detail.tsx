@@ -1184,9 +1184,6 @@ const TournamentDetail = () => {
               }
               totalMatchweeks={tournament.leagueSettings?.totalMatchweeks ?? 0}
               legs={tournament.leagueSettings?.legs ?? 1}
-              pointsPerWin={tournament.leagueSettings?.pointsPerWin}
-              pointsPerDraw={tournament.leagueSettings?.pointsPerDraw}
-              pointsPerLoss={tournament.leagueSettings?.pointsPerLoss}
               highlightUserId={currentUserId}
             />
           </section>
