@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAuth } from "../../../lib/auth-context";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ChevronLeft,
@@ -484,6 +485,7 @@ function RegistrantRow({
 const TournamentManage = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [registrants, setRegistrants] = useState<TournamentRegistrant[]>([]);
@@ -1584,6 +1586,7 @@ const TournamentManage = () => {
                 currentMatchweek={leagueSettings.currentMatchweek}
                 totalMatchweeks={leagueSettings.totalMatchweeks}
                 legs={leagueSettings.legs}
+                highlightUserId={user?.id}
                 isOrganizer
               />
             </div>

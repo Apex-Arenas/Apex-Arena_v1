@@ -145,7 +145,7 @@ export function LeagueView({
       )}
 
       {/* Modals */}
-      {activeMatchId && highlightUserId && !isOrganizer && (
+      {activeMatchId && highlightUserId && (
         <MatchActionModal
           matchId={activeMatchId}
           currentUserId={highlightUserId}
@@ -154,7 +154,7 @@ export function LeagueView({
           onActionComplete={() => { setActiveMatchId(null); loadData(true); }}
         />
       )}
-      {activeMatchId && isOrganizer && (
+      {activeMatchId && !highlightUserId && isOrganizer && (
         <OrganizerMatchModal
           matchId={activeMatchId}
           onClose={() => setActiveMatchId(null)}
