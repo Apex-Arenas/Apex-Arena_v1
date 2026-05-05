@@ -44,6 +44,7 @@ import LeaderboardPage from "./pages/auth/LeaderboardPage";
 import NotificationsPage from "./pages/auth/NotificationsPage";
 import AnalyticsPage from "./pages/auth/organizer/AnalyticsPage";
 import PayoutsPage from "./pages/auth/organizer/PayoutsPage";
+import OrganizerDisputesPage from "./pages/auth/organizer/OrganizerDisputesPage";
 
 // Admin
 
@@ -178,6 +179,7 @@ const App = () => {
               />
               <Route path="organizer/analytics" element={<AnalyticsPage />} />
               <Route path="organizer/payouts" element={<PayoutsPage />} />
+              <Route path="organizer/disputes" element={<OrganizerDisputesPage />} />
             </Route>
           </Route>
         </Route>
