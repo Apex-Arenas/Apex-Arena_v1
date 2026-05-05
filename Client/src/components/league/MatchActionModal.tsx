@@ -114,27 +114,44 @@ function PlayerCard({
 
 // ─── Score Display ────────────────────────────────────────────────────────────
 
-function ScoreDisplay({ s1, s2, n1, n2 }: { s1: number; s2: number; n1: string; n2: string }) {
+function ScoreDisplay({ s1, s2, n1, n2, p1Won, p2Won }: {
+  s1: number; s2: number; n1: string; n2: string;
+  p1Won?: boolean; p2Won?: boolean;
+}) {
+  // When an organizer overrides the winner, the raw scores may contradict the result.
+  // Swap the displayed numbers so the declared winner always shows the higher score.
+  const overridden = (p1Won && s1 < s2) || (p2Won && s2 < s1);
+  const d1 = overridden ? s2 : s1;
+  const d2 = overridden ? s1 : s2;
+
+  const h1 = p1Won !== undefined ? p1Won : d1 > d2;
+  const h2 = p2Won !== undefined ? p2Won : d2 > d1;
+
   return (
     <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 overflow-hidden">
       <div className="grid grid-cols-[1fr_auto_1fr]">
         {/* Player 1 */}
-        <div className={`flex flex-col items-center py-4 px-3 gap-1 ${s1 > s2 ? 'bg-amber-500/6' : ''}`}>
+        <div className={`flex flex-col items-center py-4 px-3 gap-1 ${h1 ? 'bg-amber-500/6' : ''}`}>
           <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate w-full text-center">{n1}</p>
-          <span className={`font-display text-5xl font-bold tabular-nums leading-none ${s1 > s2 ? 'text-amber-300' : 'text-slate-500'}`}>{s1}</span>
+          <span className={`font-display text-5xl font-bold tabular-nums leading-none ${h1 ? 'text-amber-300' : 'text-slate-500'}`}>{d1}</span>
         </div>
 
-        {/* Divider + separator */}
+        {/* Divider */}
         <div className="flex flex-col items-center justify-center px-3 border-x border-slate-700/60">
           <span className="text-slate-600 font-bold text-sm">—</span>
         </div>
 
         {/* Player 2 */}
-        <div className={`flex flex-col items-center py-4 px-3 gap-1 ${s2 > s1 ? 'bg-amber-500/6' : ''}`}>
+        <div className={`flex flex-col items-center py-4 px-3 gap-1 ${h2 ? 'bg-amber-500/6' : ''}`}>
           <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate w-full text-center">{n2}</p>
-          <span className={`font-display text-5xl font-bold tabular-nums leading-none ${s2 > s1 ? 'text-amber-300' : 'text-slate-500'}`}>{s2}</span>
+          <span className={`font-display text-5xl font-bold tabular-nums leading-none ${h2 ? 'text-amber-300' : 'text-slate-500'}`}>{d2}</span>
         </div>
       </div>
+      {overridden && (
+        <div className="px-3 py-1.5 bg-amber-500/8 border-t border-amber-500/15 text-center">
+          <span className="text-[10px] text-amber-400/80 font-semibold uppercase tracking-widest">Result decided by organizer ruling</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -236,7 +253,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
           </div>
 
           {/* Scoreboard */}
-          <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} />
+          <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} p1Won={p1Won} p2Won={p2Won} />
 
           <p className="text-center text-[11px] text-slate-600 uppercase tracking-widest">Match finalised</p>
         </div>

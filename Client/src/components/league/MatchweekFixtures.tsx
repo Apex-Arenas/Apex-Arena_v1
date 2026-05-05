@@ -129,15 +129,22 @@ function MatchCard({ match, highlightUserId, onClick }: {
           {/* Score / VS */}
           <div className="shrink-0 flex items-center gap-2">
             {isCompleted && match.score1 !== undefined ? (
-              <div className="flex items-center gap-1.5">
-                <span className={`text-2xl font-display font-bold w-8 text-center tabular-nums ${isP1Winner ? 'text-white' : 'text-slate-500'}`}>
-                  {match.score1}
-                </span>
-                <span className="text-slate-600 text-sm font-bold">–</span>
-                <span className={`text-2xl font-display font-bold w-8 text-center tabular-nums ${isP2Winner ? 'text-white' : 'text-slate-500'}`}>
-                  {match.score2}
-                </span>
-              </div>
+              (() => {
+                const overridden = (isP1Winner && match.score1 < match.score2!) || (isP2Winner && match.score2! < match.score1);
+                const d1 = overridden ? match.score2! : match.score1;
+                const d2 = overridden ? match.score1 : match.score2!;
+                return (
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-2xl font-display font-bold w-8 text-center tabular-nums ${isP1Winner ? 'text-white' : 'text-slate-500'}`}>
+                    {d1}
+                  </span>
+                  <span className="text-slate-600 text-sm font-bold">–</span>
+                  <span className={`text-2xl font-display font-bold w-8 text-center tabular-nums ${isP2Winner ? 'text-white' : 'text-slate-500'}`}>
+                    {d2}
+                  </span>
+                </div>
+                );
+              })()
             ) : (
               <div className="px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700">
                 <span className="text-xs font-bold text-slate-400 tracking-widest">VS</span>
