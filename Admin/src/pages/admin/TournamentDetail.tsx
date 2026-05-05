@@ -500,6 +500,7 @@ function ParticipantsSection({ tournamentId }: { tournamentId: string }) {
   }, [tournamentId]);
 
   const filtered = participants.filter((p) => {
+    if (p.status === "withdrawn" || p.status === "disqualified") return false;
     if (!search) return true;
     const q = search.toLowerCase();
     const user    = (p.user_id ?? {}) as Record<string, unknown>;
