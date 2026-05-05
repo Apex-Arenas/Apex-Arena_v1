@@ -42,11 +42,14 @@ export function LeagueView({
   const [error, setError] = useState<string | null>(null);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
 
-  async function loadData(showRefresh = false) {
+  async function loadData(showRefresh = false, recalculate = false) {
     if (showRefresh) setRefreshing(true);
     else setLoading(true);
     setError(null);
     try {
+      if (recalculate && isOrganizer) {
+        await tournamentService.recalculateLeagueStandings(tournamentId);
+      }
       const [tableData, mwData] = await Promise.all([
         tournamentService.getLeagueTable(tournamentId),
         tournamentService.getLeagueMatchweeks(tournamentId),
@@ -119,7 +122,7 @@ export function LeagueView({
           )}
           {/* Refresh — icon-only on mobile, with label on sm+ */}
           <button
-            onClick={() => loadData(true)}
+            onClick={() => loadData(true, true)}
             disabled={refreshing}
             className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl border border-slate-700 text-xs text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-50 transition-colors"
           >
