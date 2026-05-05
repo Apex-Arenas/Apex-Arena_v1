@@ -144,7 +144,7 @@ function DeleteModal({ tournament, onClose, onConfirm, loading }) {
             </div>
             <div>
               <h3 className="text-base font-bold text-white">Delete Tournament</h3>
-              <p className="text-xs text-slate-400 truncate max-w-[260px]">{title}</p>
+              <p className="text-xs text-slate-400 truncate max-w-65">{title}</p>
             </div>
           </div>
 
