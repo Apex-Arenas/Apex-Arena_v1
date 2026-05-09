@@ -154,8 +154,11 @@ function MatchCard({
   const p1Leg2 = isTwoLeg ? getLegScore(match, 0, 2) : null;
   const p2Leg1 = isTwoLeg ? getLegScore(match, 1, 1) : null;
   const p2Leg2 = isTwoLeg ? getLegScore(match, 1, 2) : null;
-  const p1Total = isTwoLeg ? getTotalGoals(match, 0) : isScored ? (p[0]?.score ?? null) : null;
-  const p2Total = isTwoLeg ? getTotalGoals(match, 1) : isScored ? (p[1]?.score ?? null) : null;
+  const p1TotalFromGames = isTwoLeg ? getTotalGoals(match, 0) : null;
+  const p2TotalFromGames = isTwoLeg ? getTotalGoals(match, 1) : null;
+  // Fall back to participant.score when games[] is empty (e.g. legacy completed matches)
+  const p1Total = p1TotalFromGames !== null ? p1TotalFromGames : isScored ? (p[0]?.score ?? null) : null;
+  const p2Total = p2TotalFromGames !== null ? p2TotalFromGames : isScored ? (p[1]?.score ?? null) : null;
   const hasScores = isScored && (p1Total !== null || p2Total !== null);
 
   const dotCls  = STATUS_DOT[statusRaw]  ?? STATUS_DOT.pending;
@@ -367,55 +370,9 @@ export default function BracketView({
     );
   }
 
-  const isDoubleElim = rounds.some(
-    (r) => r.round_name?.startsWith("upper_") || r.round_name?.startsWith("lower_") || r.round_name === "grand_final"
-  );
-
-  if (!isDoubleElim) {
-    return (
-      <div className="overflow-x-auto pb-4 -mx-1 px-1">
-        <BracketSection rounds={rounds} onMatchClick={onMatchClick} />
-      </div>
-    );
-  }
-
-  // Double elimination: split into upper, lower, grand final
-  const upperRounds = rounds.filter((r) => r.round_name?.startsWith("upper_"));
-  const lowerRounds = rounds.filter((r) => r.round_name?.startsWith("lower_"));
-  const gfRounds    = rounds.filter((r) => r.round_name === "grand_final");
-
   return (
-    <div className="space-y-8 overflow-x-auto pb-4">
-      {upperRounds.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-px flex-1 bg-slate-800" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-500/70 px-2">Upper Bracket</span>
-            <div className="h-px flex-1 bg-slate-800" />
-          </div>
-          <BracketSection rounds={upperRounds} onMatchClick={onMatchClick} />
-        </div>
-      )}
-      {lowerRounds.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-px flex-1 bg-slate-800" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-violet-500/70 px-2">Lower Bracket</span>
-            <div className="h-px flex-1 bg-slate-800" />
-          </div>
-          <BracketSection rounds={lowerRounds} onMatchClick={onMatchClick} />
-        </div>
-      )}
-      {gfRounds.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-px flex-1 bg-slate-800" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500/70 px-2">Grand Final</span>
-            <div className="h-px flex-1 bg-slate-800" />
-          </div>
-          <BracketSection rounds={gfRounds} onMatchClick={onMatchClick} />
-        </div>
-      )}
+    <div className="overflow-x-auto pb-4 -mx-1 px-1">
+      <BracketSection rounds={rounds} onMatchClick={onMatchClick} />
     </div>
   );
 }

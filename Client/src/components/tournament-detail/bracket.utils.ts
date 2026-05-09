@@ -83,15 +83,6 @@ export function getOpponentLabel(
 }
 
 function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
-  // Check if this is a double elimination bracket (has upper/lower/grand_final positions)
-  const hasDoubleElim = matches.some(
-    (m) => m.bracket_position === "upper" || m.bracket_position === "lower" || m.bracket_position === "grand_final"
-  );
-
-  if (hasDoubleElim) {
-    return buildDoubleElimRounds(matches);
-  }
-
   const byRound = new Map<number, BracketMatch[]>();
 
   matches.forEach((match) => {
@@ -121,50 +112,6 @@ function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
     });
 }
 
-function buildDoubleElimRounds(matches: BracketMatch[]): BracketRound[] {
-  const upper = matches.filter((m) => m.bracket_position === "upper");
-  const lower = matches.filter((m) => m.bracket_position === "lower");
-  const gf = matches.filter((m) => m.bracket_position === "grand_final");
-
-  const sort = (ms: BracketMatch[]) =>
-    [...ms].sort((a, b) => (a.match_number ?? 0) - (b.match_number ?? 0));
-
-  const groupByRound = (ms: BracketMatch[], prefix: string, labelFn: (r: number, total: number) => string): BracketRound[] => {
-    const byRound = new Map<number, BracketMatch[]>();
-    ms.forEach((m) => {
-      const r = m.round ?? m.round_number ?? 1;
-      byRound.set(r, [...(byRound.get(r) ?? []), m]);
-    });
-    const total = byRound.size;
-    return Array.from(byRound.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([round, roundMatches]) => ({
-        round,
-        round_number: round,
-        round_name: `${prefix}_r${round}`,
-        name: labelFn(round, total),
-        matches: sort(roundMatches),
-      }));
-  };
-
-  const ubRounds = groupByRound(upper, "upper", (r, total) => {
-    if (r === total) return "Upper Final";
-    if (r === total - 1) return "Upper Semi";
-    return `Upper R${r}`;
-  });
-
-  const lbRounds = groupByRound(lower, "lower", (r, total) => {
-    if (r === total) return "Lower Final";
-    return `Lower R${r}`;
-  });
-
-  const gfRounds: BracketRound[] =
-    gf.length > 0
-      ? [{ round: 999, round_number: 999, round_name: "grand_final", name: "Grand Final", matches: sort(gf) }]
-      : [];
-
-  return [...ubRounds, ...lbRounds, ...gfRounds];
-}
 
 export function extractBracketRounds(payload: unknown): BracketRound[] {
   if (Array.isArray(payload)) {
