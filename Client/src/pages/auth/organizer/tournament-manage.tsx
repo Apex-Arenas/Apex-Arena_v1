@@ -46,6 +46,7 @@ import {
   extractBracketRounds,
   type BracketRound,
 } from "../../../components/tournament-detail";
+import { MatchActionModal } from "../../../components/league/MatchActionModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -538,6 +539,7 @@ const TournamentManage = () => {
     useState(false);
   const [bracketRounds, setBracketRounds] = useState<BracketRound[]>([]);
   const [showBracketView, setShowBracketView] = useState(false);
+  const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
   const [escrowFlowView, setEscrowFlowView] = useState<"single" | "all">(
     "single",
   );
@@ -2007,7 +2009,10 @@ const TournamentManage = () => {
 
                 {showBracketView && bracketRounds.length > 0 && (
                   <div className="border-t border-slate-800 pt-4">
-                    <BracketView rounds={bracketRounds} />
+                    <BracketView
+                      rounds={bracketRounds}
+                      onMatchClick={(id) => setActiveMatchId(id)}
+                    />
                   </div>
                 )}
               </div>
@@ -3159,6 +3164,19 @@ const TournamentManage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Match score entry for organizer-as-player */}
+      {activeMatchId && user?.id && (
+        <MatchActionModal
+          matchId={activeMatchId}
+          currentUserId={user.id}
+          onClose={() => setActiveMatchId(null)}
+          onActionComplete={() => {
+            setActiveMatchId(null);
+            if (tournamentId) void loadBracketProgress(tournamentId, { silent: true });
+          }}
+        />
       )}
     </div>
   );
