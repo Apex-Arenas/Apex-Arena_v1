@@ -14,6 +14,11 @@ export interface BracketDispute {
   resolution?: string;
 }
 
+export interface BracketMatchGame {
+  game_number: number;
+  scores?: { participant_id?: string; score?: number }[];
+}
+
 export interface BracketMatch {
   _id?: string;
   id?: string;
@@ -21,6 +26,7 @@ export interface BracketMatch {
   round_number?: number;
   round_name?: string;
   match_number?: number;
+  bracket_position?: string; // 'upper' | 'lower' | 'grand_final' | 'main'
   status?: string;
   scheduled_at?: string;
   scheduled_time?: string;
@@ -28,6 +34,8 @@ export interface BracketMatch {
     scheduled_time?: string;
   };
   participants?: BracketParticipant[];
+  games?: BracketMatchGame[];
+  format?: { best_of?: number };
   winner_id?: string | { _id?: string; id?: string };
   loser_id?: string | { _id?: string; id?: string };
   result_reported_by?: string | { _id?: string; id?: string };

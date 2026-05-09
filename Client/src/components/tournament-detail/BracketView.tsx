@@ -99,6 +99,32 @@ const STATUS_TEXT: Record<string, string> = {
   scheduled: "text-cyan-400",
 };
 
+// ─── Two-leg score helpers ────────────────────────────────────────────────────
+
+function getLegScore(match: BracketMatch, participantIndex: number, legNumber: number): number | null {
+  const games = match.games ?? [];
+  const leg = games.find((g) => g.game_number === legNumber);
+  if (!leg) return null;
+  const p = match.participants?.[participantIndex];
+  if (!p) return null;
+  const entry = leg.scores?.find((s) => {
+    // match by position order since participant_id may not be populated
+    return leg.scores?.indexOf(s) === participantIndex;
+  });
+  return entry?.score ?? null;
+}
+
+function getTotalGoals(match: BracketMatch, participantIndex: number): number | null {
+  const games = match.games ?? [];
+  if (games.length === 0) return null;
+  let total = 0;
+  for (const game of games) {
+    const entry = game.scores?.[participantIndex];
+    if (entry != null) total += entry.score ?? 0;
+  }
+  return total;
+}
+
 // ─── Match Card ───────────────────────────────────────────────────────────────
 
 function MatchCard({
@@ -120,10 +146,17 @@ function MatchCard({
   const statusRaw = (match.status ?? "pending").toLowerCase();
   const SCORED_STATUSES = new Set(["completed", "in_progress", "live", "ongoing", "awaiting_results", "verifying_results"]);
   const isScored = SCORED_STATUSES.has(statusRaw);
-  const p1Score = isScored ? (p[0]?.score ?? null) : null;
-  const p2Score = isScored ? (p[1]?.score ?? null) : null;
-  const hasScores = isScored;
+  const isTwoLeg = (match.format?.best_of ?? 1) >= 2;
   const scheduledAt = match.scheduled_at ?? match.scheduled_time ?? match.schedule?.scheduled_time;
+
+  // Two-leg: show L1/L2 and aggregate
+  const p1Leg1 = isTwoLeg ? getLegScore(match, 0, 1) : null;
+  const p1Leg2 = isTwoLeg ? getLegScore(match, 0, 2) : null;
+  const p2Leg1 = isTwoLeg ? getLegScore(match, 1, 1) : null;
+  const p2Leg2 = isTwoLeg ? getLegScore(match, 1, 2) : null;
+  const p1Total = isTwoLeg ? getTotalGoals(match, 0) : isScored ? (p[0]?.score ?? null) : null;
+  const p2Total = isTwoLeg ? getTotalGoals(match, 1) : isScored ? (p[1]?.score ?? null) : null;
+  const hasScores = isScored && (p1Total !== null || p2Total !== null);
 
   const dotCls  = STATUS_DOT[statusRaw]  ?? STATUS_DOT.pending;
   const txtCls  = STATUS_TEXT[statusRaw] ?? STATUS_TEXT.pending;
@@ -133,6 +166,27 @@ function MatchCard({
     ? "border-amber-500/30 shadow-[0_0_20px_rgba(251,191,36,0.08)]"
     : "border-slate-700/60";
 
+  const renderScore = (total: number | null, l1: number | null, l2: number | null, isWinner: boolean) => {
+    if (!hasScores) return <span className="text-slate-700">—</span>;
+    if (isTwoLeg && (l1 !== null || l2 !== null)) {
+      return (
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-[10px] text-slate-600 tabular-nums">{l1 ?? "–"}</span>
+          <span className="text-[9px] text-slate-700">/</span>
+          <span className="text-[10px] text-slate-600 tabular-nums">{l2 ?? "–"}</span>
+          <span className={`text-xs font-bold tabular-nums ml-1 ${isWinner ? "text-orange-300" : "text-slate-600"}`}>
+            ({total ?? "–"})
+          </span>
+        </div>
+      );
+    }
+    return (
+      <span className={`text-xs font-bold tabular-nums shrink-0 ${isWinner ? "text-orange-300" : "text-slate-600"}`}>
+        {total ?? "—"}
+      </span>
+    );
+  };
+
   return (
     <div
       onClick={isClickable ? onClick : undefined}
@@ -141,21 +195,16 @@ function MatchCard({
       }`}
       style={{ minHeight: `${BRACKET_CARD_HEIGHT}px` }}
     >
-      {/* Ambient glow for final */}
       {isFinal && (
         <div className="absolute inset-0 bg-linear-to-br from-amber-500/5 via-transparent to-orange-500/5 pointer-events-none" />
       )}
-
-      {/* Subtle grid */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-size-[20px_20px] pointer-events-none" />
 
       {/* ── Participant 1 ── */}
       <div className={`relative flex items-center justify-between gap-2 px-3 py-2.5 transition-colors ${
         p1Win
           ? "bg-linear-to-r from-orange-500/10 to-transparent border-l-2 border-orange-400"
-          : p2Win
-          ? "border-l-2 border-transparent opacity-50"
-          : "border-l-2 border-transparent"
+          : p2Win ? "border-l-2 border-transparent opacity-50" : "border-l-2 border-transparent"
       }`}>
         <div className="flex items-center gap-2 min-w-0">
           {p1Win && <Crown className="w-3 h-3 text-amber-400 shrink-0" />}
@@ -163,21 +212,16 @@ function MatchCard({
             {p1Label}
           </span>
         </div>
-        <span className={`text-xs font-bold tabular-nums shrink-0 ${p1Win ? "text-orange-300" : "text-slate-600"}`}>
-          {hasScores ? (p1Score ?? "—") : "—"}
-        </span>
+        {renderScore(p1Total, p1Leg1, p1Leg2, p1Win)}
       </div>
 
-      {/* Divider */}
       <div className="h-px bg-slate-800/80 mx-2" />
 
       {/* ── Participant 2 ── */}
       <div className={`relative flex items-center justify-between gap-2 px-3 py-2.5 transition-colors ${
         p2Win
           ? "bg-linear-to-r from-orange-500/10 to-transparent border-l-2 border-orange-400"
-          : p1Win
-          ? "border-l-2 border-transparent opacity-50"
-          : "border-l-2 border-transparent"
+          : p1Win ? "border-l-2 border-transparent opacity-50" : "border-l-2 border-transparent"
       }`}>
         <div className="flex items-center gap-2 min-w-0">
           {p2Win && <Crown className="w-3 h-3 text-amber-400 shrink-0" />}
@@ -185,10 +229,15 @@ function MatchCard({
             {p2Label}
           </span>
         </div>
-        <span className={`text-xs font-bold tabular-nums shrink-0 ${p2Win ? "text-orange-300" : "text-slate-600"}`}>
-          {hasScores ? (p2Score ?? "—") : "—"}
-        </span>
+        {renderScore(p2Total, p2Leg1, p2Leg2, p2Win)}
       </div>
+
+      {/* ── Two-leg legend ── */}
+      {isTwoLeg && (
+        <div className="px-3 pb-1 pt-0">
+          <span className="text-[9px] text-slate-700 font-medium">L1 / L2 (Total)</span>
+        </div>
+      )}
 
       {/* ── Footer ── */}
       <div className="h-px bg-slate-800/60 mx-2" />
@@ -206,6 +255,98 @@ function MatchCard({
 }
 
 // ─── Main BracketView ─────────────────────────────────────────────────────────
+
+function BracketSection({
+  rounds,
+  onMatchClick,
+}: {
+  rounds: BracketRound[];
+  onMatchClick?: (matchId: string) => void;
+}) {
+  const layouts    = rounds.map((round, i) => getRoundLayout(i, (round.matches ?? []).length));
+  const boardHeight = Math.max(...layouts.map((l) => l.height), 0);
+
+  return (
+    <div
+      className="relative flex gap-14"
+      style={{
+        minWidth:  `${rounds.length * (BRACKET_COLUMN_WIDTH + 56)}px`,
+        minHeight: `${boardHeight + 48}px`,
+      }}
+    >
+      {rounds.map((round, ri) => {
+        const layout  = layouts[ri];
+        const matches = round.matches ?? [];
+        const title   = getRoundTitle(round, ri, rounds.length);
+        const style   = getRoundStyle(title);
+        const isFinalRound = title.toLowerCase().includes("final") && !title.toLowerCase().includes("semi") && !title.toLowerCase().includes("quarter");
+        const connectorLeft = BRACKET_COLUMN_WIDTH;
+
+        return (
+          <div
+            key={ri}
+            className="relative flex-shrink-0"
+            style={{ width: `${BRACKET_COLUMN_WIDTH}px`, minHeight: `${boardHeight}px` }}
+          >
+            <div className="flex justify-center mb-5">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-[0.14em] border ${style.pill} ${style.glow}`}>
+                {isFinalRound && <Crown className="w-3 h-3" />}
+                {title}
+              </span>
+            </div>
+
+            <div className="relative" style={{ paddingTop: `${layout.topOffset}px` }}>
+              <div className="flex flex-col" style={{ rowGap: `${layout.gap}px` }}>
+                {matches.map((match, mi) => {
+                  const matchId    = match._id ?? match.id;
+                  const isClickable = Boolean(onMatchClick && matchId);
+                  return (
+                    <MatchCard
+                      key={matchId ?? mi}
+                      match={match}
+                      isClickable={isClickable}
+                      onClick={() => isClickable && onMatchClick!(matchId!)}
+                      isFinal={isFinalRound}
+                    />
+                  );
+                })}
+              </div>
+
+              {ri < rounds.length - 1 && matches.length > 0 && (
+                <div className="absolute inset-0 pointer-events-none" style={{ overflow: "visible" }}>
+                  {matches.map((_, mi) => {
+                    const cy = layout.topOffset + mi * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
+                    return (
+                      <div
+                        key={`out-${mi}`}
+                        className="absolute bg-slate-600/60"
+                        style={{ left: `${connectorLeft}px`, top: `${cy}px`, width: `${BRACKET_CONNECTOR_OUT}px`, height: "1.5px" }}
+                      />
+                    );
+                  })}
+                  {Array.from({ length: Math.floor(matches.length / 2) }).map((_, pi) => {
+                    const top = pi * 2;
+                    const bot = top + 1;
+                    const yTop = layout.topOffset + top * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
+                    const yBot = layout.topOffset + bot * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
+                    const yMid = (yTop + yBot) / 2;
+                    const xVert = connectorLeft + BRACKET_CONNECTOR_OUT;
+                    return (
+                      <div key={`pair-${pi}`}>
+                        <div className="absolute bg-slate-600/60" style={{ left: `${xVert}px`, top: `${yTop}px`, width: "1.5px", height: `${yBot - yTop}px` }} />
+                        <div className="absolute bg-slate-600/60" style={{ left: `${xVert}px`, top: `${yMid}px`, width: `${BRACKET_CONNECTOR_IN}px`, height: "1.5px" }} />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function BracketView({
   rounds,
@@ -226,108 +367,55 @@ export default function BracketView({
     );
   }
 
-  const layouts    = rounds.map((round, i) => getRoundLayout(i, (round.matches ?? []).length));
-  const boardHeight = Math.max(...layouts.map((l) => l.height));
+  const isDoubleElim = rounds.some(
+    (r) => r.round_name?.startsWith("upper_") || r.round_name?.startsWith("lower_") || r.round_name === "grand_final"
+  );
+
+  if (!isDoubleElim) {
+    return (
+      <div className="overflow-x-auto pb-4 -mx-1 px-1">
+        <BracketSection rounds={rounds} onMatchClick={onMatchClick} />
+      </div>
+    );
+  }
+
+  // Double elimination: split into upper, lower, grand final
+  const upperRounds = rounds.filter((r) => r.round_name?.startsWith("upper_"));
+  const lowerRounds = rounds.filter((r) => r.round_name?.startsWith("lower_"));
+  const gfRounds    = rounds.filter((r) => r.round_name === "grand_final");
 
   return (
-    <div className="overflow-x-auto pb-4 -mx-1 px-1">
-      <div
-        className="relative flex gap-14"
-        style={{
-          minWidth:  `${rounds.length * (BRACKET_COLUMN_WIDTH + 56)}px`,
-          minHeight: `${boardHeight + 48}px`,
-        }}
-      >
-        {rounds.map((round, ri) => {
-          const layout  = layouts[ri];
-          const matches = round.matches ?? [];
-          const title   = getRoundTitle(round, ri, rounds.length);
-          const style   = getRoundStyle(title);
-          const isFinalRound = title.toLowerCase().includes("final") && !title.toLowerCase().includes("semi") && !title.toLowerCase().includes("quarter");
-          const connectorLeft = BRACKET_COLUMN_WIDTH;
-
-          return (
-            <div
-              key={ri}
-              className="relative flex-shrink-0"
-              style={{ width: `${BRACKET_COLUMN_WIDTH}px`, minHeight: `${boardHeight}px` }}
-            >
-              {/* Round header */}
-              <div className="flex justify-center mb-5">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-[0.14em] border ${style.pill} ${style.glow}`}>
-                  {isFinalRound && <Crown className="w-3 h-3" />}
-                  {title}
-                </span>
-              </div>
-
-              {/* Matches */}
-              <div
-                className="relative"
-                style={{ paddingTop: `${layout.topOffset}px` }}
-              >
-                <div className="flex flex-col" style={{ rowGap: `${layout.gap}px` }}>
-                  {matches.map((match, mi) => {
-                    const matchId    = match._id ?? match.id;
-                    const isClickable = Boolean(onMatchClick && matchId);
-
-                    return (
-                      <MatchCard
-                        key={matchId ?? mi}
-                        match={match}
-                        isClickable={isClickable}
-                        onClick={() => isClickable && onMatchClick!(matchId!)}
-                        isFinal={isFinalRound}
-                      />
-                    );
-                  })}
-                </div>
-
-                {/* Connectors to next round */}
-                {ri < rounds.length - 1 && matches.length > 0 && (
-                  <div className="absolute inset-0 pointer-events-none" style={{ overflow: "visible" }}>
-                    {/* Outgoing horizontal lines from each match */}
-                    {matches.map((_, mi) => {
-                      const cy = layout.topOffset + mi * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
-                      return (
-                        <div
-                          key={`out-${mi}`}
-                          className="absolute bg-slate-600/60"
-                          style={{ left: `${connectorLeft}px`, top: `${cy}px`, width: `${BRACKET_CONNECTOR_OUT}px`, height: "1.5px" }}
-                        />
-                      );
-                    })}
-
-                    {/* Vertical bar + incoming horizontal for each pair */}
-                    {Array.from({ length: Math.floor(matches.length / 2) }).map((_, pi) => {
-                      const top = pi * 2;
-                      const bot = top + 1;
-                      const yTop = layout.topOffset + top * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
-                      const yBot = layout.topOffset + bot * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
-                      const yMid = (yTop + yBot) / 2;
-                      const xVert = connectorLeft + BRACKET_CONNECTOR_OUT;
-
-                      return (
-                        <div key={`pair-${pi}`}>
-                          {/* Vertical */}
-                          <div
-                            className="absolute bg-slate-600/60"
-                            style={{ left: `${xVert}px`, top: `${yTop}px`, width: "1.5px", height: `${yBot - yTop}px` }}
-                          />
-                          {/* Incoming horizontal */}
-                          <div
-                            className="absolute bg-slate-600/60"
-                            style={{ left: `${xVert}px`, top: `${yMid}px`, width: `${BRACKET_CONNECTOR_IN}px`, height: "1.5px" }}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <div className="space-y-8 overflow-x-auto pb-4">
+      {upperRounds.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-px flex-1 bg-slate-800" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-500/70 px-2">Upper Bracket</span>
+            <div className="h-px flex-1 bg-slate-800" />
+          </div>
+          <BracketSection rounds={upperRounds} onMatchClick={onMatchClick} />
+        </div>
+      )}
+      {lowerRounds.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-px flex-1 bg-slate-800" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-violet-500/70 px-2">Lower Bracket</span>
+            <div className="h-px flex-1 bg-slate-800" />
+          </div>
+          <BracketSection rounds={lowerRounds} onMatchClick={onMatchClick} />
+        </div>
+      )}
+      {gfRounds.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-px flex-1 bg-slate-800" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500/70 px-2">Grand Final</span>
+            <div className="h-px flex-1 bg-slate-800" />
+          </div>
+          <BracketSection rounds={gfRounds} onMatchClick={onMatchClick} />
+        </div>
+      )}
     </div>
   );
 }

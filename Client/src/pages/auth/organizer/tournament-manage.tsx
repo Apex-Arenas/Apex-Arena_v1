@@ -119,6 +119,7 @@ interface OrganizerBracketMatch {
   round: number;
   roundName?: string;
   matchNumber: number;
+  bracketPosition?: string;
   status: string;
   participants: Array<{
     userId?: string;
@@ -127,6 +128,8 @@ interface OrganizerBracketMatch {
     result: string;
     isReady: boolean;
   }>;
+  games?: Array<{ game_number: number; scores?: { participant_id?: string; score?: number }[] }>;
+  format?: { best_of?: number };
   scheduledTime?: string;
 }
 
@@ -191,8 +194,11 @@ function extractOrganizerBracketMatches(
           : 1,
       roundName: raw.round_name as string | undefined,
       matchNumber: Number(raw.match_number ?? 0),
+      bracketPosition: raw.bracket_position as string | undefined,
       status: String(raw.status ?? "pending"),
       participants,
+      games: Array.isArray(raw.games) ? (raw.games as any[]) : undefined,
+      format: raw.format as { best_of?: number } | undefined,
       scheduledTime: schedule.scheduled_time as string | undefined,
     };
   });
