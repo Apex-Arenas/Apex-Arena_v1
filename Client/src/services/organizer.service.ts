@@ -872,11 +872,9 @@ export const organizerService = {
     }
   },
 
-  async generateBracket(tournamentId: string): Promise<void> {
-    const response = await apiPost(
-      `${TOURNAMENT_ENDPOINTS.BRACKET}/${tournamentId}/bracket/generate`,
-      {},
-    );
+  async generateBracket(tournamentId: string, force = false): Promise<void> {
+    const url = `${TOURNAMENT_ENDPOINTS.BRACKET}/${tournamentId}/bracket/generate${force ? '?force=true' : ''}`;
+    const response = await apiPost(url, {});
     if (!response.success) {
       const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to generate bracket';
       throw new Error(msg);

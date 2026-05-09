@@ -829,12 +829,12 @@ const TournamentManage = () => {
     }
   };
 
-  const handleGenerateBracket = async () => {
+  const handleGenerateBracket = async (force = false) => {
     if (!tournamentId) return;
     setIsGeneratingBracket(true);
     try {
-      await organizerService.generateBracket(tournamentId);
-      showToast("success", "Bracket generated successfully.");
+      await organizerService.generateBracket(tournamentId, force);
+      showToast("success", force ? "Bracket regenerated successfully." : "Bracket generated successfully.");
       await loadData();
     } catch (err) {
       showToast(
@@ -1545,39 +1545,56 @@ const TournamentManage = () => {
                     </button>
                   )}
                   {(canGenerateBracket || hasBracketGenerated) && (
-                    <button
-                      onClick={() => {
-                        if (!hasBracketGenerated) void handleGenerateBracket();
-                      }}
-                      disabled={isGeneratingBracket || hasBracketGenerated}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-60 ${
-                        hasBracketGenerated
-                          ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
-                          : "bg-indigo-500 text-white hover:bg-indigo-400"
-                      }`}
-                    >
-                      {isGeneratingBracket ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : hasBracketGenerated ? (
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      ) : (
-                        <Trophy className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (!hasBracketGenerated) void handleGenerateBracket();
+                        }}
+                        disabled={isGeneratingBracket || hasBracketGenerated}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-60 ${
+                          hasBracketGenerated
+                            ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
+                            : "bg-indigo-500 text-white hover:bg-indigo-400"
+                        }`}
+                      >
+                        {isGeneratingBracket ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : hasBracketGenerated ? (
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        ) : (
+                          <Trophy className="w-3.5 h-3.5" />
+                        )}
+                        <span className="hidden sm:inline">
+                          {isGeneratingBracket
+                            ? "Generating…"
+                            : hasBracketGenerated
+                              ? "Bracket Generated"
+                              : "Generate Bracket"}
+                        </span>
+                        <span className="sm:hidden">
+                          {isGeneratingBracket
+                            ? "Generating…"
+                            : hasBracketGenerated
+                              ? "Generated"
+                              : "Gen Bracket"}
+                        </span>
+                      </button>
+                      {hasBracketGenerated && canGenerateBracket && (
+                        <button
+                          onClick={() => void handleGenerateBracket(true)}
+                          disabled={isGeneratingBracket}
+                          title="Delete all matches and regenerate the bracket"
+                          className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-all disabled:opacity-60"
+                        >
+                          {isGeneratingBracket ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          )}
+                          <span className="hidden sm:inline">Regenerate</span>
+                        </button>
                       )}
-                      <span className="hidden sm:inline">
-                        {isGeneratingBracket
-                          ? "Generating…"
-                          : hasBracketGenerated
-                            ? "Bracket Generated"
-                            : "Generate Bracket"}
-                      </span>
-                      <span className="sm:hidden">
-                        {isGeneratingBracket
-                          ? "Generating…"
-                          : hasBracketGenerated
-                            ? "Generated"
-                            : "Gen Bracket"}
-                      </span>
-                    </button>
+                    </div>
                   )}
                   {canDepositPrizePool && (
                     <button
