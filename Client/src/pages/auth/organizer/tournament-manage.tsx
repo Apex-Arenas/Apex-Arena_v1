@@ -1322,7 +1322,7 @@ const TournamentManage = () => {
   const leagueSettings = tournament.leagueSettings;
   const canPublish = tournament.status === "draft";
   const canGenerateBracket =
-    !isLeague && ["locked", "ready_to_start"].includes(tournament.status);
+    !isLeague && !["draft", "cancelled", "completed"].includes(tournament.status);
   const canGenerateLeagueFixtures =
     isLeague &&
     !leagueSettings?.fixturesGenerated &&
