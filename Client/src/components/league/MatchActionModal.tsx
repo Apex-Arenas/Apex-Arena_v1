@@ -232,6 +232,196 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
     reportedWinner === match?.player1Id ? match?.player1Name :
     reportedWinner === match?.player2Id ? match?.player2Name : 'Unknown';
 
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  const leg1 = match?.legs?.find(l => l.game_number === 1);
+  const leg2 = match?.legs?.find(l => l.game_number === 2);
+  const penalties = match?.legs?.find(l => l.game_number === 3);
+  const leg1P1 = leg1?.scores?.[0]?.score ?? null;
+  const leg1P2 = leg1?.scores?.[1]?.score ?? null;
+  const leg2P1 = leg2?.scores?.[0]?.score ?? null;
+  const leg2P2 = leg2?.scores?.[1]?.score ?? null;
+  const penP1 = penalties?.scores?.[0]?.score ?? null;
+  const penP2 = penalties?.scores?.[1]?.score ?? null;
+  const aggP1 = leg1P1 !== null && leg2P1 !== null ? leg1P1 + leg2P1 : null;
+  const aggP2 = leg1P2 !== null && leg2P2 !== null ? leg1P2 + leg2P2 : null;
+  const currentLeg = match?.currentLeg ?? 1;
+  const isTwoLeg = match?.isTwoLeg ?? false;
+  const legLabel = currentLeg === 3 ? 'Penalties' : `Leg ${currentLeg}`;
+
+  function renderScoreInputForm(label: string, accentColor: string) {
+    const canDraw = currentLeg !== 3; // penalties must have a winner
+    return (
+      <div className="space-y-4">
+        {/* Previous legs summary */}
+        {isTwoLeg && currentLeg >= 2 && (
+          <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 p-3 space-y-2">
+            {leg1P1 !== null && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400">Leg 1</span>
+                <span className="font-bold text-slate-200 tabular-nums">
+                  {match!.player1Name} <span className="text-orange-300">{leg1P1}</span>
+                  <span className="text-slate-600 mx-1">–</span>
+                  <span className="text-orange-300">{leg1P2}</span> {match!.player2Name}
+                </span>
+              </div>
+            )}
+            {leg2P1 !== null && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400">Leg 2</span>
+                <span className="font-bold text-slate-200 tabular-nums">
+                  {match!.player1Name} <span className="text-orange-300">{leg2P1}</span>
+                  <span className="text-slate-600 mx-1">–</span>
+                  <span className="text-orange-300">{leg2P2}</span> {match!.player2Name}
+                </span>
+              </div>
+            )}
+            {aggP1 !== null && aggP2 !== null && (
+              <div className="flex items-center justify-between text-xs border-t border-slate-700/60 pt-2">
+                <span className="text-slate-400 font-semibold">Aggregate</span>
+                <span className={`font-black tabular-nums ${aggP1 === aggP2 ? 'text-amber-400' : 'text-white'}`}>
+                  {match!.player1Name} {aggP1} – {aggP2} {match!.player2Name}
+                </span>
+              </div>
+            )}
+            {currentLeg === 3 && (
+              <p className="text-[11px] text-amber-400 text-center font-semibold">
+                Aggregate level — decide by Penalties
+              </p>
+            )}
+          </div>
+        )}
+
+        <p className="text-xs text-slate-500 text-center">{label}</p>
+
+        <div className="flex gap-3">
+          <PlayerCard name={match!.player1Name} highlight={isP1} selected={!isDraw && selectedWinnerId === match!.player1Id} dimmed={isDraw}
+            onClick={() => { setIsDraw(false); setSelectedWinnerId(match!.player1Id); }} />
+          <div className="flex items-center justify-center shrink-0">
+            <span className="text-slate-600 font-bold text-xs uppercase tracking-widest">VS</span>
+          </div>
+          <PlayerCard name={match!.player2Name} highlight={isP2} selected={!isDraw && selectedWinnerId === match!.player2Id} dimmed={isDraw}
+            onClick={() => { setIsDraw(false); setSelectedWinnerId(match!.player2Id); }} />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
+            {currentLeg === 3 ? 'Penalty Score' : `${label} Score`} <span className="text-red-400">*</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 space-y-1">
+              <p className="text-[10px] text-slate-500 text-center truncate">{match!.player1Name}</p>
+              <input type="number" min="0" value={score1} onChange={e => setScore1(e.target.value)} placeholder="0"
+                className={`w-full text-center bg-slate-800/60 border border-slate-700 rounded-xl px-2 py-2.5 text-sm text-white focus:outline-none focus:border-${accentColor}-500/70 transition-colors`} />
+            </div>
+            <span className="text-slate-600 font-bold text-sm shrink-0 mt-5">—</span>
+            <div className="flex-1 space-y-1">
+              <p className="text-[10px] text-slate-500 text-center truncate">{match!.player2Name}</p>
+              <input type="number" min="0" value={score2} onChange={e => setScore2(e.target.value)} placeholder="0"
+                className={`w-full text-center bg-slate-800/60 border border-slate-700 rounded-xl px-2 py-2.5 text-sm text-white focus:outline-none focus:border-${accentColor}-500/70 transition-colors`} />
+            </div>
+          </div>
+        </div>
+
+        {canDraw && (
+          <button type="button" onClick={() => { setIsDraw(true); setSelectedWinnerId(null); }}
+            disabled={!scoresEqual}
+            title={!scoresEqual ? 'Enter equal scores to mark as a draw' : undefined}
+            className={`w-full py-2 rounded-xl border text-sm font-semibold transition-all ${
+              isDraw ? 'border-orange-500/50 bg-orange-500/10 text-orange-300'
+                : scoresEqual ? 'border-slate-700 text-slate-400 hover:border-slate-500'
+                : 'border-slate-800 text-slate-700 cursor-not-allowed opacity-40'
+            }`}>
+            {isDraw ? '⚖️ Draw Selected' : 'It was a Draw'}
+            {!scoresEqual && score1 !== '' && score2 !== '' && (
+              <span className="ml-2 text-[10px] font-normal">(scores must be equal)</span>
+            )}
+          </button>
+        )}
+
+        <div className="space-y-1.5">
+          <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
+            Screenshot proof <span className="text-red-400">*</span>
+          </label>
+          <ImageUploadDropzone value={screenshotUrl} onChange={setScreenshotUrl} folder={`match-proof/${matchId}`} disabled={submitting} />
+        </div>
+
+        <button
+          onClick={() => doAction(() => tournamentService.submitMatchResult(
+            matchId,
+            isDraw ? null : selectedWinnerId!,
+            { screenshots: [screenshotUrl] },
+            { player1: Number(score1), player2: Number(score2) }
+          ))}
+          disabled={submitting || (!isDraw && !selectedWinnerId) || !screenshotUrl || score1 === '' || score2 === ''}
+          className="w-full py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 font-bold text-sm transition-all hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
+          Submit {isTwoLeg ? legLabel : 'Result'}
+        </button>
+      </div>
+    );
+  }
+
+  function renderConfirmForm() {
+    if (!match) return null;
+    const isReportedDraw = !reportedWinner;
+    const opponentSaysIWon = reportedWinner === currentUserId;
+    return (
+      <div className="space-y-4">
+        {/* Previous legs */}
+        {isTwoLeg && currentLeg >= 2 && (
+          <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 p-3 space-y-2">
+            {leg1P1 !== null && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400">Leg 1</span>
+                <span className="font-bold text-slate-200 tabular-nums">
+                  {match.player1Name} <span className="text-orange-300">{leg1P1}</span>
+                  <span className="text-slate-600 mx-1">–</span>
+                  <span className="text-orange-300">{leg1P2}</span> {match.player2Name}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className={`rounded-xl px-4 py-3 border text-sm text-center font-medium ${
+          isReportedDraw ? 'border-slate-600/40 bg-slate-800/40 text-slate-300'
+            : opponentSaysIWon ? 'border-emerald-500/30 bg-emerald-500/8 text-emerald-300'
+            : 'border-amber-500/30 bg-amber-500/8 text-amber-300'
+        }`}>
+          <span className="text-slate-400">{opponentName} reported{isTwoLeg ? ` (${legLabel})` : ''}: </span>
+          <span className="font-bold">{isReportedDraw ? 'Draw' : `${reportedWinnerName} won`}</span>
+        </div>
+
+        {(match.player1Score > 0 || match.player2Score > 0) && (
+          <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} />
+        )}
+
+        {countdown !== null && (
+          <div className="flex justify-center">
+            {countdown > 0
+              ? <CountdownBadge seconds={countdown} label="Auto-confirms in" />
+              : <p className="text-xs text-slate-500">Auto-confirming…</p>}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={() => doAction(() => tournamentService.confirmMatchResult(matchId))}
+            disabled={submitting}
+            className="flex-1 py-3 rounded-xl bg-linear-to-r from-emerald-600 to-emerald-500 text-white font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
+            Confirm {isTwoLeg ? legLabel : ''}
+          </button>
+          <button onClick={() => setShowDisputeForm(true)} disabled={submitting}
+            className="flex-1 py-3 rounded-xl border border-red-500/30 bg-red-500/8 text-red-400 font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+            <Flag className="w-4 h-4" />
+            Dispute
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   function renderContent() {
     if (!match) return null;
 
@@ -245,17 +435,46 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
             <Trophy className="w-4 h-4 text-amber-400" />
             <span className="text-xs font-bold uppercase tracking-[0.14em] text-amber-300">Final Result</span>
           </div>
-
-          {/* Players row */}
           <div className="flex gap-3">
             <PlayerCard name={match.player1Name} isWinner={p1Won} isLoser={p2Won} highlight={isP1} />
             <PlayerCard name={match.player2Name} isWinner={p2Won} isLoser={p1Won} highlight={isP2} />
           </div>
 
-          {/* Scoreboard */}
-          <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} p1Won={p1Won} p2Won={p2Won} />
+          {/* Two-leg result breakdown */}
+          {isTwoLeg && (leg1P1 !== null || leg2P1 !== null) ? (
+            <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 p-3 space-y-2">
+              {leg1P1 !== null && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Leg 1</span>
+                  <span className="tabular-nums font-semibold text-slate-200">{match.player1Name} {leg1P1} – {leg1P2} {match.player2Name}</span>
+                </div>
+              )}
+              {leg2P1 !== null && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Leg 2</span>
+                  <span className="tabular-nums font-semibold text-slate-200">{match.player1Name} {leg2P1} – {leg2P2} {match.player2Name}</span>
+                </div>
+              )}
+              {penP1 !== null && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-amber-400 font-semibold">Penalties</span>
+                  <span className="tabular-nums font-semibold text-amber-300">{match.player1Name} {penP1} – {penP2} {match.player2Name}</span>
+                </div>
+              )}
+              {aggP1 !== null && aggP2 !== null && (
+                <div className="flex items-center justify-between text-xs border-t border-slate-700/60 pt-2">
+                  <span className="text-slate-400 font-semibold">Aggregate</span>
+                  <span className="tabular-nums font-black text-white">{match.player1Name} {aggP1} – {aggP2} {match.player2Name}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} p1Won={p1Won} p2Won={p2Won} />
+          )}
 
-          <p className="text-center text-[11px] text-slate-600 uppercase tracking-widest">Match finalised</p>
+          <p className="text-center text-[11px] text-slate-600 uppercase tracking-widest">
+            {p1Won ? `${match.player1Name} advances` : p2Won ? `${match.player2Name} advances` : 'Match finalised'}
+          </p>
         </div>
       );
     }
@@ -270,7 +489,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
           <div>
             <p className="text-sm font-bold text-white">Dispute Under Review</p>
             <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-              The organizer has been notified and will review the evidence to determine the winner.
+              The organizer has been notified and will review the evidence.
             </p>
           </div>
         </div>
@@ -289,109 +508,71 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
       );
     }
 
-    // ── ONGOING / SCHEDULED / PENDING ──────────────────────────────────────
-    if (match.status === 'ongoing' || match.status === 'scheduled' || match.status === 'pending') {
+    // ── ACTIVE MATCH (pending / scheduled / ongoing) ────────────────────────
+    if (['ongoing', 'scheduled', 'pending'].includes(match.status)) {
       if (!iParticipant) {
         return (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <div className="w-14 h-14 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
               <Swords className="w-7 h-7 text-orange-400" />
             </div>
-            <p className="text-sm text-slate-400">Match is currently in progress.</p>
+            <p className="text-sm text-slate-400">Match is in progress.</p>
           </div>
         );
       }
 
-      // ── Opponent submitted ──────────────────────────────────────────────
-      if (opponentSubmitted && !showDisputeForm) {
-        const isReportedDraw = !reportedWinner;
-        const opponentSaysIWon = reportedWinner === currentUserId;
+      // TBD
+      const hasTbd = !match.player1Id || !match.player2Id || match.player1Name === 'TBD' || match.player2Name === 'TBD';
+      if (hasTbd) {
         return (
-          <div className="space-y-4">
-            <div className={`rounded-xl px-4 py-3 border text-sm text-center font-medium ${
-              isReportedDraw
-                ? 'border-slate-600/40 bg-slate-800/40 text-slate-300'
-                : opponentSaysIWon
-                  ? 'border-emerald-500/30 bg-emerald-500/8 text-emerald-300'
-                  : 'border-amber-500/30 bg-amber-500/8 text-amber-300'
-            }`}>
-              <span className="text-slate-400">{opponentName} reported: </span>
-              <span className="font-bold">{isReportedDraw ? 'Draw' : `${reportedWinnerName} won`}</span>
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
+            <div className="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+              <Clock className="w-7 h-7 text-slate-500" />
             </div>
-
-            {(match.player1Score > 0 || match.player2Score > 0) && (
-              <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} />
-            )}
-
-            {countdown !== null && (
-              <div className="flex justify-center">
-                {countdown > 0
-                  ? <CountdownBadge seconds={countdown} label="Auto-confirms in" />
-                  : <p className="text-xs text-slate-500">Auto-confirming…</p>
-                }
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => doAction(() => tournamentService.confirmMatchResult(matchId))}
-                disabled={submitting}
-                className="flex-1 py-3 rounded-xl bg-linear-to-r from-emerald-600 to-emerald-500 text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
-                Confirm
-              </button>
-              <button
-                onClick={() => setShowDisputeForm(true)}
-                disabled={submitting}
-                className="flex-1 py-3 rounded-xl border border-red-500/30 bg-red-500/8 text-red-400 font-bold text-sm transition-all hover:bg-red-500/15 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <Flag className="w-4 h-4" />
-                Dispute
-              </button>
-            </div>
+            <p className="text-sm font-bold text-white">Waiting for Opponent</p>
+            <p className="text-xs text-slate-400">Your opponent hasn't been assigned yet.</p>
           </div>
         );
       }
 
-      // ── Dispute form ────────────────────────────────────────────────────
+      // Matchweek not active (league only)
+      const matchweekNotActive = currentMatchweek !== undefined && match.matchweek !== undefined && match.matchweek > currentMatchweek;
+      if (matchweekNotActive) {
+        return (
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
+            <div className="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+              <Clock className="w-7 h-7 text-slate-500" />
+            </div>
+            <p className="text-sm font-bold text-white">Matchweek Not Active</p>
+            <p className="text-xs text-slate-400 mt-1">The organizer hasn't advanced to Week {match.matchweek} yet.</p>
+          </div>
+        );
+      }
+
+      // Dispute form
       if (showDisputeForm) {
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-red-400 text-sm font-bold">
-              <Flag className="w-4 h-4" />
-              Dispute Result
+              <Flag className="w-4 h-4" />Dispute Result
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
-                Reason <span className="text-red-400">*</span>
-              </label>
-              <textarea
-                value={disputeReason}
-                onChange={e => setDisputeReason(e.target.value)}
-                placeholder="Explain why you're disputing this result..."
-                rows={3}
-                className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-500/70 resize-none transition-colors"
-              />
+              <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">Reason <span className="text-red-400">*</span></label>
+              <textarea value={disputeReason} onChange={e => setDisputeReason(e.target.value)}
+                placeholder="Explain why you're disputing this result..." rows={3}
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-500/70 resize-none transition-colors" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
-                Evidence <span className="text-slate-600 text-[10px] normal-case">optional</span>
-              </label>
+              <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">Evidence <span className="text-slate-600 text-[10px] normal-case">optional</span></label>
               <ImageUploadDropzone value={evidenceUrl} onChange={setEvidenceUrl} folder={`match-dispute/${matchId}`} disabled={submitting} />
             </div>
             <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => setShowDisputeForm(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-white text-sm font-medium transition-colors"
-              >
-                Back
-              </button>
+              <button onClick={() => setShowDisputeForm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-white text-sm font-medium transition-colors">Back</button>
               <button
                 onClick={() => doAction(() => tournamentService.disputeMatchResult(matchId, disputeReason, evidenceUrl ? [evidenceUrl] : undefined))}
                 disabled={submitting || !disputeReason.trim()}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
                 Submit Dispute
               </button>
@@ -400,134 +581,33 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
         );
       }
 
-      // ── I submitted — waiting ───────────────────────────────────────────
+      // Opponent submitted → show confirm form
+      if (opponentSubmitted) return renderConfirmForm();
+
+      // I submitted → waiting
       if (iSubmitted) {
-        const submittedAsDraw = !match.winnerId && !!match.resultReportedBy;
         return (
           <div className="space-y-4">
-            {submittedAsDraw
-              ? <div className="flex items-center justify-center gap-2 py-4 rounded-xl bg-slate-800/50 border border-slate-700/60 text-sm font-bold text-slate-300">⚖️ Draw</div>
-              : <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} />
-            }
             <div className="flex flex-col items-center gap-2 text-center">
-              <p className="text-sm font-bold text-white">Result Submitted</p>
-              <p className="text-xs text-slate-400">
-                Waiting for <span className="text-slate-200">{opponentName}</span> to confirm or dispute.
-              </p>
+              <p className="text-sm font-bold text-white">{isTwoLeg ? `${legLabel} Submitted` : 'Result Submitted'}</p>
+              <p className="text-xs text-slate-400">Waiting for <span className="text-slate-200">{opponentName}</span> to confirm.</p>
               {countdown !== null && (
                 countdown > 0
                   ? <CountdownBadge seconds={countdown} label="Auto-confirms in" />
                   : <p className="text-xs text-orange-400">Auto-confirming…</p>
               )}
             </div>
-          </div>
-        );
-      }
-
-      // ── TBD / no opponent ───────────────────────────────────────────────
-      const hasTbd = !match.player1Id || !match.player2Id || match.player1Name === 'TBD' || match.player2Name === 'TBD';
-      if (hasTbd) {
-        return (
-          <div className="flex flex-col items-center gap-4 py-8 text-center">
-            <div className="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
-              <Clock className="w-7 h-7 text-slate-500" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white">Waiting for Opponent</p>
-              <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">Your opponent hasn't been assigned yet.</p>
-            </div>
-          </div>
-        );
-      }
-
-      // ── Matchweek not active ────────────────────────────────────────────
-      const matchweekNotActive = currentMatchweek !== undefined && match.matchweek !== undefined && match.matchweek > currentMatchweek;
-      if (matchweekNotActive) {
-        return (
-          <div className="flex flex-col items-center gap-4 py-8 text-center">
-            <div className="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
-              <Clock className="w-7 h-7 text-slate-500" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white">Matchweek Not Active</p>
-              <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                The organizer hasn't advanced to Week {match.matchweek} yet.
-              </p>
-            </div>
-          </div>
-        );
-      }
-
-      // ── Submit result form ──────────────────────────────────────────────
-      return (
-        <div className="space-y-4">
-          <p className="text-xs text-slate-500 text-center">Select the winner of this match</p>
-
-          <div className="flex gap-3">
-            <PlayerCard name={match.player1Name} highlight={isP1} selected={!isDraw && selectedWinnerId === match.player1Id} dimmed={isDraw}
-              onClick={() => { setIsDraw(false); setSelectedWinnerId(match.player1Id); }} />
-            <div className="flex items-center justify-center shrink-0">
-              <span className="text-slate-600 font-bold text-xs uppercase tracking-widest">VS</span>
-            </div>
-            <PlayerCard name={match.player2Name} highlight={isP2} selected={!isDraw && selectedWinnerId === match.player2Id} dimmed={isDraw}
-              onClick={() => { setIsDraw(false); setSelectedWinnerId(match.player2Id); }} />
-          </div>
-
-          {/* Score inputs */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
-              Score <span className="text-red-400">*</span>
-            </label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 space-y-1">
-                <p className="text-[10px] text-slate-500 text-center truncate">{match.player1Name}</p>
-                <input type="number" min="0" value={score1} onChange={e => setScore1(e.target.value)} placeholder="0"
-                  className="w-full text-center bg-slate-800/60 border border-slate-700 rounded-xl px-2 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/70 transition-colors" />
-              </div>
-              <span className="text-slate-600 font-bold text-sm shrink-0 mt-5">—</span>
-              <div className="flex-1 space-y-1">
-                <p className="text-[10px] text-slate-500 text-center truncate">{match.player2Name}</p>
-                <input type="number" min="0" value={score2} onChange={e => setScore2(e.target.value)} placeholder="0"
-                  className="w-full text-center bg-slate-800/60 border border-slate-700 rounded-xl px-2 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/70 transition-colors" />
-              </div>
-            </div>
-          </div>
-
-          {/* Draw toggle */}
-          <button type="button" onClick={() => { setIsDraw(true); setSelectedWinnerId(null); }}
-            disabled={!scoresEqual}
-            title={!scoresEqual ? 'Enter equal scores to mark as a draw' : undefined}
-            className={`w-full py-2 rounded-xl border text-sm font-semibold transition-all ${
-              isDraw
-                ? 'border-orange-500/50 bg-orange-500/10 text-orange-300'
-                : scoresEqual
-                  ? 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300'
-                  : 'border-slate-800 text-slate-700 cursor-not-allowed opacity-40'
-            }`}>
-            {isDraw ? '⚖️ Draw Selected' : 'It was a Draw'}
-            {!scoresEqual && score1 !== '' && score2 !== '' && (
-              <span className="ml-2 text-[10px] font-normal">(scores must be equal)</span>
+            {(match.player1Score > 0 || match.player2Score > 0) && (
+              <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} />
             )}
-          </button>
-
-          {/* Screenshot */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
-              Screenshot proof <span className="text-red-400">*</span>
-            </label>
-            <ImageUploadDropzone value={screenshotUrl} onChange={setScreenshotUrl} folder={`match-proof/${matchId}`} disabled={submitting} />
           </div>
+        );
+      }
 
-          <button
-            onClick={() => doAction(() => tournamentService.submitMatchResult(matchId, isDraw ? null : selectedWinnerId!, { screenshots: [screenshotUrl] }, { player1: Number(score1), player2: Number(score2) }))}
-            disabled={submitting || (!isDraw && !selectedWinnerId) || !screenshotUrl || score1 === '' || score2 === ''}
-            className="w-full py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 font-bold text-sm transition-all hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
-            Submit Result
-          </button>
-        </div>
-      );
+      // Submit form
+      const accentColor = currentLeg === 3 ? 'amber' : currentLeg === 2 ? 'violet' : 'orange';
+      const label = currentLeg === 3 ? 'Enter Penalty Scores' : currentLeg === 2 ? 'Enter Leg 2 Scores' : 'Enter Leg 1 Scores';
+      return renderScoreInputForm(label, accentColor);
     }
 
     return (

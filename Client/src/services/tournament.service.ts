@@ -115,10 +115,20 @@ export interface LeagueOverview {
   currentWeekMatches: LeagueMatch[];
 }
 
+export interface MatchLeg {
+  game_number: number; // 1 = Leg 1, 2 = Leg 2, 3 = Penalties
+  winner_id?: string;
+  scores?: { participant_id?: string; score?: number }[];
+  completed_at?: string;
+}
+
 export interface FullMatch {
   matchId: string;
   matchweek?: number;
   status: string;
+  currentLeg?: number; // 1 | 2 | 3 (penalties)
+  isTwoLeg: boolean;
+  legs: MatchLeg[]; // confirmed legs so far
   player1Id: string;
   player1Name: string;
   player1Score: number;
@@ -1028,10 +1038,28 @@ export const tournamentService = {
     const parts = (Array.isArray(m.participants) ? m.participants : []) as Record<string, unknown>[];
     const p1 = (parts[0] ?? {}) as Record<string, unknown>;
     const p2 = (parts[1] ?? {}) as Record<string, unknown>;
+    const bestOf = Number((m.format as Record<string, unknown> | undefined)?.best_of ?? 1);
+    const isTwoLeg = bestOf >= 2 && m.matchweek == null;
+    const rawGames = Array.isArray(m.games) ? (m.games as Record<string, unknown>[]) : [];
+    const legs: MatchLeg[] = rawGames.map(g => ({
+      game_number: Number(g.game_number ?? 1),
+      winner_id: g.winner_id as string | undefined,
+      scores: Array.isArray(g.scores)
+        ? (g.scores as Record<string, unknown>[]).map(s => ({
+            participant_id: s.participant_id as string | undefined,
+            score: Number(s.score ?? 0),
+          }))
+        : undefined,
+      completed_at: g.completed_at as string | undefined,
+    }));
+
     return {
       matchId: String(m._id ?? m.id ?? ''),
       matchweek: m.matchweek !== undefined ? Number(m.matchweek) : undefined,
       status: String(m.status ?? 'pending'),
+      currentLeg: m.current_leg !== undefined ? Number(m.current_leg) : (isTwoLeg ? 1 : undefined),
+      isTwoLeg,
+      legs,
       player1Id: String(p1.user_id ?? p1.team_id ?? ''),
       player1Name: String(p1.in_game_id ?? p1.display_name ?? p1.username ?? '') || 'TBD',
       player1Score: Number(p1.score ?? 0),
