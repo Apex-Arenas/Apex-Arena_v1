@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Wallet, ArrowDownLeft, ArrowUpRight, Loader2,
   CheckCircle2, XCircle, Clock, AlertCircle, X,
-  CreditCard, Phone, ChevronRight,
+  CreditCard, Phone, Trophy, RefreshCw, Coins,
 } from "lucide-react";
 import { apiGet, apiPost } from "../../utils/api.utils";
 import { FINANCE_ENDPOINTS } from "../../config/api.config";
@@ -16,14 +16,24 @@ interface WalletBalance {
   lastUpdated?: string;
 }
 
+interface TxRecord {
+  id: string;
+  type: string;              // 'deposit' | 'withdrawal' | 'entry_fee' | 'prize_win' | ...
+  direction: "credit" | "debit";
+  amount: number;            // pesewas
+  status: "pending" | "completed" | "failed" | "cancelled";
+  description?: string;
+  createdAt: string;
+  gateway?: string;
+}
+
 interface PayoutRequest {
   id: string;
-  amount: number;            // minor units
+  amount: number;
   status: "pending" | "processing" | "completed" | "failed" | "rejected";
   momoNumber?: string;
   momoNetwork?: string;
   createdAt: string;
-  processedAt?: string;
   rejectionReason?: string;
 }
 
@@ -44,15 +54,50 @@ function fmtDate(iso: string) {
   });
 }
 
-const STATUS_CHIP: Record<PayoutRequest["status"], { cls: string; label: string }> = {
-  pending:    { cls: "bg-amber-500/15 text-amber-300 border-amber-500/25",    label: "Pending"    },
-  processing: { cls: "bg-blue-500/15  text-blue-300  border-blue-500/25",     label: "Processing" },
-  completed:  { cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25", label: "Paid"    },
-  failed:     { cls: "bg-red-500/15   text-red-300   border-red-500/25",      label: "Failed"     },
-  rejected:   { cls: "bg-red-500/15   text-red-300   border-red-500/25",      label: "Rejected"   },
+const TX_CONFIG: Record<string, { label: string; iconCls: string; amountCls: string; sign: string }> = {
+  deposit:    { label: "Deposit",    iconCls: "bg-emerald-500/15 text-emerald-400", amountCls: "text-emerald-400", sign: "+" },
+  prize_win:  { label: "Prize Win",  iconCls: "bg-amber-500/15  text-amber-400",   amountCls: "text-amber-400",   sign: "+" },
+  refund:     { label: "Refund",     iconCls: "bg-cyan-500/15   text-cyan-400",    amountCls: "text-cyan-400",    sign: "+" },
+  withdrawal: { label: "Withdrawal", iconCls: "bg-violet-500/15 text-violet-400",  amountCls: "text-red-400",     sign: "−" },
+  entry_fee:  { label: "Entry Fee",  iconCls: "bg-orange-500/15 text-orange-400",  amountCls: "text-red-400",     sign: "−" },
+};
+
+const TX_STATUS_CLS: Record<TxRecord["status"], string> = {
+  completed: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
+  pending:   "bg-amber-500/15  text-amber-300  border-amber-500/25",
+  failed:    "bg-red-500/15    text-red-300    border-red-500/25",
+  cancelled: "bg-slate-700/50  text-slate-400  border-slate-600/30",
+};
+
+const PAYOUT_STATUS_CLS: Record<PayoutRequest["status"], { cls: string; label: string }> = {
+  pending:    { cls: "bg-amber-500/15 text-amber-300 border-amber-500/25",       label: "Pending"    },
+  processing: { cls: "bg-blue-500/15  text-blue-300  border-blue-500/25",        label: "Processing" },
+  completed:  { cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25", label: "Paid"       },
+  failed:     { cls: "bg-red-500/15   text-red-300   border-red-500/25",         label: "Failed"     },
+  rejected:   { cls: "bg-red-500/15   text-red-300   border-red-500/25",         label: "Rejected"   },
 };
 
 const MOMO_NETWORKS = ["MTN", "Vodafone", "AirtelTigo"];
+
+function TxIcon({ type, direction }: { type: string; direction: string }) {
+  const cfg = TX_CONFIG[type] ?? (direction === "credit"
+    ? { iconCls: "bg-emerald-500/15 text-emerald-400" }
+    : { iconCls: "bg-slate-700/50 text-slate-400" });
+
+  const Icon =
+    type === "deposit"    ? ArrowDownLeft :
+    type === "prize_win"  ? Trophy        :
+    type === "entry_fee"  ? Coins         :
+    type === "withdrawal" ? ArrowUpRight  :
+    type === "refund"     ? RefreshCw     :
+    direction === "credit" ? ArrowDownLeft : ArrowUpRight;
+
+  return (
+    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${cfg.iconCls}`}>
+      <Icon className="w-4 h-4" />
+    </div>
+  );
+}
 
 // ─── Deposit Modal ────────────────────────────────────────────────────────────
 
@@ -80,8 +125,6 @@ function DepositModal({ onClose }: { onClose: () => void }) {
         return;
       }
       const data = res.data as Record<string, unknown>;
-      // API returns authorization_url directly on data (same shape as escrow deposit)
-      // Fall back to other common gateway field names just in case
       const inner = (typeof data.data === "object" && data.data !== null ? data.data : data) as Record<string, unknown>;
       const paymentUrl =
         (data.authorization_url as string | undefined) ??
@@ -126,7 +169,6 @@ function DepositModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="p-5 space-y-4">
-          {/* Amount input */}
           <div>
             <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Amount (GHS)</label>
             <div className="relative">
@@ -143,7 +185,6 @@ function DepositModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* Quick amount chips */}
           <div>
             <p className="text-xs text-slate-500 mb-2">Quick add</p>
             <div className="flex flex-wrap gap-2">
@@ -254,7 +295,6 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
         </div>
 
         <div className="p-5 space-y-4">
-          {/* Amount */}
           <div>
             <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Amount (GHS)</label>
             <div className="relative">
@@ -275,7 +315,6 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
             )}
           </div>
 
-          {/* MoMo network */}
           <div>
             <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Mobile Money Network</label>
             <div className="grid grid-cols-3 gap-2">
@@ -296,7 +335,6 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
             </div>
           </div>
 
-          {/* MoMo number */}
           <div>
             <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">MoMo Number</label>
             <div className="relative">
@@ -314,7 +352,6 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
             )}
           </div>
 
-          {/* Account name */}
           <div>
             <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Account Name</label>
             <input
@@ -355,17 +392,19 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
 // ─── WalletPage ───────────────────────────────────────────────────────────────
 
 export default function WalletPage() {
-  const [wallet, setWallet] = useState<WalletBalance | null>(null);
-  const [payouts, setPayouts] = useState<PayoutRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState<ModalView>(null);
+  const [wallet, setWallet]       = useState<WalletBalance | null>(null);
+  const [transactions, setTransactions] = useState<TxRecord[]>([]);
+  const [payouts, setPayouts]     = useState<PayoutRequest[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [modal, setModal]         = useState<ModalView>(null);
   const [successMsg, setSuccessMsg] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [walletRes, payoutsRes] = await Promise.all([
+      const [walletRes, txRes, payoutsRes] = await Promise.all([
         apiGet(FINANCE_ENDPOINTS.WALLET),
+        apiGet(`${FINANCE_ENDPOINTS.TRANSACTIONS}?limit=50`),
         apiGet(FINANCE_ENDPOINTS.PAYOUT_MY_REQUESTS),
       ]);
 
@@ -378,19 +417,33 @@ export default function WalletPage() {
         });
       }
 
+      if (txRes.success) {
+        const d = txRes.data as Record<string, unknown>;
+        const raw = Array.isArray(d) ? d : ((d.transactions ?? d.data ?? []) as Record<string, unknown>[]);
+        setTransactions(raw.map((t) => ({
+          id: String(t._id ?? t.id ?? ""),
+          type: String(t.type ?? ""),
+          direction: (t.direction as "credit" | "debit") ?? "credit",
+          amount: Number(t.amount ?? 0),
+          status: (t.status as TxRecord["status"]) ?? "pending",
+          description: (t.metadata as Record<string, unknown> | undefined)?.description as string | undefined,
+          createdAt: String(t.created_at ?? t.createdAt ?? ""),
+          gateway: (t.payment_details as Record<string, unknown> | undefined)?.payment_gateway as string | undefined,
+        })));
+      }
+
       if (payoutsRes.success) {
         const d = payoutsRes.data as Record<string, unknown>;
         const list = (Array.isArray(payoutsRes.data) ? payoutsRes.data : (d.requests ?? d.payouts ?? [])) as Record<string, unknown>[];
         setPayouts(list.map((p) => {
           const pd = (p.payout_details ?? {}) as Record<string, unknown>;
           return {
-            id: (p._id ?? p.id) as string,
+            id: String(p._id ?? p.id ?? ""),
             amount: Number(p.amount ?? 0),
             status: (p.status as PayoutRequest["status"]) ?? "pending",
             momoNumber: (pd.momo_number ?? p.momo_number) as string | undefined,
             momoNetwork: (pd.network ?? p.momo_network) as string | undefined,
-            createdAt: (p.created_at ?? p.createdAt) as string,
-            processedAt: (p.processed_at ?? p.processedAt) as string | undefined,
+            createdAt: String(p.created_at ?? p.createdAt ?? ""),
             rejectionReason: (p.rejection_reason ?? p.rejectionReason) as string | undefined,
           };
         }));
@@ -406,12 +459,6 @@ export default function WalletPage() {
 
   const balance = wallet?.balance ?? 0;
 
-  const statusIcon = (status: PayoutRequest["status"]) => {
-    if (status === "completed") return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
-    if (status === "failed" || status === "rejected") return <XCircle className="w-4 h-4 text-red-400" />;
-    return <Clock className="w-4 h-4 text-amber-400" />;
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -425,15 +472,11 @@ export default function WalletPage() {
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden border-b border-slate-800 bg-slate-900">
-        {/* Grid */}
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
-        {/* Amber glow top-right */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 90% at 90% -10%, rgba(251,191,36,0.18), transparent)" }} />
-        {/* Orange glow center-left */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 70% at -5% 60%, rgba(249,115,22,0.1), transparent)" }} />
 
         <div className="relative px-6 py-8 sm:px-8 sm:py-10">
-          {/* Icon + label */}
           <div className="flex items-center gap-2.5 mb-5">
             <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center shrink-0">
               <Wallet className="w-4.5 h-4.5 text-orange-400" />
@@ -441,7 +484,6 @@ export default function WalletPage() {
             <span className="text-xs font-bold text-orange-400 uppercase tracking-[0.18em]">Wallet</span>
           </div>
 
-          {/* Balance */}
           <p className="text-xs text-slate-500 uppercase tracking-widest mb-1.5">Available Balance</p>
           <p className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight leading-none">
             {fmtGhs(balance)}
@@ -450,7 +492,6 @@ export default function WalletPage() {
             <p className="text-xs text-slate-600 mt-2">Updated {fmtDate(wallet.lastUpdated)}</p>
           )}
 
-          {/* CTAs */}
           <div className="flex gap-3 mt-7">
             <button
               onClick={() => setModal("deposit")}
@@ -475,7 +516,6 @@ export default function WalletPage() {
       <div className="px-4 sm:px-6 py-6 space-y-6">
         <div className="px-6 sm:px-0 space-y-6">
 
-          {/* Success toast */}
           {successMsg && (
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-sm">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -487,9 +527,9 @@ export default function WalletPage() {
           {/* Info strip */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {[
-              { icon: CreditCard,   text: "MTN MoMo · Vodafone · AirtelTigo", sub: "Payment methods"                  },
-              { icon: CheckCircle2, text: "Escrow-secured",                    sub: "Entry fees held safely"            },
-              { icon: Clock,        text: "1–2 business days",                 sub: "Withdrawal processing time"        },
+              { icon: CreditCard,   text: "MTN MoMo · Vodafone · AirtelTigo", sub: "Payment methods"           },
+              { icon: CheckCircle2, text: "Escrow-secured",                    sub: "Entry fees held safely"     },
+              { icon: Clock,        text: "1–2 business days",                 sub: "Withdrawal processing time" },
             ].map(({ icon: Icon, text, sub }) => (
               <div key={sub} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-800/80 bg-slate-900/60">
                 <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
@@ -503,30 +543,74 @@ export default function WalletPage() {
             ))}
           </div>
 
-          {/* Withdrawal history */}
+          {/* ── Transaction History ─────────────────────────────────────── */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-              <h2 className="font-display text-sm font-semibold text-white">Withdrawal History</h2>
-              <button onClick={() => void load()} className="text-xs text-slate-400 hover:text-white transition-colors">Refresh</button>
+              <h2 className="font-display text-sm font-semibold text-white">Transaction History</h2>
+              <button onClick={() => void load()} className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" />
+                Refresh
+              </button>
             </div>
 
-            {payouts.length === 0 ? (
+            {transactions.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-14 px-4 text-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
-                  <ArrowUpRight className="w-5 h-5 text-slate-600" />
+                  <Wallet className="w-5 h-5 text-slate-600" />
                 </div>
                 <div>
-                  <p className="text-slate-400 text-sm font-medium">No withdrawals yet</p>
-                  <p className="text-slate-600 text-xs mt-0.5">Requests you submit will appear here.</p>
+                  <p className="text-slate-400 text-sm font-medium">No transactions yet</p>
+                  <p className="text-slate-600 text-xs mt-0.5">Deposits and winnings will appear here.</p>
                 </div>
               </div>
             ) : (
               <ul className="divide-y divide-slate-800/70">
+                {transactions.map((tx) => {
+                  const cfg = TX_CONFIG[tx.type] ?? {
+                    label: tx.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+                    amountCls: tx.direction === "credit" ? "text-emerald-400" : "text-red-400",
+                    sign: tx.direction === "credit" ? "+" : "−",
+                  };
+                  const statusCls = TX_STATUS_CLS[tx.status];
+                  return (
+                    <li key={tx.id} className="flex items-center gap-3 px-5 py-4 hover:bg-slate-800/30 transition-colors">
+                      <TxIcon type={tx.type} direction={tx.direction} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-white">{cfg.label}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold capitalize ${statusCls}`}>
+                            {tx.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5 truncate">
+                          {tx.description ?? (tx.gateway ? `via ${tx.gateway}` : "")}
+                          {tx.createdAt ? ` · ${fmtDate(tx.createdAt)}` : ""}
+                        </p>
+                      </div>
+                      <span className={`text-sm font-bold tabular-nums shrink-0 ${cfg.amountCls}`}>
+                        {cfg.sign}{fmtGhs(tx.amount)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* ── Withdrawal Requests ─────────────────────────────────────── */}
+          {payouts.length > 0 && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-800">
+                <h2 className="font-display text-sm font-semibold text-white">Withdrawal Requests</h2>
+              </div>
+              <ul className="divide-y divide-slate-800/70">
                 {payouts.map((p) => {
-                  const chip = STATUS_CHIP[p.status];
+                  const chip = PAYOUT_STATUS_CLS[p.status];
+                  const StatusIcon = p.status === "completed" ? CheckCircle2 : p.status === "failed" || p.status === "rejected" ? XCircle : Clock;
+                  const iconCls = p.status === "completed" ? "text-emerald-400" : p.status === "failed" || p.status === "rejected" ? "text-red-400" : "text-amber-400";
                   return (
                     <li key={p.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-800/30 transition-colors">
-                      <div className="shrink-0">{statusIcon(p.status)}</div>
+                      <StatusIcon className={`w-4 h-4 shrink-0 ${iconCls}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-semibold text-white">{fmtGhs(p.amount)}</span>
@@ -535,19 +619,18 @@ export default function WalletPage() {
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5 truncate">
-                          {p.momoNetwork && `${p.momoNetwork} · `}{p.momoNumber} · {fmtDate(p.createdAt)}
+                          {p.momoNetwork && `${p.momoNetwork} · `}{p.momoNumber}{p.createdAt ? ` · ${fmtDate(p.createdAt)}` : ""}
                         </p>
                         {p.rejectionReason && (
                           <p className="text-xs text-red-400 mt-0.5">{p.rejectionReason}</p>
                         )}
                       </div>
-                      <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
                     </li>
                   );
                 })}
               </ul>
-            )}
-          </div>
+            </div>
+          )}
 
         </div>
       </div>

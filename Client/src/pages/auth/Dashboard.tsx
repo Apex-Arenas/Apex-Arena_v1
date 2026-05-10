@@ -171,8 +171,8 @@ const Dashboard = () => {
 
   const handleDeposit = async () => {
     const amount = Number(walletAmountInput);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setWalletError("Enter a valid amount greater than 0.");
+    if (!Number.isFinite(amount) || amount < 5) {
+      setWalletError("Minimum deposit is GHS 5.00.");
       return;
     }
     setIsDepositing(true);
@@ -765,32 +765,32 @@ const Dashboard = () => {
             </div>
 
             <div className="bg-slate-900 p-4 space-y-3">
-              {/* Balance */}
+              {/* Available balance — what you can spend */}
               <div className="text-center py-1">
                 <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">
-                  Total Balance
+                  Available Balance
                 </p>
                 <p className="font-display text-2xl font-bold text-white">
-                  {formatGhs(playerWallet?.totalBalance)}
+                  {formatGhs(playerWallet?.availableBalance)}
                 </p>
               </div>
 
-              {/* Available / Pending */}
+              {/* Pending / In Escrow */}
               <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-lg border border-slate-800 px-3 py-2.5 text-center">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">
-                    Available
-                  </p>
-                  <p className="text-sm font-semibold text-emerald-300">
-                    {formatGhs(playerWallet?.availableBalance)}
-                  </p>
-                </div>
                 <div className="rounded-lg border border-slate-800 px-3 py-2.5 text-center">
                   <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">
                     Pending
                   </p>
                   <p className="text-sm font-semibold text-amber-300">
                     {formatGhs(playerWallet?.pendingBalance)}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-800 px-3 py-2.5 text-center">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">
+                    In Tournaments
+                  </p>
+                  <p className="text-sm font-semibold text-cyan-300">
+                    {formatGhs(playerWallet?.escrowLocked)}
                   </p>
                 </div>
               </div>
@@ -807,7 +807,7 @@ const Dashboard = () => {
                   <input
                     id="wallet-amount"
                     type="number"
-                    min="1"
+                    min="5"
                     step="0.01"
                     value={walletAmountInput}
                     onChange={(e) => setWalletAmountInput(e.target.value)}
