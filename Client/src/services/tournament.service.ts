@@ -1032,6 +1032,14 @@ export const tournamentService = {
   // ─── Match Actions ─────────────────────────────────────────────────────────
 
   async getMatch(matchId: string): Promise<FullMatch | null> {
+    // Helper: extract string ID from either a plain string or a populated object
+    const extractId = (val: unknown): string => {
+      if (!val) return '';
+      if (typeof val === 'string') return val;
+      const obj = val as Record<string, unknown>;
+      return String(obj._id ?? obj.id ?? '');
+    };
+
     const response = await apiGet(`${TOURNAMENT_ENDPOINTS.MATCHES}/${matchId}`, { skipCache: true });
     if (!response.success) return null;
     const m = (response.data as Record<string, unknown>);
@@ -1060,18 +1068,18 @@ export const tournamentService = {
       currentLeg: m.current_leg !== undefined ? Number(m.current_leg) : (isTwoLeg ? 1 : undefined),
       isTwoLeg,
       legs,
-      player1Id: String(p1.user_id ?? p1.team_id ?? ''),
+      player1Id: extractId(p1.user_id ?? p1.team_id),
       player1Name: String(p1.in_game_id ?? p1.display_name ?? p1.username ?? '') || 'TBD',
       player1Score: Number(p1.score ?? 0),
       player1Result: String(p1.result ?? 'pending'),
       player1IsReady: Boolean(p1.is_ready),
-      player2Id: String(p2.user_id ?? p2.team_id ?? ''),
+      player2Id: extractId(p2.user_id ?? p2.team_id),
       player2Name: String(p2.in_game_id ?? p2.display_name ?? p2.username ?? '') || 'TBD',
       player2Score: Number(p2.score ?? 0),
       player2Result: String(p2.result ?? 'pending'),
       player2IsReady: Boolean(p2.is_ready),
-      winnerId: m.winner_id as string | undefined,
-      resultReportedBy: m.result_reported_by as string | undefined,
+      winnerId: m.winner_id ? extractId(m.winner_id) : undefined,
+      resultReportedBy: m.result_reported_by ? extractId(m.result_reported_by) : undefined,
       resultConfirmationDeadline: m.result_confirmation_deadline as string | undefined,
       isDisputed: Boolean((m.dispute as Record<string, unknown> | undefined)?.is_disputed ?? false),
       scheduledAt: (m.schedule as Record<string, unknown> | undefined)?.scheduled_time as string | undefined,

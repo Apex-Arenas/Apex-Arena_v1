@@ -1283,9 +1283,9 @@ const TournamentDetail = () => {
                 <div className="p-5">
                   <BracketView
                     rounds={bracketRounds}
-                    onMatchClick={
-                      isRegistered ? (id) => setActiveMatchId(id) : undefined
-                    }
+                    onMatchClick={(id) => setActiveMatchId(id)}
+                    currentUserId={currentUserId}
+                    currentInGameId={myInGameId}
                   />
                 </div>
               </>

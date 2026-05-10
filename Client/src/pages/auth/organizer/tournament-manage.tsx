@@ -2029,6 +2029,8 @@ const TournamentManage = () => {
                     <BracketView
                       rounds={bracketRounds}
                       onMatchClick={(id) => setActiveMatchId(id)}
+                      currentUserId={user?.id}
+                      currentInGameId={registrants.find(r => r.userId === user?.id)?.inGameId}
                     />
                   </div>
                 )}

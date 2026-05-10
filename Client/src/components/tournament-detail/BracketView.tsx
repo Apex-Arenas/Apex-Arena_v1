@@ -132,17 +132,42 @@ function MatchCard({
   isClickable,
   onClick,
   isFinal,
+  currentUserId,
+  currentInGameId,
 }: {
   match: BracketMatch;
   isClickable: boolean;
   onClick: () => void;
   isFinal: boolean;
+  currentUserId?: string;
+  currentInGameId?: string;
 }) {
   const p = match.participants ?? [];
   const p1Label = getParticipantLabel(p[0]);
   const p2Label = getParticipantLabel(p[1]);
   const p1Win = p[0]?.result === "win";
   const p2Win = p[1]?.result === "win";
+
+  // "You" detection — match by userId or in-game ID
+  const isMe = (participant: typeof p[0]) => {
+    if (!participant) return false;
+    const { extractEntityId: eid } = { extractEntityId: (v: unknown) => {
+      if (!v) return '';
+      if (typeof v === 'string') return v;
+      const o = v as Record<string, unknown>;
+      return String(o._id ?? o.id ?? '');
+    }};
+    if (currentUserId) {
+      const uid = eid(participant.user_id) || eid(participant.team_id);
+      if (uid && uid === currentUserId) return true;
+    }
+    if (currentInGameId && participant.in_game_id) {
+      return participant.in_game_id.trim().toLowerCase() === currentInGameId.trim().toLowerCase();
+    }
+    return false;
+  };
+  const p1IsMe = isMe(p[0]);
+  const p2IsMe = isMe(p[1]);
   const statusRaw = (match.status ?? "pending").toLowerCase();
   const SCORED_STATUSES = new Set(["completed", "in_progress", "live", "ongoing", "awaiting_results", "verifying_results"]);
   const isScored = SCORED_STATUSES.has(statusRaw);
@@ -205,15 +230,24 @@ function MatchCard({
 
       {/* ── Participant 1 ── */}
       <div className={`relative flex items-center justify-between gap-2 px-3 py-2.5 transition-colors ${
-        p1Win
+        p1IsMe
+          ? "bg-linear-to-r from-amber-500/12 to-transparent border-l-2 border-amber-400"
+          : p1Win
           ? "bg-linear-to-r from-orange-500/10 to-transparent border-l-2 border-orange-400"
           : p2Win ? "border-l-2 border-transparent opacity-50" : "border-l-2 border-transparent"
       }`}>
         <div className="flex items-center gap-2 min-w-0">
           {p1Win && <Crown className="w-3 h-3 text-amber-400 shrink-0" />}
-          <span className={`text-xs font-semibold truncate ${p1Win ? "text-white" : p2Win ? "text-slate-500" : "text-slate-300"}`}>
+          <span className={`text-xs font-semibold truncate ${
+            p1IsMe ? "text-amber-300" : p1Win ? "text-white" : p2Win ? "text-slate-500" : "text-slate-300"
+          }`}>
             {p1Label}
           </span>
+          {p1IsMe && (
+            <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-amber-400 bg-amber-400/15 border border-amber-400/30 px-1 py-0.5 rounded">
+              You
+            </span>
+          )}
         </div>
         {renderScore(p1Total, p1Leg1, p1Leg2, p1Win)}
       </div>
@@ -222,15 +256,24 @@ function MatchCard({
 
       {/* ── Participant 2 ── */}
       <div className={`relative flex items-center justify-between gap-2 px-3 py-2.5 transition-colors ${
-        p2Win
+        p2IsMe
+          ? "bg-linear-to-r from-amber-500/12 to-transparent border-l-2 border-amber-400"
+          : p2Win
           ? "bg-linear-to-r from-orange-500/10 to-transparent border-l-2 border-orange-400"
           : p1Win ? "border-l-2 border-transparent opacity-50" : "border-l-2 border-transparent"
       }`}>
         <div className="flex items-center gap-2 min-w-0">
           {p2Win && <Crown className="w-3 h-3 text-amber-400 shrink-0" />}
-          <span className={`text-xs font-semibold truncate ${p2Win ? "text-white" : p1Win ? "text-slate-500" : "text-slate-300"}`}>
+          <span className={`text-xs font-semibold truncate ${
+            p2IsMe ? "text-amber-300" : p2Win ? "text-white" : p1Win ? "text-slate-500" : "text-slate-300"
+          }`}>
             {p2Label}
           </span>
+          {p2IsMe && (
+            <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-amber-400 bg-amber-400/15 border border-amber-400/30 px-1 py-0.5 rounded">
+              You
+            </span>
+          )}
         </div>
         {renderScore(p2Total, p2Leg1, p2Leg2, p2Win)}
       </div>
@@ -262,9 +305,13 @@ function MatchCard({
 function BracketSection({
   rounds,
   onMatchClick,
+  currentUserId,
+  currentInGameId,
 }: {
   rounds: BracketRound[];
   onMatchClick?: (matchId: string) => void;
+  currentUserId?: string;
+  currentInGameId?: string;
 }) {
   const layouts    = rounds.map((round, i) => getRoundLayout(i, (round.matches ?? []).length));
   const boardHeight = Math.max(...layouts.map((l) => l.height), 0);
@@ -310,6 +357,8 @@ function BracketSection({
                       isClickable={isClickable}
                       onClick={() => isClickable && onMatchClick!(matchId!)}
                       isFinal={isFinalRound}
+                      currentUserId={currentUserId}
+                      currentInGameId={currentInGameId}
                     />
                   );
                 })}
@@ -354,9 +403,13 @@ function BracketSection({
 export default function BracketView({
   rounds,
   onMatchClick,
+  currentUserId,
+  currentInGameId,
 }: {
   rounds: BracketRound[];
   onMatchClick?: (matchId: string) => void;
+  currentUserId?: string;
+  currentInGameId?: string;
 }) {
   if (rounds.length === 0) {
     return (
@@ -372,7 +425,7 @@ export default function BracketView({
 
   return (
     <div className="overflow-x-auto pb-4 -mx-1 px-1">
-      <BracketSection rounds={rounds} onMatchClick={onMatchClick} />
+      <BracketSection rounds={rounds} onMatchClick={onMatchClick} currentUserId={currentUserId} currentInGameId={currentInGameId} />
     </div>
   );
 }
