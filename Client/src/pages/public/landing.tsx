@@ -180,7 +180,7 @@ const Landing = () => {
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
                   <div className="ml-2 flex-1 h-5 rounded bg-slate-700/60 flex items-center px-2">
-                    <span className="text-[10px] text-slate-500">apex-arenas.com</span>
+                    <span className="text-[10px] text-slate-500">apexarenas.com</span>
                   </div>
                 </div>
                 <img
