@@ -711,7 +711,7 @@ const Landing = () => {
                 <h3 className="font-display text-lg font-bold text-white mt-2">{s.title}</h3>
                 <p className="text-sm text-slate-400 mt-2 leading-relaxed">{s.desc}</p>
                 {/* Hover glow */}
-                <div className="absolute inset-0 rounded-2xl bg-cyan-500/[0.04] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                <div className="absolute inset-0 rounded-2xl bg-cyan-500/4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 {i < STEPS.length - 1 && (
                   <ChevronRight className="hidden lg:block absolute top-10 -right-2 w-5 h-5 text-slate-700" />
                 )}
@@ -767,8 +767,10 @@ const Landing = () => {
       {/* ── CTA ──────────────────────────────────────────────────────────────── */}
       <section className="bg-slate-950 py-14 sm:py-24 border-t border-slate-800/60">
         <div className="max-w-5xl mx-auto px-5 sm:px-6 lg:px-8">
+          {/* Entrance wrapper — whileInView only */}
+          <motion.div {...fade()}>
+          {/* Glow pulse wrapper — animate only, no conflict */}
           <motion.div
-            {...fade()}
             className="relative rounded-2xl sm:rounded-3xl border border-cyan-500/25 overflow-hidden p-8 sm:p-10 md:p-14 text-center"
             style={{ background: "radial-gradient(ellipse 70% 100% at 50% 0%, rgba(6,182,212,0.15), transparent), #0f172a" }}
             animate={reduceMotion ? undefined : {
@@ -824,6 +826,7 @@ const Landing = () => {
                 </Link>
               </motion.div>
             </div>
+          </motion.div>
           </motion.div>
         </div>
       </section>
