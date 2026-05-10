@@ -427,10 +427,10 @@
       }
     }
 
-    // ── Verify payment via API ────────────────────────────────────────────────
-    async function verifyWithApi(ref) {
+    // ── Verify payment via API (single attempt) ──────────────────────────────
+    async function checkOnce(ref) {
       const token = getToken();
-      if (!token) return 'processing'; // not logged in — likely still processing
+      if (!token) return null; // not logged in — can't check
 
       try {
         const res = await fetch(`${API}/finance/transactions?limit=50`, {
@@ -439,7 +439,7 @@
             'Content-Type': 'application/json',
           },
         });
-        if (!res.ok) return 'processing';
+        if (!res.ok) return null;
 
         const json = await res.json();
         const raw  = json?.data;
@@ -447,19 +447,35 @@
           ? raw
           : (raw?.transactions ?? raw?.data ?? []);
 
+        // gateway_transaction_id is nested under payment_details in the DB/API response
         const match = list.find(t =>
-          t.gateway_transaction_id === ref ||
-          t.reference === ref ||
-          t.trxref === ref
+          t.payment_details?.gateway_transaction_id === ref ||
+          t.gateway_transaction_id === ref ||   // fallback for any top-level alias
+          t.reference === ref
         );
 
-        if (!match) return 'processing';
+        if (!match) return null;                             // not found yet
         if (match.status === 'completed') return 'success';
         if (match.status === 'failed' || match.status === 'cancelled') return 'failed';
-        return 'processing';
+        return 'processing';                                 // pending
       } catch {
-        return 'processing';
+        return null;
       }
+    }
+
+    // ── Retry verify — polls up to 4 times, 2 s apart ────────────────────────
+    async function verifyWithRetry(ref) {
+      const ATTEMPTS = 4;
+      const DELAY_MS = 2000;
+
+      for (let i = 0; i < ATTEMPTS; i++) {
+        if (i > 0) await new Promise(r => setTimeout(r, DELAY_MS));
+        const result = await checkOnce(ref);
+        // Stop as soon as we get a definitive answer (success or failed)
+        if (result === 'success' || result === 'failed') return result;
+      }
+      // Exhausted retries — payment received but still processing
+      return 'processing';
     }
 
     // ── Main boot ─────────────────────────────────────────────────────────────
@@ -469,24 +485,26 @@
       let resolvedStatus;
 
       // ── Case A: server already resolved the status (wallet redirect flow) ──
+      // Server redirects here with ?type=wallet&status=success after verifying.
       if (statusParam) {
         resolvedStatus =
-          statusParam === 'success'  ? 'success'    :
-          statusParam === 'failed'   ? 'failed'     :
-          statusParam === 'pending'  ? 'processing' :
-                                       'processing';
+          statusParam === 'success' ? 'success'    :
+          statusParam === 'failed'  ? 'failed'     :
+                                      'processing';  // pending → processing
 
-        // Short pause so the user sees the card animate in
+        // Short pause so the card entrance animation completes
         await new Promise(r => setTimeout(r, 800));
 
-      // ── Case B: Paystack redirected directly (escrow / direct callback) ────
+      // ── Case B: Paystack redirected directly (escrow / Paystack dashboard URL) ──
+      // Paystack gives us ?reference=xxx. Poll the transactions API until we
+      // see the webhook has processed it (or give up after ~8 s).
       } else {
         if (!reference) {
           resolvedStatus = 'failed';
         } else {
-          // Give webhook 1.5s head-start, then check
-          await new Promise(r => setTimeout(r, 1500));
-          resolvedStatus = await verifyWithApi(reference);
+          // 1 s head-start for the webhook to land, then start polling
+          await new Promise(r => setTimeout(r, 1000));
+          resolvedStatus = await verifyWithRetry(reference);
         }
       }
 
