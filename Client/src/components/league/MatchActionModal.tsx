@@ -252,45 +252,6 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
     const canDraw = currentLeg !== 3; // penalties must have a winner
     return (
       <div className="space-y-4">
-        {/* Previous legs summary */}
-        {isTwoLeg && currentLeg >= 2 && (
-          <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 p-3 space-y-2">
-            {leg1P1 !== null && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400">Leg 1</span>
-                <span className="font-bold text-slate-200 tabular-nums">
-                  {match!.player1Name} <span className="text-orange-300">{leg1P1}</span>
-                  <span className="text-slate-600 mx-1">–</span>
-                  <span className="text-orange-300">{leg1P2}</span> {match!.player2Name}
-                </span>
-              </div>
-            )}
-            {leg2P1 !== null && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400">Leg 2</span>
-                <span className="font-bold text-slate-200 tabular-nums">
-                  {match!.player1Name} <span className="text-orange-300">{leg2P1}</span>
-                  <span className="text-slate-600 mx-1">–</span>
-                  <span className="text-orange-300">{leg2P2}</span> {match!.player2Name}
-                </span>
-              </div>
-            )}
-            {aggP1 !== null && aggP2 !== null && (
-              <div className="flex items-center justify-between text-xs border-t border-slate-700/60 pt-2">
-                <span className="text-slate-400 font-semibold">Aggregate</span>
-                <span className={`font-black tabular-nums ${aggP1 === aggP2 ? 'text-amber-400' : 'text-white'}`}>
-                  {match!.player1Name} {aggP1} – {aggP2} {match!.player2Name}
-                </span>
-              </div>
-            )}
-            {currentLeg === 3 && (
-              <p className="text-[11px] text-amber-400 text-center font-semibold">
-                Aggregate level — decide by Penalties
-              </p>
-            )}
-          </div>
-        )}
-
         <p className="text-xs text-slate-500 text-center">{label}</p>
 
         <div className="flex gap-3">
@@ -368,22 +329,6 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
     const opponentSaysIWon = reportedWinner === currentUserId;
     return (
       <div className="space-y-4">
-        {/* Previous legs */}
-        {isTwoLeg && currentLeg >= 2 && (
-          <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 p-3 space-y-2">
-            {leg1P1 !== null && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400">Leg 1</span>
-                <span className="font-bold text-slate-200 tabular-nums">
-                  {match.player1Name} <span className="text-orange-300">{leg1P1}</span>
-                  <span className="text-slate-600 mx-1">–</span>
-                  <span className="text-orange-300">{leg1P2}</span> {match.player2Name}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
         <div className={`rounded-xl px-4 py-3 border text-sm text-center font-medium ${
           isReportedDraw ? 'border-slate-600/40 bg-slate-800/40 text-slate-300'
             : opponentSaysIWon ? 'border-emerald-500/30 bg-emerald-500/8 text-emerald-300'
@@ -440,35 +385,8 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
             <PlayerCard name={match.player2Name} isWinner={p2Won} isLoser={p1Won} highlight={isP2} />
           </div>
 
-          {/* Two-leg result breakdown */}
-          {isTwoLeg && (leg1P1 !== null || leg2P1 !== null) ? (
-            <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 p-3 space-y-2">
-              {leg1P1 !== null && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Leg 1</span>
-                  <span className="tabular-nums font-semibold text-slate-200">{match.player1Name} {leg1P1} – {leg1P2} {match.player2Name}</span>
-                </div>
-              )}
-              {leg2P1 !== null && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Leg 2</span>
-                  <span className="tabular-nums font-semibold text-slate-200">{match.player1Name} {leg2P1} – {leg2P2} {match.player2Name}</span>
-                </div>
-              )}
-              {penP1 !== null && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-amber-400 font-semibold">Penalties</span>
-                  <span className="tabular-nums font-semibold text-amber-300">{match.player1Name} {penP1} – {penP2} {match.player2Name}</span>
-                </div>
-              )}
-              {aggP1 !== null && aggP2 !== null && (
-                <div className="flex items-center justify-between text-xs border-t border-slate-700/60 pt-2">
-                  <span className="text-slate-400 font-semibold">Aggregate</span>
-                  <span className="tabular-nums font-black text-white">{match.player1Name} {aggP1} – {aggP2} {match.player2Name}</span>
-                </div>
-              )}
-            </div>
-          ) : (
+          {/* Score display — only show for non-two-leg (two-leg breakdown is in the persistent panel) */}
+          {!isTwoLeg && (
             <ScoreDisplay s1={match.player1Score} s2={match.player2Score} n1={match.player1Name} n2={match.player2Name} p1Won={p1Won} p2Won={p2Won} />
           )}
 
@@ -643,6 +561,65 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* ── Persistent leg scores panel ─────────────────────────────── */}
+        {!loading && match && isTwoLeg && (leg1P1 !== null || leg2P1 !== null || penP1 !== null) && (
+          <div className="border-b border-slate-800/80 px-5 py-3 space-y-1.5">
+            {leg1P1 !== null && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-semibold w-16 shrink-0">Leg 1</span>
+                <div className="flex items-center gap-1.5 font-bold tabular-nums">
+                  <span className={leg1P1 > (leg1P2 ?? 0) ? 'text-amber-300' : 'text-slate-400'}>{match.player1Name}</span>
+                  <span className={`px-2 py-0.5 rounded-md text-sm font-black ${leg1P1 > (leg1P2 ?? 0) ? 'bg-amber-500/15 text-amber-300' : 'bg-slate-800 text-slate-300'}`}>{leg1P1}</span>
+                  <span className="text-slate-700">–</span>
+                  <span className={`px-2 py-0.5 rounded-md text-sm font-black ${(leg1P2 ?? 0) > leg1P1 ? 'bg-amber-500/15 text-amber-300' : 'bg-slate-800 text-slate-300'}`}>{leg1P2 ?? 0}</span>
+                  <span className={(leg1P2 ?? 0) > leg1P1 ? 'text-amber-300' : 'text-slate-400'}>{match.player2Name}</span>
+                </div>
+              </div>
+            )}
+            {leg2P1 !== null && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-semibold w-16 shrink-0">Leg 2</span>
+                <div className="flex items-center gap-1.5 font-bold tabular-nums">
+                  <span className={leg2P1 > (leg2P2 ?? 0) ? 'text-amber-300' : 'text-slate-400'}>{match.player1Name}</span>
+                  <span className={`px-2 py-0.5 rounded-md text-sm font-black ${leg2P1 > (leg2P2 ?? 0) ? 'bg-amber-500/15 text-amber-300' : 'bg-slate-800 text-slate-300'}`}>{leg2P1}</span>
+                  <span className="text-slate-700">–</span>
+                  <span className={`px-2 py-0.5 rounded-md text-sm font-black ${(leg2P2 ?? 0) > leg2P1 ? 'bg-amber-500/15 text-amber-300' : 'bg-slate-800 text-slate-300'}`}>{leg2P2 ?? 0}</span>
+                  <span className={(leg2P2 ?? 0) > leg2P1 ? 'text-amber-300' : 'text-slate-400'}>{match.player2Name}</span>
+                </div>
+              </div>
+            )}
+            {leg1P1 !== null && leg2P1 !== null && (
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800/60">
+                <span className="text-slate-500 font-semibold w-16 shrink-0">Aggregate</span>
+                <div className="flex items-center gap-1.5 font-bold tabular-nums">
+                  <span className={(aggP1 ?? 0) > (aggP2 ?? 0) ? 'text-white' : (aggP2 ?? 0) > (aggP1 ?? 0) ? 'text-slate-500' : 'text-amber-400'}>{match.player1Name}</span>
+                  <span className={`px-2 py-0.5 rounded-md text-sm font-black bg-slate-800 ${(aggP1 ?? 0) === (aggP2 ?? 0) ? 'text-amber-400' : 'text-slate-200'}`}>{aggP1 ?? 0}</span>
+                  <span className="text-slate-700">–</span>
+                  <span className={`px-2 py-0.5 rounded-md text-sm font-black bg-slate-800 ${(aggP1 ?? 0) === (aggP2 ?? 0) ? 'text-amber-400' : 'text-slate-200'}`}>{aggP2 ?? 0}</span>
+                  <span className={(aggP2 ?? 0) > (aggP1 ?? 0) ? 'text-white' : (aggP1 ?? 0) > (aggP2 ?? 0) ? 'text-slate-500' : 'text-amber-400'}>{match.player2Name}</span>
+                </div>
+              </div>
+            )}
+            {aggP1 !== null && aggP2 !== null && aggP1 === aggP2 && penP1 === null && (
+              <p className="text-[11px] text-amber-400 text-center font-semibold pt-1">
+                Aggregate level — decide by Penalties
+              </p>
+            )}
+            {penP1 !== null && (
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-amber-500/20">
+                <span className="text-amber-500 font-semibold w-16 shrink-0">Penalties</span>
+                <div className="flex items-center gap-1.5 font-bold tabular-nums">
+                  <span className={penP1 > (penP2 ?? 0) ? 'text-amber-300' : 'text-slate-400'}>{match.player1Name}</span>
+                  <span className={`px-2 py-0.5 rounded-md text-sm font-black ${penP1 > (penP2 ?? 0) ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-800 text-slate-300'}`}>{penP1}</span>
+                  <span className="text-slate-700">–</span>
+                  <span className={`px-2 py-0.5 rounded-md text-sm font-black ${(penP2 ?? 0) > penP1 ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-800 text-slate-300'}`}>{penP2 ?? 0}</span>
+                  <span className={(penP2 ?? 0) > penP1 ? 'text-amber-300' : 'text-slate-400'}>{match.player2Name}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Play deadline banner */}
         {!loading && match?.playDeadline && match.status !== 'completed' && match.status !== 'cancelled' && match.status !== 'disputed' && (
