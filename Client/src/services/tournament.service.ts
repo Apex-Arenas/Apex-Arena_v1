@@ -1047,7 +1047,7 @@ export const tournamentService = {
     const p1 = (parts[0] ?? {}) as Record<string, unknown>;
     const p2 = (parts[1] ?? {}) as Record<string, unknown>;
     const bestOf = Number((m.format as Record<string, unknown> | undefined)?.best_of ?? 1);
-    const isTwoLeg = bestOf >= 2 && m.matchweek == null;
+    const isTwoLeg = bestOf === 2 && m.matchweek == null;
     const rawGames = Array.isArray(m.games) ? (m.games as Record<string, unknown>[]) : [];
     const legs: MatchLeg[] = rawGames.map(g => ({
       game_number: Number(g.game_number ?? 1),

@@ -241,7 +241,7 @@ function MatchCard({
   const statusRaw = (match.status ?? "pending").toLowerCase();
   const SCORED_STATUSES = new Set(["completed", "in_progress", "live", "ongoing", "awaiting_results", "verifying_results"]);
   const isScored = SCORED_STATUSES.has(statusRaw);
-  const isTwoLeg = (match.format?.best_of ?? 1) >= 2;
+  const isTwoLeg = (match.format?.best_of ?? 1) === 2;
   const scheduledAt = match.scheduled_at ?? match.scheduled_time ?? match.schedule?.scheduled_time;
 
   // Two-leg: show L1/L2 and aggregate
