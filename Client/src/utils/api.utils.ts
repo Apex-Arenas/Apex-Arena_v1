@@ -202,7 +202,10 @@ async function executeRequest<T = any>(
         success: false,
         error: {
           code: raw.error_code ?? raw.error?.code ?? 'REQUEST_FAILED',
-          message: raw.message ?? raw.details ?? raw.error?.message ?? 'Request failed',
+          message: raw.message
+            ?? (Array.isArray(raw.details) ? raw.details.map((d: any) => d.message ?? d).join(', ') : raw.details)
+            ?? raw.error?.message
+            ?? 'Request failed',
         },
       };
     }

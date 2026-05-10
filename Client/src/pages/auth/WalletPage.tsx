@@ -62,7 +62,7 @@ function DepositModal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState("");
 
   const amountNum = parseFloat(amount);
-  const isValid = !isNaN(amountNum) && amountNum >= 1;
+  const isValid = !isNaN(amountNum) && amountNum >= 5;
 
   async function handleDeposit() {
     if (!isValid) return;
@@ -133,7 +133,7 @@ function DepositModal({ onClose }: { onClose: () => void }) {
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">GHS</span>
               <input
                 type="number"
-                min="1"
+                min="5"
                 step="0.01"
                 value={amount}
                 onChange={(e) => { setAmount(e.target.value); setError(""); }}
