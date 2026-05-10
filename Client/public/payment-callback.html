@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment — Apex Arena</title>
+  <link rel="icon" href="/apex-logo.png" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    /* ── Reset ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      overflow: hidden;
+    }
+
+    /* ── Ambient glows ─────────────────────────────────────────────── */
+    .glow-top {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(249,115,22,0.13), transparent 60%);
+    }
+    .glow-bot {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: radial-gradient(ellipse 70% 50% at 50% 110%, rgba(56,189,248,0.09), transparent 60%);
+    }
+
+    /* ── Card ──────────────────────────────────────────────────────── */
+    .card {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 420px;
+      background: rgba(15, 23, 42, 0.82);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 1.75rem;
+      padding: 2.5rem 2rem 2rem;
+      text-align: center;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 32px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset;
+      animation: cardIn 0.45s cubic-bezier(0.34,1.2,0.64,1) both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(28px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0)   scale(1); }
+    }
+
+    /* ── Logo ──────────────────────────────────────────────────────── */
+    .logo {
+      display: inline-flex; align-items: center; gap: 0.55rem;
+      margin-bottom: 2rem;
+      text-decoration: none;
+    }
+    .logo-mark {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #f97316, #fbbf24);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 17px; color: #0f172a;
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+    .logo-text {
+      font-size: 0.95rem; font-weight: 800; letter-spacing: 0.06em;
+      background: linear-gradient(90deg, #fb923c, #fbbf24);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Status icon ring ──────────────────────────────────────────── */
+    .icon-ring {
+      width: 88px; height: 88px;
+      margin: 0 auto 1.5rem;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ring-track {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.07);
+    }
+    .ring-spin {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 2.5px solid transparent;
+      border-top-color: #f97316;
+      border-right-color: rgba(249,115,22,0.3);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .ring-spin.hidden   { display: none; }
+    .ring-spin.visible  { display: block; }
+
+    .status-svg {
+      width: 46px; height: 46px; flex-shrink: 0;
+      opacity: 0; transform: scale(0.4);
+      transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .status-svg.pop { opacity: 1; transform: scale(1); }
+    .status-svg.gone { display: none; }
+
+    /* ── Badge ─────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      padding: 0.2rem 0.85rem;
+      border-radius: 999px;
+      margin-bottom: 0.85rem;
+    }
+    .badge-amber   { background: rgba(251,191,36,0.12);  color: #fbbf24; border: 1px solid rgba(251,191,36,0.22); }
+    .badge-green   { background: rgba(52,211,153,0.12);  color: #34d399; border: 1px solid rgba(52,211,153,0.22); }
+    .badge-red     { background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.22); }
+
+    /* ── Typography ────────────────────────────────────────────────── */
+    h1 {
+      font-size: 1.45rem; font-weight: 700; color: #f1f5f9;
+      line-height: 1.3; margin-bottom: 0.65rem;
+    }
+    .message {
+      font-size: 0.855rem; color: #94a3b8; line-height: 1.65;
+    }
+    .ref-line {
+      display: none; margin-top: 0.7rem;
+      font-size: 0.7rem; color: #475569;
+    }
+    .ref-line span { color: #64748b; font-family: 'Courier New', monospace; }
+
+    /* ── Divider ───────────────────────────────────────────────────── */
+    .divider {
+      height: 1px; background: rgba(255,255,255,0.06);
+      margin: 1.6rem 0;
+    }
+
+    /* ── Countdown progress ────────────────────────────────────────── */
+    .progress-wrap { display: none; flex-direction: column; gap: 0.45rem; }
+    .progress-wrap.show { display: flex; }
+    .progress-track {
+      height: 3px; background: rgba(255,255,255,0.07);
+      border-radius: 999px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 999px; width: 100%;
+      transition: width linear;
+    }
+    .fill-green  { background: linear-gradient(90deg, #34d399, #6ee7b7); }
+    .fill-amber  { background: linear-gradient(90deg, #f97316, #fbbf24); }
+    .fill-red    { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .progress-label {
+      font-size: 0.72rem; color: #64748b; text-align: right;
+    }
+
+    /* ── Action buttons ────────────────────────────────────────────── */
+    .actions { display: none; flex-wrap: wrap; gap: 0.7rem; justify-content: center; margin-top: 1.4rem; }
+    .actions.show { display: flex; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      padding: 0.6rem 1.35rem;
+      border-radius: 0.75rem;
+      font-size: 0.84rem; font-weight: 600;
+      text-decoration: none; cursor: pointer;
+      border: none; transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .btn-gradient {
+      background: linear-gradient(135deg, #f97316, #fbbf24);
+      color: #0f172a;
+    }
+    .btn-gradient:hover { filter: brightness(1.08); box-shadow: 0 8px 24px rgba(249,115,22,0.3); }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.14);
+      color: #e2e8f0;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.28); }
+
+    @media (max-width: 440px) {
+      .card { padding: 2rem 1.25rem 1.75rem; border-radius: 1.35rem; }
+      h1 { font-size: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-top"></div>
+  <div class="glow-bot"></div>
+
+  <div class="card">
+
+    <!-- Logo -->
+    <a class="logo" href="/">
+      <div class="logo-mark">A</div>
+      <span class="logo-text">APEX ARENA</span>
+    </a>
+
+    <!-- Status icon -->
+    <div class="icon-ring">
+      <div class="ring-track"></div>
+      <div class="ring-spin visible" id="ring-spin"></div>
+
+      <!-- Success -->
+      <svg id="icon-success" class="status-svg gone" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="11" stroke="#34d399" stroke-width="1.6"/>
+        <path d="M7.5 12.5l3 3 6-6" stroke="#34d399" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+
+      <!-- Processing -->
+      <svg id="icon-processing" class="status-svg gone" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="11" stroke="#fbbf24" stroke-width="1.6"/>
+        <path d="M12 7v5l3 3" stroke="#fbbf24" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+
+      <!-- Failed -->
+      <svg id="icon-failed" class="status-svg gone" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="11" stroke="#f87171" stroke-width="1.6"/>
+        <path d="M9 9l6 6M15 9l-6 6" stroke="#f87171" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- Badge -->
+    <div class="badge badge-amber" id="badge">Payment</div>
+
+    <!-- Heading & message -->
+    <h1 id="heading">Verifying Payment…</h1>
+    <p class="message" id="message">Please wait while we confirm your transaction.</p>
+    <p class="ref-line" id="ref-line">Ref: <span id="ref-val"></span></p>
+
+    <div class="divider"></div>
+
+    <!-- Countdown -->
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-track">
+        <div class="progress-fill fill-amber" id="progress-fill"></div>
+      </div>
+      <p class="progress-label" id="progress-label">Redirecting…</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions" id="actions"></div>
+
+  </div>
+
+  <script>
+    // ── Config ─────────────────────────────────────────────────────────────────
+    const API  = 'https://api-apexarenas.onrender.com/api/v1';
+    const SITE = window.location.origin;
+
+    // ── Parse URL ──────────────────────────────────────────────────────────────
+    const sp          = new URLSearchParams(window.location.search);
+    const reference   = sp.get('reference') || sp.get('trxref') || sp.get('transaction_id') || '';
+    const typeParam   = sp.get('type');          // 'wallet' | 'escrow' | null
+    const statusParam = sp.get('status');        // pre-resolved by server: 'success' | 'pending' | 'failed'
+    const reasonParam = sp.get('reason') || '';
+
+    // For server-resolved wallet redirects the type is always wallet
+    const flowType = typeParam || (statusParam ? 'wallet' : 'escrow');
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    const $  = id => document.getElementById(id);
+    const qs = s  => document.querySelector(s);
+
+    function returnPath() {
+      return flowType === 'wallet'
+        ? SITE + '/auth/wallet'
+        : SITE + '/auth/organizer/tournaments';
+    }
+
+    // ── Show reference ─────────────────────────────────────────────────────────
+    if (reference) {
+      const line = $('ref-line');
+      line.style.display = 'block';
+      $('ref-val').textContent = reference;
+    }
+
+    // ── Auth token from shared localStorage ───────────────────────────────────
+    function getToken() {
+      try {
+        const raw = localStorage.getItem('apex_arenas_auth');
+        const data = JSON.parse(raw || 'null');
+        return data?.tokens?.accessToken || '';
+      } catch { return ''; }
+    }
+
+    // ── State map ─────────────────────────────────────────────────────────────
+    const STATES = {
+      verifying: {
+        badge: { cls: 'badge-amber', text: 'Payment' },
+        heading: 'Verifying Payment…',
+        message: 'Please wait while we confirm your transaction with Paystack.',
+        icon: null,
+      },
+      success: {
+        badge: { cls: 'badge-green', text: flowType === 'wallet' ? 'Wallet Deposit' : 'Prize Pool' },
+        heading: flowType === 'wallet' ? 'Deposit Confirmed' : 'Payment Confirmed',
+        message: flowType === 'wallet'
+          ? 'Your wallet has been topped up successfully. Your new balance is now available.'
+          : 'Your prize pool deposit was completed. Your tournament will open for registration once our system confirms it.',
+        icon: 'success',
+        fillCls: 'fill-green',
+        seconds: 4,
+      },
+      processing: {
+        badge: { cls: 'badge-amber', text: 'Processing' },
+        heading: flowType === 'wallet' ? 'Deposit Processing' : 'Payment Processing',
+        message: 'Your payment was received and is being processed. '
+          + (flowType === 'wallet'
+              ? 'Your wallet balance will update within a few seconds.'
+              : 'Your tournament will open for registration once our system confirms the payment — this usually takes a few seconds.'),
+        icon: 'processing',
+        fillCls: 'fill-amber',
+        seconds: 5,
+      },
+      failed: {
+        badge: { cls: 'badge-red', text: 'Not Confirmed' },
+        heading: 'Payment Not Confirmed',
+        message: reasonParam
+          || 'We could not confirm your payment. No funds have been deducted. Please try again or contact support if this persists.',
+        icon: 'failed',
+        fillCls: 'fill-red',
+        seconds: 7,
+      },
+    };
+
+    // ── Render state ──────────────────────────────────────────────────────────
+    function renderState(key) {
+      const s = STATES[key];
+      if (!s) return;
+
+      // Badge
+      const badge = $('badge');
+      badge.className = 'badge ' + s.badge.cls;
+      badge.textContent = s.badge.text;
+
+      // Heading & message
+      $('heading').textContent = s.heading;
+      $('message').textContent = s.message;
+
+      // Spinner → icon
+      if (s.icon) {
+        $('ring-spin').classList.remove('visible');
+        $('ring-spin').classList.add('hidden');
+
+        ['success', 'processing', 'failed'].forEach(name => {
+          const el = $('icon-' + name);
+          el.classList.add('gone');
+          el.classList.remove('pop');
+          if (name === s.icon) {
+            el.classList.remove('gone');
+            requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('pop')));
+          }
+        });
+
+        // Progress bar colour
+        if (s.fillCls) {
+          const fill = $('progress-fill');
+          fill.className = 'progress-fill ' + s.fillCls;
+        }
+      }
+    }
+
+    // ── Countdown + redirect ──────────────────────────────────────────────────
+    function startCountdown(seconds, dest) {
+      const wrap  = $('progress-wrap');
+      const fill  = $('progress-fill');
+      const label = $('progress-label');
+      wrap.classList.add('show');
+
+      const tickMs = 50;
+      const total  = seconds * 1000;
+      let elapsed  = 0;
+
+      const id = setInterval(() => {
+        elapsed += tickMs;
+        const pct  = Math.max(0, 100 - (elapsed / total) * 100);
+        fill.style.width = pct + '%';
+        const remaining = Math.ceil((total - elapsed) / 1000);
+        label.textContent = remaining > 0
+          ? `Redirecting in ${remaining}s…`
+          : 'Redirecting…';
+
+        if (elapsed >= total) {
+          clearInterval(id);
+          window.location.replace(dest);
+        }
+      }, tickMs);
+    }
+
+    // ── Action buttons ────────────────────────────────────────────────────────
+    function showActions() {
+      const div = $('actions');
+      div.classList.add('show');
+
+      if (flowType === 'wallet') {
+        div.innerHTML = `
+          <a class="btn btn-gradient" href="${SITE}/auth/wallet">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2.5"/>
+              <path d="M16 12h2"/>
+            </svg>
+            Go to Wallet
+          </a>
+          <a class="btn btn-ghost" href="${SITE}/auth">Dashboard</a>
+        `;
+      } else {
+        div.innerHTML = `
+          <a class="btn btn-gradient" href="${SITE}/auth/organizer/tournaments">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+              <path d="M4 22h16"/>
+              <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+              <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+              <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+            </svg>
+            View My Tournaments
+          </a>
+          <a class="btn btn-ghost" href="${SITE}/auth">Dashboard</a>
+        `;
+      }
+    }
+
+    // ── Verify payment via API ────────────────────────────────────────────────
+    async function verifyWithApi(ref) {
+      const token = getToken();
+      if (!token) return 'processing'; // not logged in — likely still processing
+
+      try {
+        const res = await fetch(`${API}/finance/transactions?limit=50`, {
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) return 'processing';
+
+        const json = await res.json();
+        const raw  = json?.data;
+        const list = Array.isArray(raw)
+          ? raw
+          : (raw?.transactions ?? raw?.data ?? []);
+
+        const match = list.find(t =>
+          t.gateway_transaction_id === ref ||
+          t.reference === ref ||
+          t.trxref === ref
+        );
+
+        if (!match) return 'processing';
+        if (match.status === 'completed') return 'success';
+        if (match.status === 'failed' || match.status === 'cancelled') return 'failed';
+        return 'processing';
+      } catch {
+        return 'processing';
+      }
+    }
+
+    // ── Main boot ─────────────────────────────────────────────────────────────
+    async function boot() {
+      renderState('verifying');
+
+      let resolvedStatus;
+
+      // ── Case A: server already resolved the status (wallet redirect flow) ──
+      if (statusParam) {
+        resolvedStatus =
+          statusParam === 'success'  ? 'success'    :
+          statusParam === 'failed'   ? 'failed'     :
+          statusParam === 'pending'  ? 'processing' :
+                                       'processing';
+
+        // Short pause so the user sees the card animate in
+        await new Promise(r => setTimeout(r, 800));
+
+      // ── Case B: Paystack redirected directly (escrow / direct callback) ────
+      } else {
+        if (!reference) {
+          resolvedStatus = 'failed';
+        } else {
+          // Give webhook 1.5s head-start, then check
+          await new Promise(r => setTimeout(r, 1500));
+          resolvedStatus = await verifyWithApi(reference);
+        }
+      }
+
+      renderState(resolvedStatus);
+
+      const s = STATES[resolvedStatus];
+      startCountdown(s.seconds, returnPath());
+      showActions();
+    }
+
+    boot();
+  </script>
+</body>
+</html>

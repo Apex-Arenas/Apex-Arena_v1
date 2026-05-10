@@ -13,8 +13,6 @@ import Register from "./pages/public/register";
 import Login from "./pages/public/login";
 import Dashboard from "./pages/auth/Dashboard";
 import VerifyOtp from "./pages/public/verify-otp";
-import PaymentCallback from "./pages/public/payment-callback.tsx";
-import DepositResult from "./pages/public/deposit-result";
 import Support from "./pages/public/support";
 import HelpCenter from "./pages/public/help-center";
 import Rules from "./pages/public/rules";
@@ -122,10 +120,6 @@ const App = () => {
           <Route path="login" element={<Login />} />
           <Route path="forgot" element={<ForgotPassword />} />
           <Route path="verify-otp" element={<VerifyOtp />} />
-          <Route path="payment/callback" element={<PaymentCallback />} />
-          <Route path="deposit/success" element={<DepositResult />} />
-          <Route path="deposit/failed" element={<DepositResult />} />
-          <Route path="deposit/pending" element={<DepositResult />} />
           <Route path="tournaments" element={<PublicTournaments />} />
           <Route path="leaderboard" element={<PublicLeaderboard />} />
           <Route path="*" element={<NotFound />} />

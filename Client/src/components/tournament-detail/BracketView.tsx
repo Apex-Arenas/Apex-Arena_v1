@@ -411,7 +411,7 @@ function BracketSection({
         return (
           <div
             key={ri}
-            className="relative flex-shrink-0"
+            className="relative shrink-0"
             style={{ width: `${BRACKET_COLUMN_WIDTH}px`, minHeight: `${boardHeight}px` }}
           >
             <div className="flex justify-center mb-5">

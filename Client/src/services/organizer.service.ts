@@ -694,7 +694,7 @@ export const organizerService = {
     tournamentId: string,
     grossAmountGhs: number,
   ): Promise<EscrowDepositInitiationResult> {
-    const callbackUrl = `${window.location.origin}/payment/callback`;
+    const callbackUrl = `${window.location.origin}/payment-callback.html?type=escrow`;
 
     const response = await apiPost(FINANCE_ENDPOINTS.ESCROW_INITIATE_DEPOSIT, {
       tournament_id: tournamentId,
