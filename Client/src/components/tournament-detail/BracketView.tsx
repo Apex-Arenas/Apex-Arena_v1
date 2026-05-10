@@ -126,6 +126,67 @@ function getTotalGoals(match: BracketMatch, participantIndex: number): number | 
   return total;
 }
 
+// ─── Leg Score Dropdown ───────────────────────────────────────────────────────
+
+function LegScoreDropdown({ p1Label, p2Label, p1Leg1, p2Leg1, p1Leg2, p2Leg2, p1Pen, p2Pen, p1Agg, p2Agg }: {
+  p1Label: string; p2Label: string;
+  p1Leg1: number | null; p2Leg1: number | null;
+  p1Leg2: number | null; p2Leg2: number | null;
+  p1Pen: number | null; p2Pen: number | null;
+  p1Agg: number | null; p2Agg: number | null;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const ScoreRow = ({ label, s1, s2, accent }: { label: string; s1: number; s2: number; accent?: boolean }) => (
+    <div className={`flex items-center gap-2 px-2.5 py-1 ${accent ? "bg-amber-500/5" : ""}`}>
+      <span className={`text-[10px] font-semibold w-7 shrink-0 ${accent ? "text-amber-500" : "text-slate-500"}`}>{label}</span>
+      <div className="flex-1 flex items-center justify-between gap-1 tabular-nums text-[11px] font-bold">
+        <span className={s1 > s2 ? "text-amber-300" : s1 === s2 ? "text-slate-400" : "text-slate-500"}>{p1Label}</span>
+        <div className="flex items-center gap-1">
+          <span className={`px-1.5 py-0.5 rounded bg-slate-800 ${s1 > s2 ? "text-amber-300" : "text-slate-400"}`}>{s1}</span>
+          <span className="text-slate-700 text-[10px]">–</span>
+          <span className={`px-1.5 py-0.5 rounded bg-slate-800 ${s2 > s1 ? "text-amber-300" : "text-slate-400"}`}>{s2}</span>
+        </div>
+        <span className={s2 > s1 ? "text-amber-300" : s2 === s1 ? "text-slate-400" : "text-slate-500"}>{p2Label}</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="mx-2 mb-1">
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        className="w-full flex items-center justify-between px-2.5 py-1 rounded-lg bg-slate-800/50 border border-slate-700/40 hover:bg-slate-800 transition-colors"
+      >
+        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Scores</span>
+        <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="mt-0.5 rounded-lg bg-slate-800/50 border border-slate-700/40 overflow-hidden divide-y divide-slate-700/30">
+          {p1Leg1 !== null && <ScoreRow label="Leg 1" s1={p1Leg1} s2={p2Leg1 ?? 0} />}
+          {p1Leg2 !== null && <ScoreRow label="Leg 2" s1={p1Leg2} s2={p2Leg2 ?? 0} />}
+          {p1Pen !== null  && <ScoreRow label="Pen"   s1={p1Pen}  s2={p2Pen  ?? 0} accent />}
+          {p1Agg !== null && p1Leg2 !== null && (
+            <div className="flex items-center gap-2 px-2.5 py-1 bg-slate-700/30">
+              <span className="text-[10px] font-black text-slate-400 w-7 shrink-0">Agg</span>
+              <div className="flex-1 flex items-center justify-between gap-1 tabular-nums text-[11px] font-black">
+                <span className={p1Agg > (p2Agg ?? 0) ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}>{p1Label}</span>
+                <div className="flex items-center gap-1">
+                  <span className={`px-1.5 py-0.5 rounded bg-slate-900 ${p1Agg > (p2Agg ?? 0) ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}`}>{p1Agg}</span>
+                  <span className="text-slate-700 text-[10px]">–</span>
+                  <span className={`px-1.5 py-0.5 rounded bg-slate-900 ${(p2Agg ?? 0) > p1Agg ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}`}>{p2Agg ?? 0}</span>
+                </div>
+                <span className={(p2Agg ?? 0) > p1Agg ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}>{p2Label}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Match Card ───────────────────────────────────────────────────────────────
 
 function MatchCard({
@@ -287,50 +348,6 @@ function MatchCard({
         p1Agg={p1Agg} p2Agg={p2Agg}
       />}
 
-      {false && hasLegData && (
-        <div className="mx-2 mb-1 rounded-lg bg-slate-800/50 border border-slate-700/40 overflow-hidden">
-          {p1Leg1 !== null && (
-            <div className="flex items-center justify-between px-2.5 py-1 border-b border-slate-700/30 last:border-0">
-              <span className="text-[10px] text-slate-500 font-semibold w-8 shrink-0">L1</span>
-              <div className="flex items-center gap-1 tabular-nums text-[11px] font-bold">
-                <span className={p1Leg1 > (p2Leg1 ?? 0) ? "text-amber-300" : "text-slate-400"}>{p1Leg1}</span>
-                <span className="text-slate-700">–</span>
-                <span className={(p2Leg1 ?? 0) > p1Leg1 ? "text-amber-300" : "text-slate-400"}>{p2Leg1 ?? 0}</span>
-              </div>
-            </div>
-          )}
-          {p1Leg2 !== null && (
-            <div className="flex items-center justify-between px-2.5 py-1 border-b border-slate-700/30 last:border-0">
-              <span className="text-[10px] text-slate-500 font-semibold w-8 shrink-0">L2</span>
-              <div className="flex items-center gap-1 tabular-nums text-[11px] font-bold">
-                <span className={p1Leg2 > (p2Leg2 ?? 0) ? "text-amber-300" : "text-slate-400"}>{p1Leg2}</span>
-                <span className="text-slate-700">–</span>
-                <span className={(p2Leg2 ?? 0) > p1Leg2 ? "text-amber-300" : "text-slate-400"}>{p2Leg2 ?? 0}</span>
-              </div>
-            </div>
-          )}
-          {p1Pen !== null && (
-            <div className="flex items-center justify-between px-2.5 py-1 border-b border-slate-700/30 last:border-0 bg-amber-500/5">
-              <span className="text-[10px] text-amber-500 font-semibold w-8 shrink-0">Pen</span>
-              <div className="flex items-center gap-1 tabular-nums text-[11px] font-bold">
-                <span className={p1Pen > (p2Pen ?? 0) ? "text-amber-300" : "text-slate-400"}>{p1Pen}</span>
-                <span className="text-slate-700">–</span>
-                <span className={(p2Pen ?? 0) > p1Pen ? "text-amber-300" : "text-slate-400"}>{p2Pen ?? 0}</span>
-              </div>
-            </div>
-          )}
-          {p1Agg !== null && p1Leg2 !== null && (
-            <div className="flex items-center justify-between px-2.5 py-1 bg-slate-700/30">
-              <span className="text-[10px] text-slate-400 font-black w-8 shrink-0">Agg</span>
-              <div className="flex items-center gap-1 tabular-nums text-[11px] font-black">
-                <span className={p1Agg > (p2Agg ?? 0) ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}>{p1Agg}</span>
-                <span className="text-slate-600">–</span>
-                <span className={(p2Agg ?? 0) > p1Agg ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}>{p2Agg ?? 0}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ── Footer ── */}
       <div className="h-px bg-slate-800/60 mx-2" />
