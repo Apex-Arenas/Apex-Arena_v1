@@ -128,8 +128,9 @@ function getTotalGoals(match: BracketMatch, participantIndex: number): number | 
 
 // ─── Leg Score Dropdown ───────────────────────────────────────────────────────
 
-function LegScoreDropdown({ p1Label, p2Label, p1Leg1, p2Leg1, p1Leg2, p2Leg2, p1Pen, p2Pen, p1Agg, p2Agg }: {
+function LegScoreDropdown({ p1Label, p2Label, p1IsMe, p2IsMe, p1Leg1, p2Leg1, p1Leg2, p2Leg2, p1Pen, p2Pen, p1Agg, p2Agg }: {
   p1Label: string; p2Label: string;
+  p1IsMe: boolean; p2IsMe: boolean;
   p1Leg1: number | null; p2Leg1: number | null;
   p1Leg2: number | null; p2Leg2: number | null;
   p1Pen: number | null; p2Pen: number | null;
@@ -137,17 +138,24 @@ function LegScoreDropdown({ p1Label, p2Label, p1Leg1, p2Leg1, p1Leg2, p2Leg2, p1
 }) {
   const [open, setOpen] = useState(false);
 
+  const Name = ({ label, isMe, winning }: { label: string; isMe: boolean; winning: boolean }) => (
+    <span className={`flex items-center gap-1 ${winning ? "text-amber-300" : "text-slate-400"}`}>
+      {label}
+      {isMe && <span className="text-[8px] font-black uppercase text-slate-900 bg-amber-400 px-1 py-0.5 rounded-full leading-none">YOU</span>}
+    </span>
+  );
+
   const ScoreRow = ({ label, s1, s2, accent }: { label: string; s1: number; s2: number; accent?: boolean }) => (
     <div className={`flex items-center gap-2 px-2.5 py-1 ${accent ? "bg-amber-500/5" : ""}`}>
       <span className={`text-[10px] font-semibold w-7 shrink-0 ${accent ? "text-amber-500" : "text-slate-500"}`}>{label}</span>
       <div className="flex-1 flex items-center justify-between gap-1 tabular-nums text-[11px] font-bold">
-        <span className={s1 > s2 ? "text-amber-300" : s1 === s2 ? "text-slate-400" : "text-slate-500"}>{p1Label}</span>
+        <Name label={p1Label} isMe={p1IsMe} winning={s1 > s2} />
         <div className="flex items-center gap-1">
           <span className={`px-1.5 py-0.5 rounded bg-slate-800 ${s1 > s2 ? "text-amber-300" : "text-slate-400"}`}>{s1}</span>
           <span className="text-slate-700 text-[10px]">–</span>
           <span className={`px-1.5 py-0.5 rounded bg-slate-800 ${s2 > s1 ? "text-amber-300" : "text-slate-400"}`}>{s2}</span>
         </div>
-        <span className={s2 > s1 ? "text-amber-300" : s2 === s1 ? "text-slate-400" : "text-slate-500"}>{p2Label}</span>
+        <Name label={p2Label} isMe={p2IsMe} winning={s2 > s1} />
       </div>
     </div>
   );
@@ -171,13 +179,13 @@ function LegScoreDropdown({ p1Label, p2Label, p1Leg1, p2Leg1, p1Leg2, p2Leg2, p1
             <div className="flex items-center gap-2 px-2.5 py-1 bg-slate-700/30">
               <span className="text-[10px] font-black text-slate-400 w-7 shrink-0">Agg</span>
               <div className="flex-1 flex items-center justify-between gap-1 tabular-nums text-[11px] font-black">
-                <span className={p1Agg > (p2Agg ?? 0) ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}>{p1Label}</span>
+                <Name label={p1Label} isMe={p1IsMe} winning={p1Agg > (p2Agg ?? 0)} />
                 <div className="flex items-center gap-1">
                   <span className={`px-1.5 py-0.5 rounded bg-slate-900 ${p1Agg > (p2Agg ?? 0) ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}`}>{p1Agg}</span>
                   <span className="text-slate-700 text-[10px]">–</span>
                   <span className={`px-1.5 py-0.5 rounded bg-slate-900 ${(p2Agg ?? 0) > p1Agg ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}`}>{p2Agg ?? 0}</span>
                 </div>
-                <span className={(p2Agg ?? 0) > p1Agg ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}>{p2Label}</span>
+                <Name label={p2Label} isMe={p2IsMe} winning={(p2Agg ?? 0) > p1Agg} />
               </div>
             </div>
           )}
@@ -252,7 +260,10 @@ function MatchCard({
   const txtCls  = STATUS_TEXT[statusRaw] ?? STATUS_TEXT.pending;
   const statusLabel = statusRaw.replace(/_/g, " ");
 
-  const borderAccent = isFinal
+  const isMeInMatch = p1IsMe || p2IsMe;
+  const borderAccent = isMeInMatch
+    ? "border-amber-400/50 shadow-[0_0_16px_rgba(251,191,36,0.15)]"
+    : isFinal
     ? "border-amber-500/30 shadow-[0_0_20px_rgba(251,191,36,0.08)]"
     : "border-slate-700/60";
 
@@ -305,8 +316,8 @@ function MatchCard({
             {p1Label}
           </span>
           {p1IsMe && (
-            <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-amber-400 bg-amber-400/15 border border-amber-400/30 px-1 py-0.5 rounded">
-              You
+            <span className="shrink-0 text-[9px] font-black uppercase tracking-widest text-slate-900 bg-amber-400 px-1.5 py-0.5 rounded-full">
+              YOU
             </span>
           )}
         </div>
@@ -331,8 +342,8 @@ function MatchCard({
             {p2Label}
           </span>
           {p2IsMe && (
-            <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-amber-400 bg-amber-400/15 border border-amber-400/30 px-1 py-0.5 rounded">
-              You
+            <span className="shrink-0 text-[9px] font-black uppercase tracking-widest text-slate-900 bg-amber-400 px-1.5 py-0.5 rounded-full">
+              YOU
             </span>
           )}
         </div>
@@ -342,6 +353,7 @@ function MatchCard({
       {/* ── Two-leg score breakdown (dropdown) ── */}
       {hasLegData && <LegScoreDropdown
         p1Label={p1Label} p2Label={p2Label}
+        p1IsMe={p1IsMe} p2IsMe={p2IsMe}
         p1Leg1={p1Leg1} p2Leg1={p2Leg1}
         p1Leg2={p1Leg2} p2Leg2={p2Leg2}
         p1Pen={p1Pen} p2Pen={p2Pen}
