@@ -1,4 +1,5 @@
-import { Crown, Swords } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, Crown, Swords } from "lucide-react";
 import { getParticipantLabel } from "./bracket.utils";
 import type { BracketMatch, BracketRound } from "./types";
 
@@ -194,26 +195,25 @@ function MatchCard({
     ? "border-amber-500/30 shadow-[0_0_20px_rgba(251,191,36,0.08)]"
     : "border-slate-700/60";
 
-  const renderScore = (total: number | null, l1: number | null, l2: number | null, isWinner: boolean) => {
+  const renderScore = (total: number | null, isWinner: boolean) => {
     if (!hasScores) return <span className="text-slate-700">—</span>;
-    if (isTwoLeg && (l1 !== null || l2 !== null)) {
-      return (
-        <div className="flex items-center gap-1 shrink-0">
-          <span className="text-[10px] text-slate-600 tabular-nums">{l1 ?? "–"}</span>
-          <span className="text-[9px] text-slate-700">/</span>
-          <span className="text-[10px] text-slate-600 tabular-nums">{l2 ?? "–"}</span>
-          <span className={`text-xs font-bold tabular-nums ml-1 ${isWinner ? "text-orange-300" : "text-slate-600"}`}>
-            ({total ?? "–"})
-          </span>
-        </div>
-      );
-    }
     return (
       <span className={`text-xs font-bold tabular-nums shrink-0 ${isWinner ? "text-orange-300" : "text-slate-600"}`}>
         {total ?? "—"}
       </span>
     );
   };
+
+  // Two-leg score rows shown in the card body
+  const hasLegData = isTwoLeg && (p1Leg1 !== null || p2Leg1 !== null || p1Leg2 !== null || p2Leg2 !== null);
+  const p1Agg = hasLegData ? ((p1Leg1 ?? 0) + (p1Leg2 ?? 0)) : null;
+  const p2Agg = hasLegData ? ((p2Leg1 ?? 0) + (p2Leg2 ?? 0)) : null;
+  // penalties
+  const games = match.games ?? [];
+  const penGame = games.find((g) => g.game_number === 3);
+  const penScores = (penGame?.scores ?? []) as { participant_id?: string; score?: number }[];
+  const p1Pen = penScores[0]?.score ?? null;
+  const p2Pen = penScores[1]?.score ?? null;
 
   return (
     <div
@@ -249,7 +249,7 @@ function MatchCard({
             </span>
           )}
         </div>
-        {renderScore(p1Total, p1Leg1, p1Leg2, p1Win)}
+        {renderScore(p1Total, p1Win)}
       </div>
 
       <div className="h-px bg-slate-800/80 mx-2" />
@@ -275,13 +275,60 @@ function MatchCard({
             </span>
           )}
         </div>
-        {renderScore(p2Total, p2Leg1, p2Leg2, p2Win)}
+        {renderScore(p2Total, p2Win)}
       </div>
 
-      {/* ── Two-leg legend ── */}
-      {isTwoLeg && (
-        <div className="px-3 pb-1 pt-0">
-          <span className="text-[9px] text-slate-700 font-medium">L1 / L2 (Total)</span>
+      {/* ── Two-leg score breakdown (dropdown) ── */}
+      {hasLegData && <LegScoreDropdown
+        p1Label={p1Label} p2Label={p2Label}
+        p1Leg1={p1Leg1} p2Leg1={p2Leg1}
+        p1Leg2={p1Leg2} p2Leg2={p2Leg2}
+        p1Pen={p1Pen} p2Pen={p2Pen}
+        p1Agg={p1Agg} p2Agg={p2Agg}
+      />}
+
+      {false && hasLegData && (
+        <div className="mx-2 mb-1 rounded-lg bg-slate-800/50 border border-slate-700/40 overflow-hidden">
+          {p1Leg1 !== null && (
+            <div className="flex items-center justify-between px-2.5 py-1 border-b border-slate-700/30 last:border-0">
+              <span className="text-[10px] text-slate-500 font-semibold w-8 shrink-0">L1</span>
+              <div className="flex items-center gap-1 tabular-nums text-[11px] font-bold">
+                <span className={p1Leg1 > (p2Leg1 ?? 0) ? "text-amber-300" : "text-slate-400"}>{p1Leg1}</span>
+                <span className="text-slate-700">–</span>
+                <span className={(p2Leg1 ?? 0) > p1Leg1 ? "text-amber-300" : "text-slate-400"}>{p2Leg1 ?? 0}</span>
+              </div>
+            </div>
+          )}
+          {p1Leg2 !== null && (
+            <div className="flex items-center justify-between px-2.5 py-1 border-b border-slate-700/30 last:border-0">
+              <span className="text-[10px] text-slate-500 font-semibold w-8 shrink-0">L2</span>
+              <div className="flex items-center gap-1 tabular-nums text-[11px] font-bold">
+                <span className={p1Leg2 > (p2Leg2 ?? 0) ? "text-amber-300" : "text-slate-400"}>{p1Leg2}</span>
+                <span className="text-slate-700">–</span>
+                <span className={(p2Leg2 ?? 0) > p1Leg2 ? "text-amber-300" : "text-slate-400"}>{p2Leg2 ?? 0}</span>
+              </div>
+            </div>
+          )}
+          {p1Pen !== null && (
+            <div className="flex items-center justify-between px-2.5 py-1 border-b border-slate-700/30 last:border-0 bg-amber-500/5">
+              <span className="text-[10px] text-amber-500 font-semibold w-8 shrink-0">Pen</span>
+              <div className="flex items-center gap-1 tabular-nums text-[11px] font-bold">
+                <span className={p1Pen > (p2Pen ?? 0) ? "text-amber-300" : "text-slate-400"}>{p1Pen}</span>
+                <span className="text-slate-700">–</span>
+                <span className={(p2Pen ?? 0) > p1Pen ? "text-amber-300" : "text-slate-400"}>{p2Pen ?? 0}</span>
+              </div>
+            </div>
+          )}
+          {p1Agg !== null && p1Leg2 !== null && (
+            <div className="flex items-center justify-between px-2.5 py-1 bg-slate-700/30">
+              <span className="text-[10px] text-slate-400 font-black w-8 shrink-0">Agg</span>
+              <div className="flex items-center gap-1 tabular-nums text-[11px] font-black">
+                <span className={p1Agg > (p2Agg ?? 0) ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}>{p1Agg}</span>
+                <span className="text-slate-600">–</span>
+                <span className={(p2Agg ?? 0) > p1Agg ? "text-white" : p1Agg === (p2Agg ?? 0) ? "text-amber-400" : "text-slate-500"}>{p2Agg ?? 0}</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
