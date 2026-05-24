@@ -939,6 +939,18 @@ export const organizerService = {
     }
   },
 
+  async setMatchScore(matchId: string, score1: number, score2: number, reason?: string): Promise<void> {
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_SET_SCORE}/${matchId}/set-score`, {
+      score1,
+      score2,
+      ...(reason?.trim() ? { reason: reason.trim() } : {}),
+    });
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to set match score';
+      throw new Error(msg);
+    }
+  },
+
   async getMyDisputes(options?: { limit?: number; skip?: number }): Promise<{ disputes: any[]; total: number }> {
     const params = new URLSearchParams();
     if (options?.limit) params.set('limit', String(options.limit));

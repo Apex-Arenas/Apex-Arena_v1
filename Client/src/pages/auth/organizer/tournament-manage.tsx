@@ -1884,43 +1884,37 @@ const TournamentManage = () => {
           <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/60">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <Trophy className="w-4 h-4 text-cyan-400 shrink-0" />
-                <div>
-                  <h2 className="font-display text-sm font-bold text-white leading-tight">
-                    Bracket Progress
-                  </h2>
-                  {hasBracketGenerated && currentBracketRound && (
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Round {currentBracketRound.round} active ·{" "}
-                      {currentBracketRound.completed}/
-                      {currentBracketRound.total} matches done
-                    </p>
-                  )}
-                </div>
+                <h2 className="font-display text-sm font-bold text-white">Bracket</h2>
+                {hasBracketGenerated && currentBracketRound && (
+                  <span className="text-[11px] font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/25 px-2 py-0.5 rounded-full">
+                    Round {currentBracketRound.round}
+                  </span>
+                )}
               </div>
               {hasBracketGenerated && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   {bracketRounds.length > 0 && (
                     <button
                       onClick={() => setShowBracketView((v) => !v)}
-                      className="text-xs font-semibold text-slate-400 hover:text-cyan-400 transition-colors px-2 py-1"
+                      className={`text-xs font-semibold transition-colors px-3 py-1.5 rounded-lg
+                        ${showBracketView
+                          ? "text-slate-400 hover:text-cyan-400 hover:bg-white/5"
+                          : "text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/30 animate-pulse hover:animate-none"
+                        }`}
                     >
-                      {showBracketView ? "Hide" : "View full bracket"}
+                      {showBracketView ? "Hide" : "Full bracket"}
                     </button>
                   )}
                   {tournamentId && (
                     <button
-                      onClick={() => {
-                        void loadBracketProgress(tournamentId);
-                      }}
+                      onClick={() => { void loadBracketProgress(tournamentId); }}
                       disabled={isRefreshingBracketProgress}
                       className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 disabled:opacity-40 transition-colors"
                       title="Refresh"
                     >
-                      <RefreshCw
-                        className={`w-3.5 h-3.5 ${isRefreshingBracketProgress ? "animate-spin" : ""}`}
-                      />
+                      <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingBracketProgress ? "animate-spin" : ""}`} />
                     </button>
                   )}
                 </div>
@@ -1928,96 +1922,52 @@ const TournamentManage = () => {
             </div>
 
             {hasBracketGenerated ? (
-              <div className="px-5 py-5 space-y-5">
-                {/* Match summary — two numbers, clean */}
-                <div className="flex items-end gap-4">
-                  <div>
-                    <span className="font-display text-4xl font-black tabular-nums text-white leading-none">
-                      {completedBracketMatches}
+              <div className="px-5 py-4 space-y-4">
+                {/* Progress bar + inline stats */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400">
+                      <span className="text-white font-bold tabular-nums">{completedBracketMatches}</span>
+                      <span className="text-slate-600"> / {totalBracketMatches} matches</span>
                     </span>
-                    <span className="font-display text-xl font-bold text-slate-600 tabular-nums leading-none">
-                      /{totalBracketMatches}
-                    </span>
-                    <p className="text-[11px] text-slate-500 mt-1 uppercase tracking-widest font-semibold">
-                      Matches Completed
-                    </p>
-                  </div>
-                  <div className="mb-5 flex-1">
-                    <div className="h-1 rounded-full bg-slate-800 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ${
-                          bracketCompletionPercent === 100
-                            ? "bg-emerald-400"
-                            : "bg-cyan-500"
-                        }`}
-                        style={{ width: `${bracketCompletionPercent}%` }}
-                      />
-                    </div>
-                    <p className="text-right text-[11px] font-bold tabular-nums mt-1 text-slate-500">
+                    <span className={`text-xs font-bold tabular-nums ${bracketCompletionPercent === 100 ? "text-emerald-400" : "text-cyan-400"}`}>
                       {bracketCompletionPercent}%
-                    </p>
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ${
+                        bracketCompletionPercent === 100
+                          ? "bg-emerald-400"
+                          : "bg-gradient-to-r from-cyan-500 to-indigo-500"
+                      }`}
+                      style={{ width: `${bracketCompletionPercent || 0}%` }}
+                    />
                   </div>
                 </div>
 
-                {/* Round progression — connected horizontal steps */}
+                {/* Round pills */}
                 {bracketRoundStats.length > 0 && (
-                  <div className="flex items-start gap-0 overflow-x-auto pb-1">
+                  <div className="flex flex-wrap gap-2">
                     {bracketRoundStats.map((round, i) => {
-                      const isActive =
-                        !round.done &&
-                        (i === 0 || bracketRoundStats[i - 1].done);
+                      const isActive = !round.done && (i === 0 || bracketRoundStats[i - 1].done);
                       const isDone = round.done;
                       return (
                         <div
                           key={round.round}
-                          className="flex items-center shrink-0"
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+                            isDone
+                              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                              : isActive
+                                ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-300"
+                                : "bg-slate-800/50 border-slate-700/50 text-slate-600"
+                          }`}
                         >
-                          <div className="flex flex-col items-center gap-1.5 px-2">
-                            {/* Node */}
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
-                                isDone
-                                  ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-400"
-                                  : isActive
-                                    ? "bg-cyan-500/15 border-cyan-500 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]"
-                                    : "bg-slate-800/80 border-slate-700 text-slate-600"
-                              }`}
-                            >
-                              {isDone ? (
-                                <CheckCircle2 className="w-4 h-4" />
-                              ) : (
-                                <span className="text-[11px] font-bold">
-                                  {round.round}
-                                </span>
-                              )}
-                            </div>
-                            {/* Label */}
-                            <span
-                              className={`text-[10px] font-semibold whitespace-nowrap ${
-                                isDone
-                                  ? "text-emerald-400"
-                                  : isActive
-                                    ? "text-cyan-400"
-                                    : "text-slate-600"
-                              }`}
-                            >
-                              {isDone
-                                ? `${round.completed}/${round.total}`
-                                : isActive
-                                  ? `${round.completed}/${round.total}`
-                                  : `0/${round.total}`}
-                            </span>
-                          </div>
-                          {/* Connector */}
-                          {i < bracketRoundStats.length - 1 && (
-                            <div
-                              className={`h-0.5 w-8 shrink-0 mb-4 rounded-full ${
-                                bracketRoundStats[i].done
-                                  ? "bg-emerald-500/40"
-                                  : "bg-slate-800"
-                              }`}
-                            />
-                          )}
+                          {isDone && <CheckCircle2 className="w-3 h-3" />}
+                          <span>R{round.round}</span>
+                          <span className={`tabular-nums ${isDone ? "text-emerald-500/70" : isActive ? "text-cyan-500/70" : "text-slate-700"}`}>
+                            {isDone || isActive ? `${round.completed}/${round.total}` : `0/${round.total}`}
+                          </span>
                         </div>
                       );
                     })}
@@ -2034,176 +1984,17 @@ const TournamentManage = () => {
                     />
                   </div>
                 )}
+
               </div>
             ) : (
               <div className="flex flex-col items-center py-10 text-center gap-2 px-5">
                 <Trophy className="w-7 h-7 text-slate-700" />
-                <p className="text-sm text-slate-500">
-                  Bracket not generated yet.
-                </p>
-                <p className="text-xs text-slate-600">
-                  Lock registrations and generate the bracket above.
-                </p>
+                <p className="text-sm text-slate-500">Bracket not generated yet.</p>
+                <p className="text-xs text-slate-600">Lock registrations and generate the bracket above.</p>
               </div>
             )}
           </div>
         )}
-
-        {/* Match Management */}
-        {bracketMatches.some((m) => m.id) &&
-          ["ongoing", "awaiting_results"].includes(tournament.status) && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
-                    <Play className="w-4 h-4 text-orange-400" />
-                  </div>
-                  <div>
-                    <h2 className="font-display text-sm font-bold text-white">
-                      Match Management
-                    </h2>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Start, forfeit, or resolve ongoing matches
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[11px] font-semibold text-slate-500 bg-slate-800/60 border border-slate-700/50 px-2.5 py-1 rounded-full">
-                  {bracketMatches.length} match
-                  {bracketMatches.length !== 1 ? "es" : ""}
-                </span>
-              </div>
-
-              <div className="p-3 space-y-2">
-                {bracketMatches.map((match) => {
-                  const isActioning =
-                    matchActionLoading === match.id ||
-                    matchActionLoading === `${match.id}-forfeit`;
-                  const roundLabel = match.roundName
-                    ? match.roundName.replace(/_/g, " ")
-                    : `Round ${match.round}`;
-                  const matchLabel = match.matchNumber
-                    ? `Match #${match.matchNumber}`
-                    : "";
-
-                  const MATCH_STATUS_COLORS: Record<string, string> = {
-                    pending:
-                      "bg-slate-700/50 text-slate-400 border-slate-700/60",
-                    scheduled:
-                      "bg-amber-500/15 text-amber-300 border-amber-500/25",
-                    ongoing: "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
-                    completed:
-                      "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
-                    disputed: "bg-red-500/15 text-red-300 border-red-500/25",
-                    cancelled:
-                      "bg-slate-700/50 text-slate-400 border-slate-700/60",
-                  };
-
-                  const borderAccent =
-                    match.status === "ongoing"
-                      ? "border-cyan-500/20"
-                      : match.status === "disputed"
-                        ? "border-red-500/20"
-                        : "border-slate-800/60";
-
-                  return (
-                    <div
-                      key={match.id || `${match.round}-${match.matchNumber}`}
-                      className={`rounded-xl border bg-slate-800/30 px-4 py-3 flex flex-wrap items-center gap-3 ${borderAccent}`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-[11px] font-semibold text-slate-500 capitalize">
-                            {roundLabel}
-                            {matchLabel ? ` · ${matchLabel}` : ""}
-                          </span>
-                          <span
-                            className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${MATCH_STATUS_COLORS[match.status] ?? "bg-slate-700/50 text-slate-400 border-slate-700/60"}`}
-                          >
-                            {match.status}
-                          </span>
-                        </div>
-                        <p className="text-sm font-semibold text-white">
-                          {match.participants.length === 2
-                            ? `${match.participants[0].inGameId || "TBD"} vs ${match.participants[1].inGameId || "TBD"}`
-                            : match.participants.length === 1
-                              ? match.participants[0].inGameId || "TBD"
-                              : "No participants"}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {["pending", "scheduled"].includes(match.status) &&
-                          match.id && (
-                            <button
-                              onClick={() => void handleStartMatch(match.id)}
-                              disabled={isActioning}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 hover:bg-cyan-500 hover:text-slate-950 hover:border-cyan-500 disabled:opacity-50 transition-colors"
-                            >
-                              {isActioning ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Play className="w-3.5 h-3.5" />
-                              )}
-                              Start
-                            </button>
-                          )}
-                        {match.status === "ongoing" &&
-                          match.participants.map((p) =>
-                            p.userId ? (
-                              <button
-                                key={p.userId}
-                                onClick={() =>
-                                  void handleForfeitMatch(
-                                    match.id,
-                                    p.userId!,
-                                    p.inGameId,
-                                  )
-                                }
-                                disabled={isActioning}
-                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/25 hover:bg-amber-500 hover:text-slate-950 hover:border-amber-500 disabled:opacity-50 transition-colors"
-                              >
-                                {isActioning ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : (
-                                  <XCircle className="w-3.5 h-3.5" />
-                                )}
-                                Forfeit {p.inGameId}
-                              </button>
-                            ) : null,
-                          )}
-                        {match.status === "disputed" && match.id && (
-                          <button
-                            onClick={() => handleOpenDisputeModal(match.id)}
-                            disabled={isActioning}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/25 hover:bg-red-500 hover:text-white hover:border-red-500 disabled:opacity-50 transition-colors"
-                          >
-                            <Gavel className="w-3.5 h-3.5" />
-                            Resolve Dispute
-                          </button>
-                        )}
-                        {["pending", "scheduled", "ongoing"].includes(
-                          match.status,
-                        ) &&
-                          match.id && (
-                            <button
-                              onClick={() =>
-                                void handleCancelMatchById(match.id)
-                              }
-                              disabled={isActioning}
-                              title="Cancel match"
-                              className="p-1.5 rounded-lg text-slate-500 border border-slate-700/60 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/25 disabled:opacity-50 transition-colors"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
         {/* Tournament Results */}
         {tournament.status === "completed" && (
@@ -3185,11 +2976,14 @@ const TournamentManage = () => {
         </div>
       )}
 
+
+
       {/* Match score entry for organizer-as-player */}
       {activeMatchId && user?.id && (
         <MatchActionModal
           matchId={activeMatchId}
           currentUserId={user.id}
+          isOrganizer={true}
           onClose={() => setActiveMatchId(null)}
           onActionComplete={() => {
             setActiveMatchId(null);

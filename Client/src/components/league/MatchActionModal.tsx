@@ -423,15 +423,22 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
           {/* Organizer score override */}
           {isOrganizer && (
             <div className="mt-5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 overflow-hidden">
-              {/* header */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-indigo-500/15 bg-indigo-500/10">
-                <div className="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
-                  <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+              {/* toggle header */}
+              <button
+                onClick={() => setShowScoreOverride(v => !v)}
+                className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-indigo-500/10 hover:bg-indigo-500/15 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+                    <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-300">Override Score</span>
                 </div>
-                <span className="text-xs font-bold uppercase tracking-widest text-indigo-300">Override Score</span>
-              </div>
+                <ChevronDown className={`w-4 h-4 text-indigo-400 transition-transform duration-200 ${showScoreOverride ? 'rotate-180' : ''}`} />
+              </button>
 
-              <div className="px-4 py-4 space-y-3">
+              {showScoreOverride && (
+              <div className="px-4 py-4 space-y-3 border-t border-indigo-500/15">
                 {/* score inputs */}
                 <div className="flex items-end gap-3">
                   <div className="flex-1 space-y-1.5">
@@ -481,6 +488,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
                   Confirm Override
                 </button>
               </div>
+              )}
             </div>
           )}
         </div>
