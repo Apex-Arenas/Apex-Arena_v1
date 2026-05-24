@@ -140,18 +140,15 @@ export default function PayoutsPage() {
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-5 pb-5">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500/20 to-orange-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
-              <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
-            </div>
-            <div className="flex-1 min-w-0 pt-1">
-              <h1 className="font-display text-xl sm:text-3xl font-bold text-white leading-tight">Payouts</h1>
-              <p className="text-sm text-slate-400 mt-1">Request and track your withdrawals.</p>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
+          <div className="flex items-end gap-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Payouts</h1>
+              <p className="text-base text-slate-400 mt-3">Request and track your withdrawals.</p>
             </div>
             <button
               onClick={() => setShowForm(v => !v)}
-              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all shrink-0 mt-1"
+              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all shrink-0"
             >
               <Send className="w-4 h-4" />
               <span className="hidden sm:inline">New Request</span>
@@ -190,7 +187,7 @@ export default function PayoutsPage() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
             <div className="flex items-center gap-2">
               <ArrowDownToLine className="w-4 h-4 text-orange-400" />
-              <h2 className="font-display text-base font-bold text-white">New Payout Request</h2>
+              <h2 className="font-display text-xl font-bold text-white">New Payout Request</h2>
             </div>
             <button onClick={() => setShowForm(false)}
               className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors">
@@ -259,7 +256,7 @@ export default function PayoutsPage() {
       {/* ── History ────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-          <h2 className="font-display text-base font-bold text-white">Request History</h2>
+          <h2 className="font-display text-xl font-bold text-white">Request History</h2>
           {requests.length > 0 && (
             <span className="text-xs text-slate-500">{requests.length} request{requests.length !== 1 ? "s" : ""}</span>
           )}
