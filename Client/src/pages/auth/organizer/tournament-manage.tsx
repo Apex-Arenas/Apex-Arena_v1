@@ -23,6 +23,7 @@ import {
   Gavel,
   List,
   Share2,
+  Pencil,
 } from "lucide-react";
 import {
   organizerService,
@@ -549,6 +550,10 @@ const TournamentManage = () => {
   const [disputeMatchId] = useState<string | null>(null);
   const [disputeWinnerId, setDisputeWinnerId] = useState("");
   const [disputeResolution, setDisputeResolution] = useState("");
+  const [showSetScoreModal, setShowSetScoreModal] = useState(false);
+  const [setScoreTarget, setSetScoreTarget] = useState<OrganizerBracketMatch | null>(null);
+  const [setScoreInput, setSetScoreInput] = useState({ score1: "", score2: "", reason: "", penalty1: "", penalty2: "" });
+  const [isSettingScore, setIsSettingScore] = useState(false);
   const [tournamentResults, setTournamentResults] = useState<Array<
     Record<string, unknown>
   > | null>(null);
@@ -987,6 +992,35 @@ const TournamentManage = () => {
       );
     } finally {
       setMatchActionLoading(null);
+    }
+  };
+
+  const handleSetScore = async () => {
+    if (!setScoreTarget) return;
+    const s1 = parseInt(setScoreInput.score1, 10);
+    const s2 = parseInt(setScoreInput.score2, 10);
+    if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return;
+    const isDraw = s1 === s2;
+    const p1 = parseInt(setScoreInput.penalty1, 10);
+    const p2 = parseInt(setScoreInput.penalty2, 10);
+    // For a draw, penalties are required and must not be equal
+    if (isDraw && (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2)) return;
+    // Submit penalty scores as decisive when it's a draw
+    const finalScore1 = isDraw ? p1 : s1;
+    const finalScore2 = isDraw ? p2 : s2;
+    const penaltyNote = isDraw ? `Regular time: ${s1}–${s2} · Penalties: ${p1}–${p2}` : "";
+    const reason = [penaltyNote, setScoreInput.reason].filter(Boolean).join(" · ") || undefined;
+    setIsSettingScore(true);
+    try {
+      await organizerService.setMatchScore(setScoreTarget.id, finalScore1, finalScore2, reason);
+      showToast("success", "Match score set successfully.");
+      setShowSetScoreModal(false);
+      setSetScoreTarget(null);
+      if (tournamentId) await loadBracketProgress(tournamentId, { silent: true });
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Failed to set match score.");
+    } finally {
+      setIsSettingScore(false);
     }
   };
 
@@ -1804,6 +1838,50 @@ const TournamentManage = () => {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {/* Pending matches — organizer can set scores */}
+                {bracketMatches.filter(m => m.participants.length >= 2 && m.status !== "completed").length > 0 && (
+                  <div className="border-t border-slate-800/60 pt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pending Matches</p>
+                      <span className="text-[10px] text-slate-600 tabular-nums">
+                        {bracketMatches.filter(m => m.status !== "completed" && m.participants.length >= 2).length} remaining
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {bracketMatches
+                        .filter(m => m.participants.length >= 2 && m.status !== "completed")
+                        .map(match => (
+                          <div key={match.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-[10px] font-bold text-slate-500">R{match.round} · M{match.matchNumber}</span>
+                                {match.status === "disputed" && (
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-red-500/15 text-red-400 border border-red-500/25">Disputed</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-semibold text-white truncate max-w-20">{match.participants[0]?.inGameId || "TBD"}</span>
+                                <span className="text-[10px] text-slate-600 shrink-0">vs</span>
+                                <span className="text-xs font-semibold text-white truncate max-w-20">{match.participants[1]?.inGameId || "TBD"}</span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setSetScoreTarget(match);
+                                setSetScoreInput({ score1: "", score2: "", reason: "", penalty1: "", penalty2: "" });
+                                setShowSetScoreModal(true);
+                              }}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/25 text-orange-400 text-xs font-semibold hover:bg-orange-500/20 transition-colors shrink-0"
+                            >
+                              <Pencil className="w-3 h-3" />
+                              Set Score
+                            </button>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 )}
 
@@ -2841,6 +2919,215 @@ const TournamentManage = () => {
       )}
 
 
+
+      {/* Set Score Modal */}
+      {showSetScoreModal && setScoreTarget && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl shadow-black/60">
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
+                  <Pencil className="w-4 h-4 text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="font-display text-sm font-bold text-white">Set Match Score</h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    R{setScoreTarget.round} · M{setScoreTarget.matchNumber} · Manual override
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowSetScoreModal(false); setSetScoreTarget(null); }}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              {/* Quick outcome shortcuts */}
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Quick Set</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSetScoreInput(prev => ({ ...prev, score1: "1", score2: "0", penalty1: "", penalty2: "" }))}
+                    className={`py-1.5 rounded-lg text-[11px] font-bold border transition-colors truncate px-1 ${
+                      setScoreInput.score1 === "1" && setScoreInput.score2 === "0"
+                        ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300"
+                        : "bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white"
+                    }`}
+                  >
+                    {setScoreTarget.participants[0]?.inGameId?.split(" ")[0] || "P1"} Win
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSetScoreInput(prev => ({ ...prev, score1: "0", score2: "0", penalty1: "", penalty2: "" }))}
+                    className={`py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
+                      setScoreInput.score1 === setScoreInput.score2 && setScoreInput.score1 !== ""
+                        ? "bg-slate-600/40 border-slate-500/60 text-slate-200"
+                        : "bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white"
+                    }`}
+                  >
+                    Draw
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSetScoreInput(prev => ({ ...prev, score1: "0", score2: "1", penalty1: "", penalty2: "" }))}
+                    className={`py-1.5 rounded-lg text-[11px] font-bold border transition-colors truncate px-1 ${
+                      setScoreInput.score1 === "0" && setScoreInput.score2 === "1"
+                        ? "bg-orange-500/20 border-orange-500/40 text-orange-300"
+                        : "bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white"
+                    }`}
+                  >
+                    {setScoreTarget.participants[1]?.inGameId?.split(" ")[0] || "P2"} Win
+                  </button>
+                </div>
+              </div>
+
+              {/* Manual score inputs */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">
+                    {setScoreTarget.participants[0]?.inGameId || "Player 1"}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={setScoreInput.score1}
+                    onChange={e => setSetScoreInput(prev => ({ ...prev, score1: e.target.value, penalty1: "", penalty2: "" }))}
+                    placeholder="0"
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-center text-xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">
+                    {setScoreTarget.participants[1]?.inGameId || "Player 2"}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={setScoreInput.score2}
+                    onChange={e => setSetScoreInput(prev => ({ ...prev, score2: e.target.value, penalty1: "", penalty2: "" }))}
+                    placeholder="0"
+                    className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-center text-xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
+                  />
+                </div>
+              </div>
+              {setScoreInput.score1 !== "" && setScoreInput.score2 !== "" && (() => {
+                const s1 = parseInt(setScoreInput.score1, 10);
+                const s2 = parseInt(setScoreInput.score2, 10);
+                if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return null;
+                const isDraw = s1 === s2;
+                const p1 = parseInt(setScoreInput.penalty1, 10);
+                const p2 = parseInt(setScoreInput.penalty2, 10);
+                const penaltiesEntered = !isNaN(p1) && !isNaN(p2) && setScoreInput.penalty1 !== "" && setScoreInput.penalty2 !== "";
+                const penaltyWinner = penaltiesEntered && p1 !== p2
+                  ? (p1 > p2
+                    ? setScoreTarget.participants[0]?.inGameId || "Player 1"
+                    : setScoreTarget.participants[1]?.inGameId || "Player 2")
+                  : null;
+                const resultText = isDraw
+                  ? penaltyWinner ? `${penaltyWinner} wins (on penalties)` : "Draw — enter penalties below"
+                  : s1 > s2
+                    ? `${setScoreTarget.participants[0]?.inGameId || "Player 1"} wins`
+                    : `${setScoreTarget.participants[1]?.inGameId || "Player 2"} wins`;
+                return (
+                  <>
+                    <div className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl border ${
+                      isDraw && !penaltyWinner
+                        ? "bg-amber-500/8 border-amber-500/25"
+                        : isDraw && penaltyWinner
+                          ? "bg-cyan-500/8 border-cyan-500/20"
+                          : "bg-cyan-500/8 border-cyan-500/20"
+                    }`}>
+                      <span className="text-xs text-slate-400">Result:</span>
+                      <span className={`text-xs font-bold ${isDraw && !penaltyWinner ? "text-amber-300" : "text-cyan-300"}`}>{resultText}</span>
+                    </div>
+
+                    {isDraw && (
+                      <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 space-y-2.5">
+                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Penalty Shootout</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">
+                              {setScoreTarget.participants[0]?.inGameId || "Player 1"}
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={setScoreInput.penalty1}
+                              onChange={e => setSetScoreInput(prev => ({ ...prev, penalty1: e.target.value }))}
+                              placeholder="0"
+                              className="w-full bg-slate-800/60 border border-amber-500/30 rounded-xl px-3 py-2 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-400/60 transition-colors"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">
+                              {setScoreTarget.participants[1]?.inGameId || "Player 2"}
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={setScoreInput.penalty2}
+                              onChange={e => setSetScoreInput(prev => ({ ...prev, penalty2: e.target.value }))}
+                              placeholder="0"
+                              className="w-full bg-slate-800/60 border border-amber-500/30 rounded-xl px-3 py-2 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-400/60 transition-colors"
+                            />
+                          </div>
+                        </div>
+                        {penaltiesEntered && p1 === p2 && (
+                          <p className="text-[11px] text-rose-400">Penalty scores must not be equal — a winner is required.</p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Reason <span className="text-slate-700 normal-case font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={setScoreInput.reason}
+                  onChange={e => setSetScoreInput(prev => ({ ...prev, reason: e.target.value }))}
+                  placeholder="e.g. Score confirmed via screenshot"
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
+                />
+              </div>
+            </div>
+            <div className="px-5 pb-5 flex gap-2.5">
+              <button
+                onClick={() => { setShowSetScoreModal(false); setSetScoreTarget(null); }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-700 text-sm font-semibold text-slate-300 hover:border-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { void handleSetScore(); }}
+                disabled={(() => {
+                  if (isSettingScore) return true;
+                  if (setScoreInput.score1 === "" || setScoreInput.score2 === "") return true;
+                  const s1 = parseInt(setScoreInput.score1, 10);
+                  const s2 = parseInt(setScoreInput.score2, 10);
+                  if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return true;
+                  if (s1 === s2) {
+                    const p1 = parseInt(setScoreInput.penalty1, 10);
+                    const p2 = parseInt(setScoreInput.penalty2, 10);
+                    if (setScoreInput.penalty1 === "" || setScoreInput.penalty2 === "") return true;
+                    if (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2) return true;
+                  }
+                  return false;
+                })()}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {isSettingScore ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                {isSettingScore ? "Setting…" : "Confirm Score"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Match score entry for organizer-as-player */}
       {activeMatchId && user?.id && (
