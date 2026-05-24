@@ -2994,7 +2994,7 @@ const TournamentManage = () => {
                     type="number"
                     min="0"
                     value={setScoreInput.score1}
-                    onChange={e => setSetScoreInput(prev => ({ ...prev, score1: e.target.value, penalty1: "", penalty2: "" }))}
+                    onChange={e => setSetScoreInput(prev => ({ ...prev, score1: e.target.value }))}
                     placeholder="0"
                     className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-center text-xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
                   />
@@ -3007,7 +3007,7 @@ const TournamentManage = () => {
                     type="number"
                     min="0"
                     value={setScoreInput.score2}
-                    onChange={e => setSetScoreInput(prev => ({ ...prev, score2: e.target.value, penalty1: "", penalty2: "" }))}
+                    onChange={e => setSetScoreInput(prev => ({ ...prev, score2: e.target.value }))}
                     placeholder="0"
                     className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-center text-xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
                   />

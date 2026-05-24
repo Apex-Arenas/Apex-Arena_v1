@@ -171,6 +171,8 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
   const [showScoreOverride, setShowScoreOverride] = useState(false);
   const [overrideS1, setOverrideS1] = useState('');
   const [overrideS2, setOverrideS2] = useState('');
+  const [overridePenalty1, setOverridePenalty1] = useState('');
+  const [overridePenalty2, setOverridePenalty2] = useState('');
   const [overrideReason, setOverrideReason] = useState('');
   const [overriding, setOverriding] = useState(false);
   const [overrideError, setOverrideError] = useState<string | null>(null);
@@ -179,10 +181,18 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
     const s1 = parseInt(overrideS1, 10);
     const s2 = parseInt(overrideS2, 10);
     if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return;
+    const isDrawScore = s1 === s2;
+    const p1 = parseInt(overridePenalty1, 10);
+    const p2 = parseInt(overridePenalty2, 10);
+    if (isDrawScore && (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2)) return;
+    const finalS1 = isDrawScore ? p1 : s1;
+    const finalS2 = isDrawScore ? p2 : s2;
+    const penaltyNote = isDrawScore ? `Regular time: ${s1}–${s2} · Penalties: ${p1}–${p2}` : '';
+    const reason = [penaltyNote, overrideReason].filter(Boolean).join(' · ') || undefined;
     setOverriding(true);
     setOverrideError(null);
     try {
-      await organizerService.setMatchScore(matchId, s1, s2, overrideReason);
+      await organizerService.setMatchScore(matchId, finalS1, finalS2, reason);
       onActionComplete();
       onClose();
     } catch (e: any) {
@@ -466,6 +476,49 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
                   </div>
                 </div>
 
+                {/* Penalty shootout — shown when scores are equal */}
+                {overrideS1 !== '' && overrideS2 !== '' && (() => {
+                  const s1 = parseInt(overrideS1, 10);
+                  const s2 = parseInt(overrideS2, 10);
+                  if (isNaN(s1) || isNaN(s2) || s1 !== s2) return null;
+                  const p1 = parseInt(overridePenalty1, 10);
+                  const p2 = parseInt(overridePenalty2, 10);
+                  const penaltiesEntered = overridePenalty1 !== '' && overridePenalty2 !== '' && !isNaN(p1) && !isNaN(p2);
+                  return (
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2.5">
+                      <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Penalty Shootout</p>
+                      <div className="flex items-end gap-3">
+                        <div className="flex-1 space-y-1.5">
+                          <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player1Name}</p>
+                          <input
+                            type="number"
+                            min={0}
+                            value={overridePenalty1}
+                            onChange={e => setOverridePenalty1(e.target.value)}
+                            placeholder="0"
+                            className="w-full bg-slate-900/80 border border-amber-500/30 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-amber-400 transition-colors placeholder:text-slate-700"
+                          />
+                        </div>
+                        <div className="pb-3 text-slate-600 font-bold text-xl select-none">–</div>
+                        <div className="flex-1 space-y-1.5">
+                          <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player2Name}</p>
+                          <input
+                            type="number"
+                            min={0}
+                            value={overridePenalty2}
+                            onChange={e => setOverridePenalty2(e.target.value)}
+                            placeholder="0"
+                            className="w-full bg-slate-900/80 border border-amber-500/30 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-amber-400 transition-colors placeholder:text-slate-700"
+                          />
+                        </div>
+                      </div>
+                      {penaltiesEntered && p1 === p2 && (
+                        <p className="text-[11px] text-rose-400">Penalty scores must not be equal — a winner is required.</p>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* reason */}
                 <input
                   type="text"
@@ -481,7 +534,19 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
 
                 <button
                   onClick={handleScoreOverride}
-                  disabled={overriding || overrideS1 === '' || overrideS2 === ''}
+                  disabled={(() => {
+                    if (overriding || overrideS1 === '' || overrideS2 === '') return true;
+                    const s1 = parseInt(overrideS1, 10);
+                    const s2 = parseInt(overrideS2, 10);
+                    if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return true;
+                    if (s1 === s2) {
+                      const p1 = parseInt(overridePenalty1, 10);
+                      const p2 = parseInt(overridePenalty2, 10);
+                      if (overridePenalty1 === '' || overridePenalty2 === '') return true;
+                      if (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2) return true;
+                    }
+                    return false;
+                  })()}
                   className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-500 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
                 >
                   {overriding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Edit3 className="w-4 h-4" />}
