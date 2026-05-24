@@ -167,7 +167,6 @@ const JoinTournament = () => {
   const [withdrawReasonError, setWithdrawReasonError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [statsOpen, setStatsOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const hasFetchedGames = useRef(false);
 
@@ -293,62 +292,47 @@ const JoinTournament = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen">
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden border-b border-slate-800 bg-slate-900 px-8 py-7">
-        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
+      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
+        <div className="absolute -top-40 right-0 w-[700px] h-[400px] rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative text-center sm:text-left">
-          <div className="flex items-center justify-center gap-3 mb-1 sm:justify-start">
-            <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-orange-400" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-5 pb-5">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
+              <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
             </div>
-            <p className="text-xs text-orange-400/80 font-semibold uppercase tracking-[0.18em]">
-              Tournaments
-            </p>
+            <div className="flex-1 min-w-0 pt-1">
+              <h1 className="font-display text-xl sm:text-3xl font-bold text-white leading-tight">Find Your Arena</h1>
+              <p className="text-sm text-slate-400 mt-1">Browse open tournaments, track your registrations, and compete.</p>
+            </div>
           </div>
-          <h1 className="font-display text-3xl sm:text-4xl font-bold text-white leading-none mb-2">
-            Find Your Arena
-          </h1>
-          <p className="text-sm text-slate-400">
-            Browse open tournaments, track your registrations, and compete.
-          </p>
 
-          {/* Stats strip — dropdown on mobile, always visible on sm+ */}
-          <div className="mt-6">
-            {/* Mobile toggle */}
-            <button
-              onClick={() => setStatsOpen((o) => !o)}
-              className="sm:hidden w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-700/60 bg-slate-800/50 text-xs font-semibold text-slate-300 hover:border-slate-600 transition-all"
-            >
-              <span>Overview</span>
-              <ChevronDown
-                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {/* Stats grid */}
-            <div className={`grid grid-cols-3 gap-3 sm:mt-0 ${statsOpen ? "mt-2" : "hidden sm:grid"}`}>
-              {[
-                { label: "Available",        value: isLoading ? "—" : String(tournaments.length),                        accent: "text-white",       sub: "open tournaments" },
-                { label: "My Registrations", value: isLoadingRegistrations ? "—" : String(upcomingRegistrations.length),  accent: "text-orange-400",  sub: "upcoming"         },
-                { label: "Active",           value: isLoadingRegistrations ? "—" : String(activeTournaments.length),      accent: "text-emerald-400", sub: "in progress"      },
-              ].map((s) => (
-                <div key={s.label} className="bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
-                  <p className={`font-display text-2xl font-bold tabular-nums leading-none ${s.accent}`}>{s.value}</p>
-                  <p className="text-[10px] text-slate-600 mt-1">{s.sub}</p>
+          {/* Stats strip */}
+          <div className="grid grid-cols-3 gap-3 mt-5">
+            {[
+              { icon: Trophy,      iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Available",        value: isLoading ? "—" : String(tournaments.length) },
+              { icon: Swords,      iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",   label: "My Registrations", value: isLoadingRegistrations ? "—" : String(upcomingRegistrations.length) },
+              { icon: CheckCircle2, iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15", label: "Active",           value: isLoadingRegistrations ? "—" : String(activeTournaments.length) },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center gap-2 sm:gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-3">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                  <s.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${s.iconColor}`} />
                 </div>
-              ))}
-            </div>
+                <div className="min-w-0">
+                  <p className="font-display text-lg sm:text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
+                  <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="px-10 sm:px-6 py-6 space-y-5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5">
 
         {/* Notifications */}
         {successMsg && (
@@ -548,7 +532,7 @@ const JoinTournament = () => {
 
             {/* Grid */}
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : tournaments.length === 0 ? (
@@ -562,7 +546,7 @@ const JoinTournament = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {tournaments.map((t) => (
                   <TournamentCard
                     key={t.id}
@@ -583,7 +567,7 @@ const JoinTournament = () => {
         {activeTab === "registrations" && (
           <div className="space-y-4">
             {isLoadingRegistrations ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : upcomingRegistrations.length === 0 ? (
@@ -604,7 +588,7 @@ const JoinTournament = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {upcomingRegistrations.map((registration) => (
                   <RegistrationCard
                     key={registration.registrationId}
@@ -624,7 +608,7 @@ const JoinTournament = () => {
         {activeTab === "my-tournaments" && (
           <div className="space-y-4">
             {isLoadingRegistrations ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : activeTournaments.length === 0 ? (
@@ -638,7 +622,7 @@ const JoinTournament = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {activeTournaments.map((registration) => (
                   <ActiveTournamentCard
                     key={registration.registrationId}

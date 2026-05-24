@@ -257,28 +257,51 @@ export default function LeaderboardPage() {
     tournaments.some(t => t.game?.id === g.id || t.game?.name === g.name)
   );
 
+  const leagueCount = tournaments.filter(t => t.tournamentType === "league").length;
+  const bracketCount = tournaments.filter(t => t.tournamentType !== "league").length;
+
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="relative overflow-hidden bg-slate-900 border-b border-slate-800 px-6 py-7 sm:px-8 sm:py-8">
-        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-amber-500/12 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-orange-600/8 blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
-        <div className="relative flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-4">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center shrink-0">
-            <Trophy className="w-5 h-5 text-amber-400" />
+    <div className="min-h-screen">
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
+        <div className="absolute -top-40 right-0 w-[700px] h-[400px] rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-5 pb-5">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
+              <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0 pt-1">
+              <h1 className="font-display text-xl sm:text-3xl font-bold text-white leading-tight">Leaderboard</h1>
+              <p className="text-sm text-slate-400 mt-1">Standings by tournament — select a game and tournament to view rankings.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-display text-2xl font-bold text-white">Leaderboard</h1>
-            <p className="text-sm text-slate-400 mt-0.5">
-              Standings by tournament — select a game and tournament to view rankings.
-            </p>
+
+          {/* Stats strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+            {[
+              { icon: Trophy,   iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15",  label: "Tournaments", value: loading ? "—" : String(tournaments.length) },
+              { icon: Gamepad2, iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",   label: "Games",       value: loading ? "—" : String(gamesWithTournaments.length) },
+              { icon: Crown,    iconColor: "text-violet-400",  bg: "from-violet-500/15 to-indigo-500/15", label: "League",      value: loading ? "—" : String(leagueCount) },
+              { icon: Medal,    iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Bracket",     value: loading ? "—" : String(bracketCount) },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center gap-2 sm:gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-3">
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                  <s.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${s.iconColor}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-display text-lg sm:text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
+                  <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 py-6 space-y-6">
-      <div className="px-6 sm:px-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       {loading ? (
         <div className="flex justify-center py-24">
           <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -432,7 +455,6 @@ export default function LeaderboardPage() {
           )}
         </div>
       )}
-      </div>
       </div>
     </div>
   );

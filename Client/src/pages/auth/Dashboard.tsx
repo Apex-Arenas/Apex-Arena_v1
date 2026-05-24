@@ -8,7 +8,7 @@ import {
   Wallet,
   ArrowRight,
   Swords,
-  ChevronDown,
+  Users,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import {
@@ -48,8 +48,6 @@ const Dashboard = () => {
   const [tournamentTab, setTournamentTab] = useState<"active" | "history">(
     "active",
   );
-  const [statsOpen, setStatsOpen] = useState(false);
-
   const hasFetched = useRef(false);
   const isOrganizer = user?.role === "organizer";
 
@@ -273,7 +271,7 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen">
         {/* ── Hero ──────────────────────────────────────────────────────── */}
-        <div className="relative overflow-hidden bg-slate-900 border-b border-slate-800">
+        <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
           {/* Ambient glows */}
           <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/12 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
@@ -302,7 +300,7 @@ const Dashboard = () => {
                   <p className="text-xs text-orange-400/80 font-semibold uppercase tracking-[0.18em] mb-1">
                     {greeting} · Organizer
                   </p>
-                  <h1 className="font-display text-3xl sm:text-4xl font-bold text-white leading-none">
+                  <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">
                     {displayName}
                   </h1>
                   {organizerTournaments.length > 0 ? (
@@ -356,37 +354,24 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Stats strip — dropdown on mobile, always visible on sm+ */}
-            <div className="mt-5">
-              {/* Mobile toggle */}
-              <button
-                onClick={() => setStatsOpen((o) => !o)}
-                className="sm:hidden w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-700/60 bg-slate-800/50 text-xs font-semibold text-slate-300 hover:border-slate-600 transition-all"
-              >
-                <span>Your Stats</span>
-                <ChevronDown
-                  className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              {/* Stats grid */}
-              <div className={`grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800/60 rounded-xl overflow-hidden border border-slate-800/60 sm:mt-0 ${statsOpen ? "mt-2" : "hidden sm:grid"}`}>
-                {[
-                  { label: "Tournaments",   value: String(organizerTournaments.length),                                                               accent: "text-white"       },
-                  { label: "Live / Active", value: String(organizerLiveCount),                                                                        accent: "text-emerald-400" },
-                  { label: "Total Entrants",value: String(organizerTotalParticipants),                                                                 accent: "text-cyan-400"    },
-                  { label: "Wallet",        value: organizerWalletBalance === null ? "GHS —" : `GHS ${(organizerWalletBalance / 100).toFixed(2)}`,    accent: "text-amber-400"   },
-                ].map((s) => (
-                  <div key={s.label} className="bg-slate-900 px-4 py-3">
-                    <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">
-                      {s.label}
-                    </p>
-                    <p className={`font-display text-xl font-bold tabular-nums ${s.accent}`}>
-                      {s.value}
-                    </p>
+            {/* Stats strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+              {[
+                { icon: Trophy,   iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Tournaments",    value: String(organizerTournaments.length) },
+                { icon: Gamepad2, iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15", label: "Live / Active",  value: String(organizerLiveCount) },
+                { icon: Users,    iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",  label: "Total Entrants", value: String(organizerTotalParticipants) },
+                { icon: Wallet,   iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15", label: "Wallet",         value: organizerWalletBalance === null ? "GHS —" : `GHS ${(organizerWalletBalance / 100).toFixed(2)}` },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                    <s.icon className={`w-4 h-4 ${s.iconColor}`} />
                   </div>
-                ))}
-              </div>
+                  <div className="min-w-0">
+                    <p className="font-display text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -399,7 +384,7 @@ const Dashboard = () => {
             <section>
               <div className="flex flex-col items-center text-center gap-2 mb-5 sm:flex-row sm:items-center sm:justify-between sm:text-left">
                 <div className="flex items-center gap-3">
-                  <h2 className="font-display text-xl font-bold text-white">
+                  <h2 className="font-display text-2xl font-bold text-white">
                     Active Tournaments
                   </h2>
                   {organizerActiveList.length > 0 && (
@@ -449,7 +434,7 @@ const Dashboard = () => {
             {organizerDrafts.length > 0 && (
               <section>
                 <div className="flex items-center gap-3 mb-5">
-                  <h2 className="font-display text-xl font-bold text-white">
+                  <h2 className="font-display text-2xl font-bold text-white">
                     Drafts & Pending
                   </h2>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20">
@@ -513,7 +498,7 @@ const Dashboard = () => {
                       </span>
                     </div>
                     <span
-                      className={`font-display text-xl font-bold tabular-nums ${row.accent}`}
+                      className={`font-display text-2xl font-bold tabular-nums ${row.accent}`}
                     >
                       {row.value}
                     </span>
@@ -571,7 +556,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen">
       {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden border-b border-slate-800/60 bg-slate-900">
+      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
         {/* Grid */}
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(148,163,184,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.045) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
         {/* Orange glow top-right */}
@@ -605,7 +590,7 @@ const Dashboard = () => {
                 <p className="text-xs text-orange-400/80 font-semibold uppercase tracking-[0.18em] mb-1">
                   {greeting} · Player
                 </p>
-                <h1 className="font-display text-3xl sm:text-4xl font-bold text-white leading-none">
+                <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">
                   {displayName}
                 </h1>
                 <p className="text-sm text-slate-400 mt-2">
@@ -634,37 +619,24 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Stats strip — dropdown on mobile, always visible on sm+ */}
-          <div className="mt-5">
-            {/* Mobile toggle */}
-            <button
-              onClick={() => setStatsOpen((o) => !o)}
-              className="sm:hidden w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-slate-700/60 bg-slate-800/50 text-xs font-semibold text-slate-300 hover:border-slate-600 transition-all"
-            >
-              <span>Your Stats</span>
-              <ChevronDown
-                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {/* Stats grid — hidden on mobile until open, always shown sm+ */}
-            <div
-              className={`grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800/50 rounded-xl overflow-hidden sm:mt-0 ${
-                statsOpen ? "mt-2" : "hidden sm:grid"
-              }`}
-            >
-              {[
-                { label: "Tournaments", value: String(stats.joinedTournaments), accent: "text-white" },
-                { label: "Total Wins",  value: String(stats.totalWins),         accent: "text-emerald-400" },
-                { label: "Prize Won",   value: stats.totalPrizeWon > 0 ? `GHS ${(stats.totalPrizeWon / 100).toFixed(2)}` : "GHS 0", accent: "text-amber-400" },
-                { label: "Checked In", value: String(stats.checkedInCount),     accent: "text-orange-400" },
-              ].map((s) => (
-                <div key={s.label} className="bg-slate-900/80 px-4 py-3">
-                  <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
-                  <p className={`font-display text-xl font-bold tabular-nums ${s.accent}`}>{s.value}</p>
+          {/* Stats strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+            {[
+              { icon: Trophy,   iconColor: "text-white",       bg: "from-slate-700/40 to-slate-600/40",   label: "Tournaments", value: String(stats.joinedTournaments) },
+              { icon: Swords,   iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15",  label: "Total Wins",  value: String(stats.totalWins) },
+              { icon: Wallet,   iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15",  label: "Prize Won",   value: stats.totalPrizeWon > 0 ? `GHS ${(stats.totalPrizeWon / 100).toFixed(2)}` : "GHS 0" },
+              { icon: Gamepad2, iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Checked In",  value: String(stats.checkedInCount) },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                  <s.icon className={`w-4 h-4 ${s.iconColor}`} />
                 </div>
-              ))}
-            </div>
+                <div className="min-w-0">
+                  <p className="font-display text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -675,13 +647,13 @@ const Dashboard = () => {
         {/* Left: My Tournaments */}
         <section className="min-w-0">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-lg font-bold text-white">
+            <h2 className="font-display text-2xl font-bold text-white">
               My Tournaments
             </h2>
             <div className="flex items-center rounded-lg bg-slate-800/60 border border-slate-700/60 p-0.5">
               <button
                 onClick={() => setTournamentTab("active")}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                className={`px-3 py-2.5 rounded-md text-xs font-medium transition-all ${
                   tournamentTab === "active"
                     ? "bg-slate-700 text-white"
                     : "text-slate-400 hover:text-slate-300"
@@ -691,7 +663,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setTournamentTab("history")}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                className={`px-3 py-2.5 rounded-md text-xs font-medium transition-all ${
                   tournamentTab === "history"
                     ? "bg-slate-700 text-white"
                     : "text-slate-400 hover:text-slate-300"
@@ -770,7 +742,7 @@ const Dashboard = () => {
                 <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">
                   Available Balance
                 </p>
-                <p className="font-display text-2xl font-bold text-white">
+                <p className="font-display text-3xl font-bold text-white">
                   {formatGhs(playerWallet?.availableBalance)}
                 </p>
               </div>
