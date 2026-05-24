@@ -22,7 +22,6 @@ import {
   Play,
   Gavel,
   List,
-  ChevronDown,
   Share2,
 } from "lucide-react";
 import {
@@ -547,7 +546,7 @@ const TournamentManage = () => {
     null,
   );
   const [showDisputeModal, setShowDisputeModal] = useState(false);
-  const [disputeMatchId, setDisputeMatchId] = useState<string | null>(null);
+  const [disputeMatchId] = useState<string | null>(null);
   const [disputeWinnerId, setDisputeWinnerId] = useState("");
   const [disputeResolution, setDisputeResolution] = useState("");
   const [tournamentResults, setTournamentResults] = useState<Array<
@@ -559,7 +558,6 @@ const TournamentManage = () => {
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [showRegistrationAlert, setShowRegistrationAlert] = useState(true);
   const [showExtendModal, setShowExtendModal] = useState(false);
-  const [statsOpen, setStatsOpen] = useState(false);
   const [extendDate, setExtendDate] = useState("");
   const [isExtending, setIsExtending] = useState(false);
 
@@ -960,68 +958,6 @@ const TournamentManage = () => {
     } finally {
       setIsExtending(false);
     }
-  };
-
-  const handleStartMatch = async (matchId: string) => {
-    setMatchActionLoading(matchId);
-    try {
-      await organizerService.startMatch(matchId);
-      showToast("success", "Match started.");
-      if (tournamentId)
-        await loadBracketProgress(tournamentId, { silent: true });
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "Failed to start match.",
-      );
-    } finally {
-      setMatchActionLoading(null);
-    }
-  };
-
-  const handleCancelMatchById = async (matchId: string) => {
-    setMatchActionLoading(matchId);
-    try {
-      await organizerService.cancelMatchById(matchId);
-      showToast("success", "Match cancelled.");
-      if (tournamentId)
-        await loadBracketProgress(tournamentId, { silent: true });
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "Failed to cancel match.",
-      );
-    } finally {
-      setMatchActionLoading(null);
-    }
-  };
-
-  const handleForfeitMatch = async (
-    matchId: string,
-    noShowUserId: string,
-    inGameId: string,
-  ) => {
-    setMatchActionLoading(`${matchId}-forfeit`);
-    try {
-      await organizerService.forfeitMatch(matchId, noShowUserId);
-      showToast("success", `Forfeit recorded for ${inGameId}.`);
-      if (tournamentId)
-        await loadBracketProgress(tournamentId, { silent: true });
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "Failed to forfeit match.",
-      );
-    } finally {
-      setMatchActionLoading(null);
-    }
-  };
-
-  const handleOpenDisputeModal = (matchId: string) => {
-    setDisputeMatchId(matchId);
-    setDisputeWinnerId("");
-    setDisputeResolution("");
-    setShowDisputeModal(true);
   };
 
   const handleResolveDispute = async () => {
