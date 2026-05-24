@@ -102,19 +102,14 @@ const ContactUs = () => {
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-5 pb-5">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
-              <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-violet-400" />
-            </div>
-            <div className="flex-1 min-w-0 pt-1">
-              <h1 className="font-display text-xl sm:text-3xl font-bold text-white leading-tight">Contact Us</h1>
-              <p className="text-sm text-slate-400 mt-1">Get in touch with the Apex Arenas crew — we're here to help.</p>
-            </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
+          <div>
+            <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Contact Us</h1>
+            <p className="text-base text-slate-400 mt-3">Get in touch with the Apex Arenas crew — we're here to help.</p>
           </div>
 
           {/* Contact method pills */}
-          <div className="flex flex-wrap items-center gap-2 mt-5">
+          <div className="flex flex-wrap items-center gap-2 mt-6">
             <div className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/60 rounded-full px-3 py-1.5">
               <Mail className="w-3.5 h-3.5 text-violet-400" />
               <span className="text-xs text-slate-300 font-medium">support@apexarenas.com</span>

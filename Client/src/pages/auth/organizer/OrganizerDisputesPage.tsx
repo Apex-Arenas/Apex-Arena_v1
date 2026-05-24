@@ -401,24 +401,19 @@ export default function OrganizerDisputesPage() {
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-5 pb-5 space-y-4">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7 space-y-5">
           {/* Title row */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3 sm:gap-4">
-              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
-                <ShieldAlert className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 flex-wrap mb-3">
+                <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Disputes</h1>
+                {pending.length > 0 && (
+                  <span className="text-[11px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border bg-amber-500/15 text-amber-300 border-amber-500/25">
+                    {pending.length} pending
+                  </span>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="font-display text-xl sm:text-3xl font-bold text-white leading-tight">Disputes</h1>
-                  {pending.length > 0 && (
-                    <span className="text-[11px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border bg-amber-500/15 text-amber-300 border-amber-500/25">
-                      {pending.length} pending
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-slate-400 mt-1">Review and resolve disputed matches across your tournaments.</p>
-              </div>
+              <p className="text-base text-slate-400">Review and resolve disputed matches across your tournaments.</p>
             </div>
             <button
               onClick={() => void fetchDisputes()}

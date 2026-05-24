@@ -300,19 +300,14 @@ const JoinTournament = () => {
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-5 pb-5">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
-              <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
-            </div>
-            <div className="flex-1 min-w-0 pt-1">
-              <h1 className="font-display text-xl sm:text-3xl font-bold text-white leading-tight">Find Your Arena</h1>
-              <p className="text-sm text-slate-400 mt-1">Browse open tournaments, track your registrations, and compete.</p>
-            </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
+          <div>
+            <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Find Your Arena</h1>
+            <p className="text-base text-slate-400 mt-3">Browse open tournaments, track your registrations, and compete.</p>
           </div>
 
           {/* Stats strip */}
-          <div className="grid grid-cols-3 gap-3 mt-5">
+          <div className="grid grid-cols-3 gap-3 mt-6">
             {[
               { icon: Trophy,      iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Available",        value: isLoading ? "—" : String(tournaments.length) },
               { icon: Swords,      iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",   label: "My Registrations", value: isLoadingRegistrations ? "—" : String(upcomingRegistrations.length) },

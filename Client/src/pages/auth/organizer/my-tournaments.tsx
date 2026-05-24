@@ -265,7 +265,7 @@ function Section({
   return (
     <section>
       <div className="flex items-center justify-center gap-3 mb-5 sm:justify-start">
-        <h2 className="font-display text-xl font-bold text-white">{title}</h2>
+        <h2 className="font-display text-2xl font-bold text-white">{title}</h2>
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${badge}`}>
           {count}
         </span>

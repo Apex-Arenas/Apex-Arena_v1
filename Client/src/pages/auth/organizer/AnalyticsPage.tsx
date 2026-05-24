@@ -164,19 +164,14 @@ export default function AnalyticsPage() {
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-5 pb-5">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500/20 to-violet-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
-              <BarChart2 className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
-            </div>
-            <div className="flex-1 min-w-0 pt-1">
-              <h1 className="font-display text-xl sm:text-3xl font-bold text-white leading-tight">Analytics</h1>
-              <p className="text-sm text-slate-400 mt-1">Performance overview across all your tournaments.</p>
-            </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
+          <div>
+            <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Analytics</h1>
+            <p className="text-base text-slate-400 mt-3">Performance overview across all your tournaments.</p>
           </div>
 
           {/* Stats strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
             {[
               { icon: BarChart2,    iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",   label: "Tournaments",     value: loading ? "—" : String(total) },
               { icon: Users,        iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",    label: "Total Players",   value: loading ? "—" : String(totalPlayers) },
@@ -224,7 +219,7 @@ export default function AnalyticsPage() {
             {/* Status breakdown */}
             <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-                <h2 className="font-display text-base font-bold text-white">Status Breakdown</h2>
+                <h2 className="font-display text-xl font-bold text-white">Status Breakdown</h2>
                 <span className="text-xs text-slate-500">{total} total</span>
               </div>
               <div className="px-6 py-5 space-y-5">
@@ -240,7 +235,7 @@ export default function AnalyticsPage() {
             {/* All tournaments table */}
             <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-800">
-                <h2 className="font-display text-base font-bold text-white">All Tournaments</h2>
+                <h2 className="font-display text-xl font-bold text-white">All Tournaments</h2>
               </div>
               <div className="divide-y divide-slate-800/60">
                 {tournaments.map(t => {
@@ -312,7 +307,7 @@ export default function AnalyticsPage() {
             {/* Key insights */}
             <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-800">
-                <h3 className="font-display text-sm font-bold text-white">Key Insights</h3>
+                <h3 className="font-display text-base font-bold text-white">Key Insights</h3>
               </div>
               <div className="divide-y divide-slate-800/60">
                 {[
@@ -334,7 +329,7 @@ export default function AnalyticsPage() {
             {topByFill.length > 0 && (
               <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
                 <div className="px-5 py-4 border-b border-slate-800">
-                  <h3 className="font-display text-sm font-bold text-white">Top Fill Rate</h3>
+                  <h3 className="font-display text-base font-bold text-white">Top Fill Rate</h3>
                 </div>
                 <div className="p-4 space-y-3">
                   {topByFill.map(t => {

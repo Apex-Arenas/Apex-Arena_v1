@@ -307,7 +307,7 @@ export default function LeaderboardPage() {
           <div className="flex items-center gap-2 overflow-x-auto pb-0.5 no-scrollbar">
             <button
               onClick={() => setSelectedGameId("all")}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all border shrink-0 ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border shrink-0 ${
                 selectedGameId === "all"
                   ? "bg-cyan-500 text-slate-950 border-cyan-500"
                   : "bg-slate-900/60 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white"
@@ -329,7 +329,7 @@ export default function LeaderboardPage() {
                 <button
                   key={game.id}
                   onClick={() => setSelectedGameId(game.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all border shrink-0 ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border shrink-0 ${
                     isActive
                       ? "bg-cyan-500 text-slate-950 border-cyan-500"
                       : "bg-slate-900/60 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white"
