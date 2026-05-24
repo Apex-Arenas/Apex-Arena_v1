@@ -106,7 +106,7 @@ function SectionCard({
         <div className="w-8 h-8 rounded-full bg-orange-500/15 border border-orange-500/30 flex items-center justify-center shrink-0">
           <Icon className="w-4 h-4 text-orange-400" />
         </div>
-        <h2 className="font-display text-sm font-bold text-white uppercase tracking-wide">
+        <h2 className="font-display text-base font-bold text-white">
           {title}
         </h2>
       </div>
