@@ -168,8 +168,8 @@ export function LeagueView({
       )}
 
       {/* Modals */}
-      {activeMatchId && highlightUserId && (
-        <MatchActionModal
+      {activeMatchId && isOrganizer && (
+        <OrganizerMatchModal
           matchId={activeMatchId}
           currentUserId={highlightUserId}
           currentMatchweek={currentMatchweek}
@@ -180,9 +180,11 @@ export function LeagueView({
           }}
         />
       )}
-      {activeMatchId && !highlightUserId && isOrganizer && (
-        <OrganizerMatchModal
+      {activeMatchId && !isOrganizer && highlightUserId && (
+        <MatchActionModal
           matchId={activeMatchId}
+          currentUserId={highlightUserId}
+          currentMatchweek={currentMatchweek}
           onClose={() => setActiveMatchId(null)}
           onActionComplete={() => {
             setActiveMatchId(null);
