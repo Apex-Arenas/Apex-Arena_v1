@@ -1377,368 +1377,266 @@ const TournamentManage = () => {
     ["disputed", "cancelled"].includes(escrowSummary.status);
 
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden border-b border-slate-800/80 bg-slate-900">
-        {/* Glows */}
-        <div className="absolute -top-24 -right-24 w-125 h-125 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute top-0 left-1/3 w-125 h-64 rounded-full bg-cyan-500/8 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-125 h-125 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
-        {/* Grid */}
-        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-size-[48px_48px]" />
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 inset-x-0 h-px bg-linear-to-r from-transparent via-slate-600/40 to-transparent pointer-events-none" />
+    <div className="min-h-screen">
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute -top-40 right-0 w-[700px] h-[400px] rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative px-6 pt-8 pb-7 sm:px-10 sm:pt-10 sm:pb-8 space-y-7">
-          {/* Back + title + actions row */}
-          <div className="flex items-start gap-4">
+        <div className="relative max-w-7xl mx-auto">
+          {/* ── Top nav bar ── */}
+          <div className="flex items-center justify-between gap-4 px-6 sm:px-8 py-3 border-b border-slate-800/50">
             <button
               onClick={() => navigate("/auth/organizer/tournaments")}
-              className="shrink-0 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-slate-700/60 transition-all mt-0.5"
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors group shrink-0"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              My Tournaments
             </button>
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="font-display text-3xl sm:text-4xl font-bold text-white leading-tight tracking-tight truncate min-w-0">
-                      {tournament.title}
-                    </h1>
-                    <span
-                      className={`shrink-0 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wide ${
-                        tournament.status === "open"
-                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/25"
-                          : tournament.status === "awaiting_deposit" ||
-                              tournament.status === "published"
-                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/25"
-                            : tournament.status === "draft"
-                              ? "bg-slate-600/20 text-slate-400 border border-slate-600/25"
-                              : tournament.status === "cancelled"
-                                ? "bg-red-500/20 text-red-400 border border-red-500/25"
-                                : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/25"
-                      }`}
-                    >
-                      {tournament.status.replace(/_/g, " ")}
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-400 mt-2 flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-slate-300">
-                      {tournament.game?.name ?? "Unknown Game"}
-                    </span>
-                    <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
-                    <span>{tournament.format ?? "Solo"}</span>
-                    <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
-                    <span
-                      className={
-                        tournament.isFree
-                          ? "text-emerald-400 font-semibold"
-                          : "text-amber-400 font-semibold"
-                      }
-                    >
-                      {tournament.isFree
-                        ? "Free Entry"
-                        : `GHS ${(tournament.entryFee / 100).toFixed(2)}`}
-                    </span>
-                  </p>
-                  {/* Fixtures Generated badge */}
-                  {leagueSettings?.fixturesGenerated &&
-                    !canGenerateLeagueFixtures && (
-                      <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Fixtures Generated
-                        {leagueSettings?.currentMatchweek != null &&
-                          leagueSettings?.totalMatchweeks != null && (
-                            <span className="text-emerald-400/70">
-                              · Wk {leagueSettings.currentMatchweek}/
-                              {leagueSettings.totalMatchweeks}
-                            </span>
-                          )}
-                      </span>
-                    )}
-                </div>
-                {/* Action buttons */}
-                <div className="flex items-center gap-2 flex-wrap sm:shrink-0 sm:justify-end">
-                  {canPublish && (
-                    <button
-                      onClick={handlePublish}
-                      disabled={isPublishing}
-                      className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-xs sm:text-sm font-bold hover:shadow-lg hover:shadow-orange-500/20 disabled:opacity-60 transition-all"
-                    >
-                      {isPublishing ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Send className="w-3.5 h-3.5" />
-                      )}
-                      Publish
-                    </button>
-                  )}
-                  {canGenerateLeagueFixtures && (
-                    <button
-                      onClick={() => {
-                        void handleGenerateLeagueFixtures();
-                      }}
-                      disabled={isGeneratingFixtures}
-                      className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-indigo-500 text-white text-xs sm:text-sm font-bold hover:bg-indigo-400 disabled:opacity-60 transition-colors"
-                    >
-                      {isGeneratingFixtures ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <List className="w-3.5 h-3.5" />
-                      )}
-                      {isGeneratingFixtures
-                        ? "Generating…"
-                        : "Generate Fixtures"}
-                    </button>
-                  )}
-                  {leagueSettings?.fixturesGenerated && (
-                    <button
-                      onClick={() => {
-                        void handleRecalculateStandings();
-                      }}
-                      disabled={isRecalculating}
-                      title="Force-recalculate the league table from all completed matches"
-                      className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-slate-700 text-slate-300 text-xs sm:text-sm font-medium hover:border-slate-500 hover:text-white disabled:opacity-60 transition-colors"
-                    >
-                      {isRecalculating ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-3.5 h-3.5" />
-                      )}
-                      <span className="hidden sm:inline">
-                        {isRecalculating
-                          ? "Recalculating…"
-                          : "Recalculate Table"}
-                      </span>
-                      <span className="sm:hidden">
-                        {isRecalculating ? "Recalculating…" : "Recalculate"}
-                      </span>
-                    </button>
-                  )}
-                  {canAdvanceMatchweek && (
-                    <button
-                      onClick={() => {
-                        void handleAdvanceLeagueMatchweek();
-                      }}
-                      disabled={isAdvancingMatchweek}
-                      className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-cyan-500 text-slate-950 text-xs sm:text-sm font-bold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
-                    >
-                      {isAdvancingMatchweek ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Play className="w-3.5 h-3.5" />
-                      )}
-                      <span className="hidden sm:inline">
-                        {isAdvancingMatchweek
-                          ? "Advancing…"
-                          : leagueSettings?.legs === 2
-                            ? `Advance to Week ${(leagueSettings?.currentMatchweek ?? 0) + 1} – ${(leagueSettings?.currentMatchweek ?? 0) + 2}`
-                            : `Advance to Week ${(leagueSettings?.currentMatchweek ?? 0) + 1}`}
-                      </span>
-                      <span className="sm:hidden">
-                        {isAdvancingMatchweek
-                          ? "Advancing…"
-                          : leagueSettings?.legs === 2
-                            ? `Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}/${(leagueSettings?.currentMatchweek ?? 0) + 2}`
-                            : `Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}`}
-                      </span>
-                    </button>
-                  )}
-                  {(canGenerateBracket || hasBracketGenerated) && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          if (!hasBracketGenerated) void handleGenerateBracket();
-                        }}
-                        disabled={isGeneratingBracket || hasBracketGenerated}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-60 ${
-                          hasBracketGenerated
-                            ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
-                            : "bg-indigo-500 text-white hover:bg-indigo-400"
-                        }`}
-                      >
-                        {isGeneratingBracket ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : hasBracketGenerated ? (
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                        ) : (
-                          <Trophy className="w-3.5 h-3.5" />
-                        )}
-                        <span className="hidden sm:inline">
-                          {isGeneratingBracket
-                            ? "Generating…"
-                            : hasBracketGenerated
-                              ? "Bracket Generated"
-                              : "Generate Bracket"}
-                        </span>
-                        <span className="sm:hidden">
-                          {isGeneratingBracket
-                            ? "Generating…"
-                            : hasBracketGenerated
-                              ? "Generated"
-                              : "Gen Bracket"}
-                        </span>
-                      </button>
-                      {hasBracketGenerated && canGenerateBracket && (
-                        <button
-                          onClick={() => void handleGenerateBracket(true)}
-                          disabled={isGeneratingBracket}
-                          title="Delete all matches and regenerate the bracket"
-                          className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-all disabled:opacity-60"
-                        >
-                          {isGeneratingBracket ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <RefreshCw className="w-3.5 h-3.5" />
-                          )}
-                          <span className="hidden sm:inline">Regenerate</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {canDepositPrizePool && (
-                    <button
-                      onClick={() => {
-                        void handlePayPrizePool();
-                      }}
-                      disabled={isInitiatingPayment}
-                      className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-amber-500 text-slate-950 text-xs sm:text-sm font-bold hover:bg-amber-400 disabled:opacity-60 transition-colors"
-                    >
-                      {isInitiatingPayment ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Wallet className="w-3.5 h-3.5" />
-                      )}
-                      Pay Prize Pool
-                    </button>
-                  )}
-                  {canOpenWinnersModal && (
-                    <button
-                      onClick={handleOpenWinnersModal}
-                      className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-indigo-500 text-white text-xs sm:text-sm font-bold hover:bg-indigo-400 transition-colors"
-                    >
-                      <Trophy className="w-3.5 h-3.5" />
-                      {canSubmitWinners ? "Submit Winners" : "Review Winners"}
-                    </button>
-                  )}
-                  {canCancel && (
-                    <button
-                      onClick={() => setShowCancelConfirm(true)}
-                      disabled={isCancelling}
-                      className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-red-500/30 text-red-400 text-xs sm:text-sm font-medium hover:bg-red-500/10 hover:border-red-500/50 disabled:opacity-60 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  )}
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              {canPublish && (
+                <button
+                  onClick={handlePublish}
+                  disabled={isPublishing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 text-xs font-bold hover:opacity-90 disabled:opacity-60 transition-all shadow-md shadow-orange-500/20"
+                >
+                  {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  Publish
+                </button>
+              )}
+              {canGenerateLeagueFixtures && (
+                <button
+                  onClick={() => void handleGenerateLeagueFixtures()}
+                  disabled={isGeneratingFixtures}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 disabled:opacity-60 transition-colors"
+                >
+                  {isGeneratingFixtures ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <List className="w-3.5 h-3.5" />}
+                  {isGeneratingFixtures ? "Generating…" : "Generate Fixtures"}
+                </button>
+              )}
+              {leagueSettings?.fixturesGenerated && (
+                <button
+                  onClick={() => void handleRecalculateStandings()}
+                  disabled={isRecalculating}
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 text-xs font-medium hover:border-slate-500 hover:text-white disabled:opacity-60 transition-colors"
+                >
+                  {isRecalculating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  {isRecalculating ? "Recalculating…" : "Recalculate Table"}
+                </button>
+              )}
+              {canAdvanceMatchweek && (
+                <button
+                  onClick={() => void handleAdvanceLeagueMatchweek()}
+                  disabled={isAdvancingMatchweek}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
+                >
+                  {isAdvancingMatchweek ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                  <span className="hidden sm:inline">
+                    {isAdvancingMatchweek ? "Advancing…" : leagueSettings?.legs === 2
+                      ? `Advance Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}–${(leagueSettings?.currentMatchweek ?? 0) + 2}`
+                      : `Advance Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}`}
+                  </span>
+                  <span className="sm:hidden">Advance</span>
+                </button>
+              )}
+              {(canGenerateBracket || hasBracketGenerated) && (
+                <div className="flex items-center gap-1.5">
                   <button
-                    onClick={() => {
-                      const url = `${window.location.origin}/tournaments/${tournament.id}`;
-                      if (navigator.share) {
-                        void navigator.share({ title: tournament.title, url });
-                      } else {
-                        void navigator.clipboard.writeText(url);
-                        showSuccess("Link copied to clipboard");
-                      }
-                    }}
-                    title="Share tournament"
-                    className="p-1.5 sm:p-2 rounded-xl border border-slate-700 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 transition-colors"
+                    onClick={() => { if (!hasBracketGenerated) void handleGenerateBracket(); }}
+                    disabled={isGeneratingBracket || hasBracketGenerated}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-60 ${
+                      hasBracketGenerated
+                        ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
+                        : "bg-indigo-500 text-white hover:bg-indigo-400"
+                    }`}
                   >
-                    <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    {isGeneratingBracket ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : hasBracketGenerated ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Trophy className="w-3.5 h-3.5" />}
+                    <span className="hidden sm:inline">{isGeneratingBracket ? "Generating…" : hasBracketGenerated ? "Bracket Ready" : "Generate Bracket"}</span>
+                    <span className="sm:hidden">{hasBracketGenerated ? "Ready" : "Generate"}</span>
                   </button>
-                  {tournament.status === "draft" && (
+                  {hasBracketGenerated && canGenerateBracket && (
                     <button
-                      onClick={() => setShowDeleteConfirm(true)}
-                      className="p-1.5 sm:p-2 rounded-xl border border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500/40 transition-colors"
+                      onClick={() => void handleGenerateBracket(true)}
+                      disabled={isGeneratingBracket}
+                      title="Regenerate bracket"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-bold hover:bg-amber-500/20 disabled:opacity-60 transition-all"
                     >
-                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      {isGeneratingBracket ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      <span className="hidden sm:inline">Regenerate</span>
                     </button>
                   )}
                 </div>
-              </div>
+              )}
+              {canDepositPrizePool && (
+                <button
+                  onClick={() => void handlePayPrizePool()}
+                  disabled={isInitiatingPayment}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-400 disabled:opacity-60 transition-colors"
+                >
+                  {isInitiatingPayment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wallet className="w-3.5 h-3.5" />}
+                  Pay Prize Pool
+                </button>
+              )}
+              {canOpenWinnersModal && (
+                <button
+                  onClick={handleOpenWinnersModal}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 transition-colors"
+                >
+                  <Trophy className="w-3.5 h-3.5" />
+                  {canSubmitWinners ? "Submit Winners" : "Review Winners"}
+                </button>
+              )}
+              <div className="w-px h-4 bg-slate-700/60 hidden sm:block" />
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}/tournaments/${tournament.id}`;
+                  if (navigator.share) { void navigator.share({ title: tournament.title, url }); }
+                  else { void navigator.clipboard.writeText(url); showSuccess("Link copied!"); }
+                }}
+                title="Share"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+              {canCancel && (
+                <button
+                  onClick={() => setShowCancelConfirm(true)}
+                  disabled={isCancelling}
+                  title="Cancel tournament"
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 disabled:opacity-60 transition-colors"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              )}
+              {tournament.status === "draft" && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  title="Delete draft"
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Stats strip */}
-          <button
-            onClick={() => setStatsOpen((o) => !o)}
-            className="sm:hidden w-full flex items-center justify-between px-4 py-3 rounded-xl border border-slate-700/50 bg-slate-800/40 text-xs font-semibold text-slate-300 hover:border-slate-600 transition-all"
-          >
-            <span>Tournament Stats</span>
-            <ChevronDown
-              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-          <div
-            className={`grid grid-cols-2 sm:grid-cols-4 gap-3 sm:mt-0 ${statsOpen ? "mt-2" : "hidden sm:grid"}`}
-          >
-            {[
-              {
-                icon: Users,
-                label: "Registrants",
-                value: String(activeRegistrants.length),
-                accent: "text-white",
-                iconBg: "bg-slate-700/60 border-slate-600/50",
-                glow: "",
-              },
-              {
-                icon: UserCheck,
-                label: "Checked In",
-                value: String(checkedInCount),
-                accent: "text-emerald-400",
-                iconBg: "bg-emerald-500/15 border-emerald-500/25",
-                glow: "hover:border-emerald-500/30",
-              },
-              {
-                icon: Trophy,
-                label: "Capacity",
-                value: `${tournament.currentCount}/${tournament.maxParticipants}`,
-                accent: "text-cyan-400",
-                iconBg: "bg-cyan-500/15 border-cyan-500/25",
-                glow: "hover:border-cyan-500/30",
-              },
-              {
-                icon: CalendarDays,
-                label: "Starts",
-                value: tournament.schedule.tournamentStart
-                  ? new Date(
-                      tournament.schedule.tournamentStart,
-                    ).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "TBD",
-                accent: "text-orange-400",
-                iconBg: "bg-orange-500/15 border-orange-500/25",
-                glow: "hover:border-orange-500/30",
-              },
-            ].map(({ icon: Icon, label, value, accent, iconBg, glow }) => (
-              <div
-                key={label}
-                className={`flex items-center gap-4 bg-slate-800/50 border border-slate-700/40 rounded-2xl px-5 py-4 transition-colors ${glow}`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}
-                >
-                  <Icon className={`w-5 h-5 ${accent}`} />
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                    {label}
-                  </p>
-                  <p
-                    className={`font-display text-2xl font-bold tabular-nums leading-tight mt-0.5 ${accent}`}
-                  >
-                    {value}
-                  </p>
-                </div>
+          {/* ── Hero body ── */}
+          <div className="px-6 sm:px-8 pt-5 pb-6 space-y-5">
+            {/* Title + status */}
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0 shadow-lg">
+                <Trophy className="w-6 h-6 text-cyan-400" />
               </div>
-            ))}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="font-display text-2xl sm:text-3xl font-bold text-white leading-tight">
+                    {tournament.title}
+                  </h1>
+                  <span className={`shrink-0 text-[11px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border ${
+                    tournament.status === "open"
+                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                      : tournament.status === "awaiting_deposit" || tournament.status === "published"
+                        ? "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                        : tournament.status === "draft"
+                          ? "bg-slate-600/20 text-slate-400 border-slate-600/25"
+                          : tournament.status === "cancelled"
+                            ? "bg-red-500/15 text-red-400 border-red-500/25"
+                            : tournament.status === "completed"
+                              ? "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                              : "bg-cyan-500/15 text-cyan-300 border-cyan-500/25"
+                  }`}>
+                    {tournament.status.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                  <span className="text-sm font-semibold text-slate-300">{tournament.game?.name ?? "Unknown Game"}</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
+                  <span className="text-sm text-slate-500">{tournament.format ?? "Solo"}</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
+                  <span className={`text-sm font-semibold ${tournament.isFree ? "text-emerald-400" : "text-amber-400"}`}>
+                    {tournament.isFree ? "Free Entry" : `GHS ${(tournament.entryFee / 100).toFixed(2)}`}
+                  </span>
+                  <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
+                  <span className="text-sm text-slate-500 capitalize">{(tournament.tournamentType ?? "—").replace(/_/g, " ")}</span>
+                </div>
+                {leagueSettings?.fixturesGenerated && !canGenerateLeagueFixtures && (
+                  <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[11px] font-semibold">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Fixtures Generated
+                    {leagueSettings?.currentMatchweek != null && leagueSettings?.totalMatchweeks != null && (
+                      <span className="text-emerald-400/60">· Wk {leagueSettings.currentMatchweek}/{leagueSettings.totalMatchweeks}</span>
+                    )}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Stats strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                {
+                  icon: Users,
+                  label: "Registrants",
+                  value: String(activeRegistrants.length),
+                  sub: `of ${tournament.maxParticipants} max`,
+                  accent: "text-white",
+                  iconColor: "text-slate-400",
+                  iconBg: "bg-slate-800 border-slate-700/50",
+                },
+                {
+                  icon: UserCheck,
+                  label: "Checked In",
+                  value: String(checkedInCount),
+                  sub: `${activeRegistrants.length > 0 ? Math.round((checkedInCount / activeRegistrants.length) * 100) : 0}% ready`,
+                  accent: "text-emerald-400",
+                  iconColor: "text-emerald-400",
+                  iconBg: "bg-emerald-500/10 border-emerald-500/20",
+                },
+                {
+                  icon: Trophy,
+                  label: "Capacity",
+                  value: `${tournament.currentCount}/${tournament.maxParticipants}`,
+                  sub: `${tournament.minParticipants} min required`,
+                  accent: "text-cyan-400",
+                  iconColor: "text-cyan-400",
+                  iconBg: "bg-cyan-500/10 border-cyan-500/20",
+                },
+                {
+                  icon: CalendarDays,
+                  label: "Starts",
+                  value: tournament.schedule.tournamentStart
+                    ? new Date(tournament.schedule.tournamentStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : "TBD",
+                  sub: tournament.schedule.tournamentStart
+                    ? new Date(tournament.schedule.tournamentStart).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+                    : "Date not set",
+                  accent: "text-orange-400",
+                  iconColor: "text-orange-400",
+                  iconBg: "bg-orange-500/10 border-orange-500/20",
+                },
+              ].map(({ icon: Icon, label, value, sub, accent, iconColor, iconBg }) => (
+                <div key={label} className="flex items-center gap-3 bg-slate-800/40 border border-slate-700/40 rounded-2xl px-4 py-3.5 hover:border-slate-600/60 transition-colors">
+                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
+                    <Icon className={`w-4 h-4 ${iconColor}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
+                    <p className={`font-display text-xl font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
+                    <p className="text-[10px] text-slate-600 mt-0.5 truncate">{sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
-      <div className="px-6 py-6 sm:px-8 space-y-5">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 py-6">
         {/* Registration Shortfall Alert */}
         {registrationShortfall && showRegistrationAlert && (
           <div className="rounded-2xl border border-amber-500/30 bg-linear-to-r from-amber-500/10 to-amber-500/5 p-4 flex gap-3">
@@ -1778,15 +1676,19 @@ const TournamentManage = () => {
           </div>
         )}
 
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* ── MAIN column ── */}
+        <div className="flex-1 min-w-0 space-y-5">
+
         {/* League Section (organizer) */}
         {isLeague &&
           !["draft", "cancelled"].includes(tournament.status) &&
           tournament.id && (
             <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30">
+              <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/60 bg-slate-950/20">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
                     <List className="w-4 h-4 text-indigo-400" />
                   </div>
                   <div>
@@ -2154,13 +2056,114 @@ const TournamentManage = () => {
           </div>
         )}
 
-        <div
-          className={`grid gap-5 ${
-            !tournament.isFree && escrowSummary ? "xl:grid-cols-12" : ""
-          }`}
-        >
+          {/* Participants */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div className="flex flex-col gap-3 px-5 py-4 border-b border-slate-800/60 bg-slate-950/20 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center shrink-0">
+                  <Users className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div>
+                  <h2 className="font-display text-sm font-bold text-white leading-tight">
+                    Participants
+                    <span className="ml-2 text-xs font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded-full">
+                      {activeRegistrants.length}
+                    </span>
+                  </h2>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{checkedInCount} checked in</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 sm:flex-none">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search players..."
+                    className="w-full sm:w-44 bg-slate-800/60 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 transition-colors"
+                  />
+                </div>
+                <button
+                  onClick={handleBulkCheckIn}
+                  disabled={actionLoading === "bulk"}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold hover:bg-emerald-500 hover:text-slate-950 hover:border-emerald-500 disabled:opacity-50 transition-colors shrink-0"
+                >
+                  {actionLoading === "bulk" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckSquare className="w-3.5 h-3.5" />}
+                  Bulk Check-In
+                </button>
+              </div>
+            </div>
+            {filteredRegistrants.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+                <div className="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center mb-3">
+                  <Users className="w-5 h-5 text-slate-600" />
+                </div>
+                <p className="text-sm font-medium text-slate-400">{search ? "No players match your search" : "No players registered yet"}</p>
+                {search && (
+                  <button onClick={() => setSearch("")} className="mt-2 text-xs text-cyan-500 hover:text-cyan-400 transition-colors">Clear search</button>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-200">
+                  <thead>
+                    <tr className="border-b border-slate-800/60 bg-slate-950/20">
+                      {["Player", "In-Game ID", "Status", "Registered", "Actions"].map(h => (
+                        <th key={h} className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRegistrants.map(r => (
+                      <RegistrantRow
+                        key={r.registrationId}
+                        registrant={r}
+                        onCheckIn={handleCheckIn}
+                        onUndoCheckIn={handleUndoCheckIn}
+                        onRemove={(userId, displayName) => setRemoveTarget({ userId, displayName })}
+                        isActionLoading={actionLoading === r.userId}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+        </div>{/* end main column */}
+
+        {/* ── SIDEBAR ── */}
+        <div className="w-full lg:w-72 shrink-0 space-y-4 lg:sticky lg:top-6">
+          {/* Tournament Info */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-800/60 bg-slate-950/20">
+              <div className="w-8 h-8 rounded-xl bg-slate-700/60 border border-slate-600/50 flex items-center justify-center">
+                <CalendarDays className="w-4 h-4 text-slate-300" />
+              </div>
+              <h2 className="font-display text-sm font-bold text-white">Tournament Info</h2>
+            </div>
+            <div className="p-4 space-y-2.5">
+              {[
+                { label: "Game", value: tournament.game?.name ?? "—" },
+                { label: "Type", value: (tournament.tournamentType ?? "—").replace(/_/g, " ") },
+                { label: "Format", value: tournament.format ?? "—" },
+                { label: "Entry", value: tournament.isFree ? "Free" : `GHS ${(tournament.entryFee / 100).toFixed(2)}` },
+                { label: "Prize Pool", value: tournament.prizePool ? `GHS ${(tournament.prizePool / 100).toFixed(2)}` : "—" },
+                { label: "Reg. Closes", value: formatDate(tournament.schedule.registrationEnd) },
+                { label: "Starts", value: formatDate(tournament.schedule.tournamentStart) },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-start justify-between gap-3 py-1 border-b border-slate-800/40 last:border-0">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide shrink-0">{label}</span>
+                  <span className="text-[12px] font-medium text-slate-300 text-right capitalize">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Escrow */}
           {!tournament.isFree && escrowSummary && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden xl:col-span-4 xl:order-2 xl:sticky xl:top-24 self-start">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30">
                 <div className="flex items-center gap-2.5">
@@ -2431,125 +2434,10 @@ const TournamentManage = () => {
               </div>
               {/* end p-4 space-y-4 */}
             </div>
-          )}
-
-          {/* Participants Table */}
-          <div
-            className={`rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden ${
-              !tournament.isFree && escrowSummary
-                ? "xl:col-span-8 xl:order-1"
-                : ""
-            }`}
-          >
-            {/* Header */}
-            <div className="flex flex-col gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center shrink-0">
-                  <Users className="w-4 h-4 text-cyan-400" />
-                </div>
-                <div>
-                  <h2 className="font-display text-sm font-bold text-white leading-tight">
-                    Participants
-                    <span className="ml-2 text-xs font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded-full">
-                      {activeRegistrants.length}
-                    </span>
-                  </h2>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    {activeRegistrants.filter((r) => r.checkedIn).length}{" "}
-                    checked in
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Search */}
-                <div className="relative flex-1 sm:flex-none">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search players..."
-                    className="w-full sm:w-44 bg-slate-800/60 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 focus:bg-slate-800 transition-colors"
-                  />
-                </div>
-                {/* Bulk Check-In */}
-                <button
-                  onClick={handleBulkCheckIn}
-                  disabled={actionLoading === "bulk"}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold hover:bg-emerald-500 hover:text-slate-950 hover:border-emerald-500 disabled:opacity-50 transition-colors shrink-0"
-                >
-                  {actionLoading === "bulk" ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <CheckSquare className="w-3.5 h-3.5" />
-                  )}
-                  Bulk Check-In
-                </button>
-              </div>
-            </div>
-
-            {filteredRegistrants.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-                <div className="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center mb-3">
-                  <Users className="w-5 h-5 text-slate-600" />
-                </div>
-                <p className="text-sm font-medium text-slate-400">
-                  {search
-                    ? "No players match your search"
-                    : "No players registered yet"}
-                </p>
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="mt-2 text-xs text-cyan-500 hover:text-cyan-400 transition-colors"
-                  >
-                    Clear search
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-200">
-                  <thead>
-                    <tr className="border-b border-slate-800/60 bg-slate-950/20">
-                      <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                        Player
-                      </th>
-                      <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest min-w-36">
-                        In-Game ID
-                      </th>
-                      <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest min-w-36">
-                        Status
-                      </th>
-                      <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest min-w-48">
-                        Registered
-                      </th>
-                      <th className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRegistrants.map((r) => (
-                      <RegistrantRow
-                        key={r.registrationId}
-                        registrant={r}
-                        onCheckIn={handleCheckIn}
-                        onUndoCheckIn={handleUndoCheckIn}
-                        onRemove={(userId, displayName) =>
-                          setRemoveTarget({ userId, displayName })
-                        }
-                        isActionLoading={actionLoading === r.userId}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-        {/* ── End Content ───────────────────────────────────────────────── */}
-      </div>
+          )}{/* end escrow conditional */}
+        </div>{/* end sidebar */}
+        </div>{/* end flex row */}
+      </div>{/* end content max-w */}
 
       {/* Extend Registration Modal */}
       {showExtendModal && (
