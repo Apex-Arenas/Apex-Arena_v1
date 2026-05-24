@@ -1387,17 +1387,53 @@ const TournamentManage = () => {
 
         <div className="relative max-w-7xl mx-auto">
           {/* ── Top nav bar ── */}
-          <div className="flex items-center justify-between gap-4 px-6 sm:px-8 py-3 border-b border-slate-800/50">
+          <div className="border-b border-slate-800/50">
+            {/* Row 1: back + utility icons */}
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-8 py-3">
             <button
               onClick={() => navigate("/auth/organizer/tournaments")}
               className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors group shrink-0"
             >
               <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-              My Tournaments
+              <span className="hidden xs:inline">My Tournaments</span>
             </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}/tournaments/${tournament.id}`;
+                  if (navigator.share) { void navigator.share({ title: tournament.title, url }); }
+                  else { void navigator.clipboard.writeText(url); showSuccess("Link copied!"); }
+                }}
+                title="Share"
+                className="p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+              {canCancel && (
+                <button
+                  onClick={() => setShowCancelConfirm(true)}
+                  disabled={isCancelling}
+                  title="Cancel tournament"
+                  className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 disabled:opacity-60 transition-colors"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              )}
+              {tournament.status === "draft" && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  title="Delete draft"
+                  className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            </div>
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 flex-wrap justify-end">
+            {/* Row 2: action buttons — horizontally scrollable on mobile */}
+            <div className="flex items-center gap-2 px-4 sm:px-8 pb-3 overflow-x-auto scrollbar-none">
+            <div className="flex items-center gap-2 flex-nowrap">
               {canPublish && (
                 <button
                   onClick={handlePublish}
@@ -1422,7 +1458,7 @@ const TournamentManage = () => {
                 <button
                   onClick={() => void handleRecalculateStandings()}
                   disabled={isRecalculating}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 text-xs font-medium hover:border-slate-500 hover:text-white disabled:opacity-60 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 text-xs font-medium hover:border-slate-500 hover:text-white disabled:opacity-60 transition-colors"
                 >
                   {isRecalculating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                   {isRecalculating ? "Recalculating…" : "Recalculate Table"}
@@ -1458,17 +1494,6 @@ const TournamentManage = () => {
                     <span className="hidden sm:inline">{isGeneratingBracket ? "Generating…" : hasBracketGenerated ? "Bracket Ready" : "Generate Bracket"}</span>
                     <span className="sm:hidden">{hasBracketGenerated ? "Ready" : "Generate"}</span>
                   </button>
-                  {hasBracketGenerated && canGenerateBracket && (
-                    <button
-                      onClick={() => void handleGenerateBracket(true)}
-                      disabled={isGeneratingBracket}
-                      title="Regenerate bracket"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-bold hover:bg-amber-500/20 disabled:opacity-60 transition-all"
-                    >
-                      {isGeneratingBracket ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                      <span className="hidden sm:inline">Regenerate</span>
-                    </button>
-                  )}
                 </div>
               )}
               {canDepositPrizePool && (
@@ -1490,50 +1515,20 @@ const TournamentManage = () => {
                   {canSubmitWinners ? "Submit Winners" : "Review Winners"}
                 </button>
               )}
-              <div className="w-px h-4 bg-slate-700/60 hidden sm:block" />
-              <button
-                onClick={() => {
-                  const url = `${window.location.origin}/tournaments/${tournament.id}`;
-                  if (navigator.share) { void navigator.share({ title: tournament.title, url }); }
-                  else { void navigator.clipboard.writeText(url); showSuccess("Link copied!"); }
-                }}
-                title="Share"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 transition-colors"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-              {canCancel && (
-                <button
-                  onClick={() => setShowCancelConfirm(true)}
-                  disabled={isCancelling}
-                  title="Cancel tournament"
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 disabled:opacity-60 transition-colors"
-                >
-                  <XCircle className="w-4 h-4" />
-                </button>
-              )}
-              {tournament.status === "draft" && (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  title="Delete draft"
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
+            </div>{/* end flex-nowrap */}
+            </div>{/* end row 2 */}
+          </div>{/* end nav bar */}
 
           {/* ── Hero body ── */}
-          <div className="px-6 sm:px-8 pt-5 pb-6 space-y-5">
+          <div className="px-4 sm:px-8 pt-5 pb-5 space-y-4">
             {/* Title + status */}
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0 shadow-lg">
-                <Trophy className="w-6 h-6 text-cyan-400" />
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
+                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="font-display text-2xl sm:text-3xl font-bold text-white leading-tight">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="font-display text-xl sm:text-3xl font-bold text-white leading-tight">
                     {tournament.title}
                   </h1>
                   <span className={`shrink-0 text-[11px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border ${
@@ -1576,7 +1571,7 @@ const TournamentManage = () => {
             </div>
 
             {/* Stats strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               {[
                 {
                   icon: Users,
@@ -1619,14 +1614,14 @@ const TournamentManage = () => {
                   iconBg: "bg-orange-500/10 border-orange-500/20",
                 },
               ].map(({ icon: Icon, label, value, sub, accent, iconColor, iconBg }) => (
-                <div key={label} className="flex items-center gap-3 bg-slate-800/40 border border-slate-700/40 rounded-2xl px-4 py-3.5 hover:border-slate-600/60 transition-colors">
-                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
-                    <Icon className={`w-4 h-4 ${iconColor}`} />
+                <div key={label} className="flex items-center gap-2.5 sm:gap-3 bg-slate-800/40 border border-slate-700/40 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3.5 hover:border-slate-600/60 transition-colors">
+                  <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
+                    <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${iconColor}`} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
-                    <p className={`font-display text-xl font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
-                    <p className="text-[10px] text-slate-600 mt-0.5 truncate">{sub}</p>
+                    <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
+                    <p className={`font-display text-lg sm:text-xl font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
+                    <p className="text-[9px] sm:text-[10px] text-slate-600 mt-0.5 truncate">{sub}</p>
                   </div>
                 </div>
               ))}
@@ -1636,7 +1631,7 @@ const TournamentManage = () => {
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Registration Shortfall Alert */}
         {registrationShortfall && showRegistrationAlert && (
           <div className="rounded-2xl border border-amber-500/30 bg-linear-to-r from-amber-500/10 to-amber-500/5 p-4 flex gap-3">
@@ -1676,7 +1671,7 @@ const TournamentManage = () => {
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-start mt-4 sm:mt-5">
         {/* ── MAIN column ── */}
         <div className="flex-1 min-w-0 space-y-5">
 
@@ -1686,7 +1681,7 @@ const TournamentManage = () => {
           tournament.id && (
             <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/60 bg-slate-950/20">
+              <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4 border-b border-slate-800/60 bg-slate-950/20">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
                     <List className="w-4 h-4 text-indigo-400" />
@@ -1735,8 +1730,8 @@ const TournamentManage = () => {
                   </div>
                 </div>
               ) : (
-                <div className="p-5 space-y-5">
-                  <div className="grid grid-cols-3 gap-3">
+                <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {[
                       {
                         label: "Current Week",
@@ -1785,7 +1780,7 @@ const TournamentManage = () => {
         {(hasBracketGenerated || canGenerateBracket) && (
           <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/60">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4 border-b border-slate-800/60">
               <div className="flex items-center gap-2.5">
                 <Trophy className="w-4 h-4 text-cyan-400 shrink-0" />
                 <h2 className="font-display text-sm font-bold text-white">Bracket</h2>
@@ -1824,7 +1819,7 @@ const TournamentManage = () => {
             </div>
 
             {hasBracketGenerated ? (
-              <div className="px-5 py-4 space-y-4">
+              <div className="px-4 py-3 sm:px-5 sm:py-4 space-y-3 sm:space-y-4">
                 {/* Progress bar + inline stats */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -1902,7 +1897,7 @@ const TournamentManage = () => {
         {tournament.status === "completed" && (
           <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4 border-b border-slate-800/80 bg-slate-950/30">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
                   <Trophy className="w-4 h-4 text-amber-400" />
@@ -1927,10 +1922,10 @@ const TournamentManage = () => {
                 <span className="text-sm text-slate-500">Loading results…</span>
               </div>
             ) : tournamentResults && tournamentResults.length > 0 ? (
-              <div className="p-5 space-y-4">
+              <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
                 {/* Podium cards for top 3 */}
                 {tournamentResults.slice(0, 3).length > 0 && (
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {[
                       {
                         pos: 1,
@@ -2105,29 +2100,74 @@ const TournamentManage = () => {
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-200">
-                  <thead>
-                    <tr className="border-b border-slate-800/60 bg-slate-950/20">
-                      {["Player", "In-Game ID", "Status", "Registered", "Actions"].map(h => (
-                        <th key={h} className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">{h}</th>
+              <>
+                {/* Mobile card list — visible below sm */}
+                <div className="sm:hidden divide-y divide-slate-800/50">
+                  {filteredRegistrants.map(r => (
+                    <div key={r.registrationId} className="px-4 py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-white truncate">{r.displayName}</p>
+                        <p className="text-xs text-slate-500 truncate">{r.inGameId} · @{r.username}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${STATUS_COLORS[r.status] ?? "bg-slate-700/30 text-slate-400 border-slate-700"}`}>
+                          {r.status.replace(/_/g, " ")}
+                        </span>
+                        {r.checkedIn ? (
+                          <button
+                            onClick={() => void handleUndoCheckIn(r.userId)}
+                            disabled={actionLoading === r.userId}
+                            className="p-1.5 rounded-lg text-emerald-400 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50 transition-colors"
+                            title="Undo check-in"
+                          >
+                            {actionLoading === r.userId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => void handleCheckIn(r.userId)}
+                            disabled={actionLoading === r.userId}
+                            className="p-1.5 rounded-lg text-slate-500 hover:bg-emerald-500/10 hover:text-emerald-400 disabled:opacity-50 transition-colors"
+                            title="Check in"
+                          >
+                            {actionLoading === r.userId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setRemoveTarget({ userId: r.userId, displayName: r.displayName })}
+                          className="p-1.5 rounded-lg text-slate-600 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                          title="Remove player"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop table — visible from sm up */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full min-w-[640px]">
+                    <thead>
+                      <tr className="border-b border-slate-800/60 bg-slate-950/20">
+                        {["Player", "In-Game ID", "Status", "Registered", "Actions"].map(h => (
+                          <th key={h} className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRegistrants.map(r => (
+                        <RegistrantRow
+                          key={r.registrationId}
+                          registrant={r}
+                          onCheckIn={handleCheckIn}
+                          onUndoCheckIn={handleUndoCheckIn}
+                          onRemove={(userId, displayName) => setRemoveTarget({ userId, displayName })}
+                          isActionLoading={actionLoading === r.userId}
+                        />
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRegistrants.map(r => (
-                      <RegistrantRow
-                        key={r.registrationId}
-                        registrant={r}
-                        onCheckIn={handleCheckIn}
-                        onUndoCheckIn={handleUndoCheckIn}
-                        onRemove={(userId, displayName) => setRemoveTarget({ userId, displayName })}
-                        isActionLoading={actionLoading === r.userId}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
 
