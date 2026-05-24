@@ -267,11 +267,23 @@ function MatchCard({
     ? "border-amber-500/30 shadow-[0_0_20px_rgba(251,191,36,0.08)]"
     : "border-slate-700/60";
 
-  const renderScore = (total: number | null, isWinner: boolean) => {
+  const renderScore = (regular: number | null, pen: number | null, isWinner: boolean) => {
     if (!hasScores) return <span className="text-slate-700">—</span>;
+    if (pen !== null) {
+      return (
+        <div className="flex items-center gap-1 shrink-0">
+          <span className={`text-xs font-bold tabular-nums ${isWinner ? "text-orange-300" : "text-slate-500"}`}>
+            {regular ?? "—"}
+          </span>
+          <span className="text-[9px] text-amber-500/80 font-bold tabular-nums">
+            ({pen})
+          </span>
+        </div>
+      );
+    }
     return (
       <span className={`text-xs font-bold tabular-nums shrink-0 ${isWinner ? "text-orange-300" : "text-slate-600"}`}>
-        {total ?? "—"}
+        {regular ?? "—"}
       </span>
     );
   };
@@ -280,12 +292,26 @@ function MatchCard({
   const hasLegData = isTwoLeg && (p1Leg1 !== null || p2Leg1 !== null || p1Leg2 !== null || p2Leg2 !== null);
   const p1Agg = hasLegData ? ((p1Leg1 ?? 0) + (p1Leg2 ?? 0)) : null;
   const p2Agg = hasLegData ? ((p2Leg1 ?? 0) + (p2Leg2 ?? 0)) : null;
-  // penalties
+  // penalties from games array (two-leg format)
   const games = match.games ?? [];
   const penGame = games.find((g) => g.game_number === 3);
   const penScores = (penGame?.scores ?? []) as { participant_id?: string; score?: number }[];
   const p1Pen = penScores[0]?.score ?? null;
   const p2Pen = penScores[1]?.score ?? null;
+
+  // Penalty override: parse "Regular time: X–Y · Penalties: P1–P2" from admin_override.reason
+  const penaltyOverride = (() => {
+    const raw = match as Record<string, unknown>;
+    const adminOverride = raw.admin_override as Record<string, unknown> | undefined;
+    const r = String(
+      adminOverride?.reason ?? match.reason ?? raw.score_note ?? raw.override_reason ?? ""
+    );
+    const m = r.match(/Regular time:\s*(\d+)[-\u2013](\d+).*?Penalties:\s*(\d+)[-\u2013](\d+)/i);
+    if (!m) return null;
+    return { rt1: Number(m[1]), rt2: Number(m[2]), pen1: Number(m[3]), pen2: Number(m[4]) };
+  })();
+  const displayP1 = penaltyOverride ? penaltyOverride.rt1 : p1Total;
+  const displayP2 = penaltyOverride ? penaltyOverride.rt2 : p2Total;
 
   return (
     <div
@@ -321,7 +347,7 @@ function MatchCard({
             </span>
           )}
         </div>
-        {renderScore(p1Total, p1Win)}
+        {renderScore(displayP1, penaltyOverride ? penaltyOverride.pen1 : null, p1Win)}
       </div>
 
       <div className="h-px bg-slate-800/80 mx-2" />
@@ -347,7 +373,7 @@ function MatchCard({
             </span>
           )}
         </div>
-        {renderScore(p2Total, p2Win)}
+        {renderScore(displayP2, penaltyOverride ? penaltyOverride.pen2 : null, p2Win)}
       </div>
 
       {/* ── Two-leg score breakdown (dropdown) ── */}

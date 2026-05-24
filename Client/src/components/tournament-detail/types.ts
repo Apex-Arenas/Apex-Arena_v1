@@ -42,6 +42,7 @@ export interface BracketMatch {
   result_reported_at?: string;
   result_confirmed_by?: string | { _id?: string; id?: string };
   result_confirmed_at?: string;
+  reason?: string;
   dispute?: BracketDispute;
   player1?: Record<string, unknown>;
   player2?: Record<string, unknown>;

@@ -140,6 +140,7 @@ export interface FullMatch {
   player2Result: string;
   player2IsReady: boolean;
   winnerId?: string;
+  reason?: string;
   resultReportedBy?: string;
   resultConfirmationDeadline?: string;
   isDisputed: boolean;
@@ -1079,6 +1080,7 @@ export const tournamentService = {
       player2Result: String(p2.result ?? 'pending'),
       player2IsReady: Boolean(p2.is_ready),
       winnerId: m.winner_id ? extractId(m.winner_id) : undefined,
+      reason: ((m.admin_override as Record<string, unknown> | undefined)?.reason ?? m.reason ?? m.score_note ?? m.override_reason) as string | undefined,
       resultReportedBy: m.result_reported_by ? extractId(m.result_reported_by) : undefined,
       resultConfirmationDeadline: m.result_confirmation_deadline as string | undefined,
       isDisputed: Boolean((m.dispute as Record<string, unknown> | undefined)?.is_disputed ?? false),
