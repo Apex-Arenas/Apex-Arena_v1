@@ -219,6 +219,8 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
   const [isDraw, setIsDraw] = useState(false);
   const [score1, setScore1] = useState('');
   const [score2, setScore2] = useState('');
+  const [penaltyScore1, setPenaltyScore1] = useState('');
+  const [penaltyScore2, setPenaltyScore2] = useState('');
   const [screenshotUrl, setScreenshotUrl] = useState('');
   const [showDisputeForm, setShowDisputeForm] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
@@ -246,7 +248,13 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
     return () => clearInterval(id);
   }, [match?.resultReportedBy, match?.status]);
 
-  useEffect(() => { if (isDraw && !scoresEqual) setIsDraw(false); }, [score1, score2]);
+  useEffect(() => {
+    if (!scoresEqual) {
+      if (isDraw) setIsDraw(false);
+      setPenaltyScore1('');
+      setPenaltyScore2('');
+    }
+  }, [score1, score2]);
 
   useEffect(() => {
     if (countdown !== 0 || autoConfirmedRef.current) return;
@@ -349,6 +357,53 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
           </button>
         )}
 
+        {/* Penalty shootout — appears when scores are equal */}
+        {scoresEqual && (() => {
+          const p1 = parseInt(penaltyScore1, 10);
+          const p2 = parseInt(penaltyScore2, 10);
+          const penaltiesEntered = penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2);
+          return (
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 space-y-2.5">
+              <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Penalty Shootout</p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 space-y-1">
+                  <p className="text-[10px] text-slate-500 text-center truncate">{match!.player1Name}</p>
+                  <input
+                    type="number" min="0" value={penaltyScore1}
+                    onChange={e => {
+                      setPenaltyScore1(e.target.value);
+                      setIsDraw(false);
+                    }}
+                    placeholder="0"
+                    className="w-full text-center bg-slate-800/60 border border-amber-500/30 rounded-xl px-2 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400/60 transition-colors"
+                  />
+                </div>
+                <span className="text-slate-600 font-bold text-sm shrink-0 mt-5">—</span>
+                <div className="flex-1 space-y-1">
+                  <p className="text-[10px] text-slate-500 text-center truncate">{match!.player2Name}</p>
+                  <input
+                    type="number" min="0" value={penaltyScore2}
+                    onChange={e => {
+                      setPenaltyScore2(e.target.value);
+                      setIsDraw(false);
+                    }}
+                    placeholder="0"
+                    className="w-full text-center bg-slate-800/60 border border-amber-500/30 rounded-xl px-2 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400/60 transition-colors"
+                  />
+                </div>
+              </div>
+              {penaltiesEntered && p1 === p2 && (
+                <p className="text-[11px] text-rose-400">Penalty scores must not be equal — a winner is required.</p>
+              )}
+              {penaltiesEntered && p1 !== p2 && (
+                <p className="text-[11px] text-amber-300 font-semibold">
+                  {p1 > p2 ? match!.player1Name : match!.player2Name} wins on penalties
+                </p>
+              )}
+            </div>
+          );
+        })()}
+
         <div className="space-y-1.5">
           <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
             Screenshot proof <span className="text-red-400">*</span>
@@ -357,13 +412,31 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
         </div>
 
         <button
-          onClick={() => doAction(() => tournamentService.submitMatchResult(
-            matchId,
-            isDraw ? null : selectedWinnerId!,
-            { screenshots: [screenshotUrl] },
-            { player1: Number(score1), player2: Number(score2) }
-          ))}
-          disabled={submitting || (!isDraw && !selectedWinnerId) || !screenshotUrl || score1 === '' || score2 === ''}
+          onClick={() => {
+            const p1 = parseInt(penaltyScore1, 10);
+            const p2 = parseInt(penaltyScore2, 10);
+            const hasPenalties = scoresEqual && penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2) && p1 !== p2;
+            const winnerId = hasPenalties
+              ? (p1 > p2 ? match!.player1Id : match!.player2Id)
+              : (isDraw ? null : selectedWinnerId!);
+            doAction(() => tournamentService.submitMatchResult(
+              matchId,
+              winnerId,
+              { screenshots: [screenshotUrl] },
+              { player1: Number(score1), player2: Number(score2) }
+            ));
+          }}
+          disabled={(() => {
+            if (submitting || !screenshotUrl || score1 === '' || score2 === '') return true;
+            if (scoresEqual) {
+              const p1 = parseInt(penaltyScore1, 10);
+              const p2 = parseInt(penaltyScore2, 10);
+              const hasPenalties = penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2) && p1 !== p2;
+              // equal scores require either draw selection or valid penalties
+              return !isDraw && !hasPenalties;
+            }
+            return !selectedWinnerId;
+          })()}
           className="w-full py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 font-bold text-sm transition-all hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
