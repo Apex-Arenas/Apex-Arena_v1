@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
   X, Loader2, AlertTriangle, Shield, Trophy, CheckCircle2,
-  ExternalLink, Gavel, Clock, Swords, Play, UserX, XCircle, ChevronDown,
+  ExternalLink, Gavel, Clock, Swords, Play, UserX, XCircle, ChevronDown, Edit3, Gamepad2,
 } from 'lucide-react';
 import { tournamentService } from '../../services/tournament.service';
 import type { FullMatch } from '../../services/tournament.service';
 import { organizerService } from '../../services/organizer.service';
+import { MatchActionModal } from './MatchActionModal';
 
 interface Props {
   matchId: string;
+  currentUserId?: string;
+  currentMatchweek?: number;
   onClose: () => void;
   onActionComplete: () => void;
 }
@@ -48,11 +51,12 @@ function PlayerCard({
   );
 }
 
-export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Props) {
+export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, onClose, onActionComplete }: Props) {
   const [match, setMatch] = useState<FullMatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPlayerModal, setShowPlayerModal] = useState(false);
 
   // Resolve form state
   const [resolveWinnerId, setResolveWinnerId] = useState<string | null>(null);
@@ -62,6 +66,10 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
   const [forfeitPlayerId, setForfeitPlayerId] = useState<string | null>(null);
   const [showForfeit, setShowForfeit] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const [showSetScore, setShowSetScore] = useState(false);
+  const [setScoreVal1, setSetScoreVal1] = useState('');
+  const [setScoreVal2, setSetScoreVal2] = useState('');
+  const [setScoreReason, setSetScoreReason] = useState('');
 
   useEffect(() => {
     tournamentService.getMatch(matchId).then(data => {
@@ -121,6 +129,22 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
       onClose();
     } catch (e: any) {
       setError(e.message ?? 'Failed to cancel match.');
+      setSubmitting(false);
+    }
+  }
+
+  async function handleSetScore() {
+    const s1 = parseInt(setScoreVal1, 10);
+    const s2 = parseInt(setScoreVal2, 10);
+    if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await organizerService.setMatchScore(matchId, s1, s2, setScoreReason);
+      onActionComplete();
+      onClose();
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to set score.');
       setSubmitting(false);
     }
   }
@@ -256,6 +280,66 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
               </a>
             </div>
           )}
+
+          {/* Override score on completed match */}
+          <div className="border-t border-slate-800 pt-3">
+            <button
+              onClick={() => setShowSetScore((v) => !v)}
+              className="w-full flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-sm font-semibold hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <Edit3 className="w-4 h-4" />
+                Override Score
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${showSetScore ? 'rotate-180' : ''}`} />
+            </button>
+            {showSetScore && (
+              <div className="mt-2 p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 space-y-3">
+                <p className="text-xs text-slate-400">Overwrite the recorded score for this match.</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[10px] text-slate-500 font-medium truncate">{match.player1Name}</p>
+                    <input
+                      type="number"
+                      min={0}
+                      value={setScoreVal1}
+                      onChange={e => setSetScoreVal1(e.target.value)}
+                      placeholder={String(match.player1Score)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <span className="text-slate-600 font-bold text-sm mt-4">–</span>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[10px] text-slate-500 font-medium truncate">{match.player2Name}</p>
+                    <input
+                      type="number"
+                      min={0}
+                      value={setScoreVal2}
+                      onChange={e => setSetScoreVal2(e.target.value)}
+                      placeholder={String(match.player2Score)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={setScoreReason}
+                  onChange={e => setSetScoreReason(e.target.value)}
+                  placeholder="Reason (optional)"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                />
+                {error && <p className="text-xs text-red-400">{error}</p>}
+                <button
+                  onClick={handleSetScore}
+                  disabled={submitting || setScoreVal1 === '' || setScoreVal2 === ''}
+                  className="w-full py-2 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Edit3 className="w-3.5 h-3.5" />}
+                  Confirm Override
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       );
     }
@@ -286,6 +370,20 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
           <PlayerCard name={match.player2Name} />
         </div>
 
+        {/* ── Player actions (when organizer is also a participant) ── */}
+        {currentUserId && (match.player1Id === currentUserId || match.player2Id === currentUserId) && (
+          <div className="border-t border-slate-800 pt-4">
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3">Your Match</p>
+            <button
+              onClick={() => setShowPlayerModal(true)}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-sm font-semibold hover:bg-emerald-500/20 hover:border-emerald-500/40 transition-all"
+            >
+              <Gamepad2 className="w-4 h-4" />
+              Submit / View as Player
+            </button>
+          </div>
+        )}
+
         {/* ── Organizer actions ── */}
         <div className="border-t border-slate-800 pt-4 space-y-2">
           <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-3">Organizer Actions</p>
@@ -301,6 +399,65 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
               Start Match Now
             </button>
           )}
+
+          {/* Set Score */}
+          <div>
+            <button
+              onClick={() => setShowSetScore((v) => !v)}
+              className="w-full flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-sm font-semibold hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <Edit3 className="w-4 h-4" />
+                Set Score Manually
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${showSetScore ? 'rotate-180' : ''}`} />
+            </button>
+            {showSetScore && (
+              <div className="mt-2 p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 space-y-3">
+                <p className="text-xs text-slate-400">Enter the final score for each player.</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[10px] text-slate-500 font-medium truncate">{match?.player1Name}</p>
+                    <input
+                      type="number"
+                      min={0}
+                      value={setScoreVal1}
+                      onChange={e => setSetScoreVal1(e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <span className="text-slate-600 font-bold text-sm mt-4">–</span>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[10px] text-slate-500 font-medium truncate">{match?.player2Name}</p>
+                    <input
+                      type="number"
+                      min={0}
+                      value={setScoreVal2}
+                      onChange={e => setSetScoreVal2(e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={setScoreReason}
+                  onChange={e => setSetScoreReason(e.target.value)}
+                  placeholder="Reason (optional)"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  onClick={handleSetScore}
+                  disabled={submitting || setScoreVal1 === '' || setScoreVal2 === ''}
+                  className="w-full py-2 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Edit3 className="w-3.5 h-3.5" />}
+                  Confirm Score
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Forfeit (no-show) */}
           <div>
@@ -418,6 +575,20 @@ export function OrganizerMatchModal({ matchId, onClose, onActionComplete }: Prop
           ) : renderContent()}
         </div>
       </div>
+
+      {/* Nested player modal — rendered on top when organizer acts as player */}
+      {showPlayerModal && currentUserId && (
+        <MatchActionModal
+          matchId={matchId}
+          currentUserId={currentUserId}
+          currentMatchweek={currentMatchweek}
+          onClose={() => setShowPlayerModal(false)}
+          onActionComplete={() => {
+            setShowPlayerModal(false);
+            onActionComplete();
+          }}
+        />
+      )}
     </div>
   );
 }
