@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   X, Loader2, AlertTriangle, Swords, Clock,
-  Shield, Trophy, CheckCheck, Flag, Timer, Crown,
+  Shield, Trophy, CheckCheck, Flag, Timer, Crown, Edit3, ChevronDown,
 } from 'lucide-react';
 import { tournamentService } from '../../services/tournament.service';
 import type { FullMatch } from '../../services/tournament.service';
 import ImageUploadDropzone from '../ImageUploadDropzone';
+import { organizerService } from '../../services/organizer.service';
 
 interface Props {
   matchId: string;
   currentUserId: string;
   currentMatchweek?: number;
+  isOrganizer?: boolean;
   onClose: () => void;
   onActionComplete: () => void;
 }
@@ -158,12 +160,36 @@ function ScoreDisplay({ s1, s2, n1, n2, p1Won, p2Won }: {
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
-export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onClose, onActionComplete }: Props) {
+export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isOrganizer, onClose, onActionComplete }: Props) {
   const [match, setMatch] = useState<FullMatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoConfirmedRef = useRef(false);
+
+  // Organizer score override
+  const [showScoreOverride, setShowScoreOverride] = useState(false);
+  const [overrideS1, setOverrideS1] = useState('');
+  const [overrideS2, setOverrideS2] = useState('');
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overriding, setOverriding] = useState(false);
+  const [overrideError, setOverrideError] = useState<string | null>(null);
+
+  async function handleScoreOverride() {
+    const s1 = parseInt(overrideS1, 10);
+    const s2 = parseInt(overrideS2, 10);
+    if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return;
+    setOverriding(true);
+    setOverrideError(null);
+    try {
+      await organizerService.setMatchScore(matchId, s1, s2, overrideReason);
+      onActionComplete();
+      onClose();
+    } catch (e: any) {
+      setOverrideError(e.message ?? 'Failed to set score.');
+      setOverriding(false);
+    }
+  }
 
   const [selectedWinnerId, setSelectedWinnerId] = useState<string | null>(null);
   const [isDraw, setIsDraw] = useState(false);
@@ -393,6 +419,70 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, onC
           <p className="text-center text-[11px] text-slate-600 uppercase tracking-widest">
             {p1Won ? `${match.player1Name} advances` : p2Won ? `${match.player2Name} advances` : 'Match finalised'}
           </p>
+
+          {/* Organizer score override */}
+          {isOrganizer && (
+            <div className="mt-5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 overflow-hidden">
+              {/* header */}
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-indigo-500/15 bg-indigo-500/10">
+                <div className="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+                  <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-widest text-indigo-300">Override Score</span>
+              </div>
+
+              <div className="px-4 py-4 space-y-3">
+                {/* score inputs */}
+                <div className="flex items-end gap-3">
+                  <div className="flex-1 space-y-1.5">
+                    <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player1Name}</p>
+                    <input
+                      type="number"
+                      min={0}
+                      value={overrideS1}
+                      onChange={e => setOverrideS1(e.target.value)}
+                      placeholder={String(match.player1Score ?? 0)}
+                      className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-colors placeholder:text-slate-700"
+                    />
+                  </div>
+                  <div className="pb-3 text-slate-600 font-bold text-xl select-none">–</div>
+                  <div className="flex-1 space-y-1.5">
+                    <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player2Name}</p>
+                    <input
+                      type="number"
+                      min={0}
+                      value={overrideS2}
+                      onChange={e => setOverrideS2(e.target.value)}
+                      placeholder={String(match.player2Score ?? 0)}
+                      className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-colors placeholder:text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                {/* reason */}
+                <input
+                  type="text"
+                  value={overrideReason}
+                  onChange={e => setOverrideReason(e.target.value)}
+                  placeholder="Reason for override (optional)"
+                  className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-colors"
+                />
+
+                {overrideError && (
+                  <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{overrideError}</p>
+                )}
+
+                <button
+                  onClick={handleScoreOverride}
+                  disabled={overriding || overrideS1 === '' || overrideS2 === ''}
+                  className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-500 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
+                >
+                  {overriding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Edit3 className="w-4 h-4" />}
+                  Confirm Override
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
