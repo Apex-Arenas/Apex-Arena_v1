@@ -138,6 +138,7 @@ export const TOURNAMENT_ENDPOINTS = {
   MATCH_READY: `${API_BASE_URLS.TOURNAMENT}/matches`,                     // + /:matchId/ready
   MATCH_FORFEIT: `${API_BASE_URLS.TOURNAMENT}/matches`,                   // + /:matchId/forfeit
   MATCH_CANCEL: `${API_BASE_URLS.TOURNAMENT}/matches`,                    // + /:matchId/cancel
+  MATCH_SET_SCORE: `${API_BASE_URLS.TOURNAMENT}/matches`,                 // + /:matchId/set-score
 
   // Match Sessions
   MATCH_SESSION: `${API_BASE_URLS.TOURNAMENT}/matches`,                   // + /:matchId/session
