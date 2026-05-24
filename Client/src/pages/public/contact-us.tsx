@@ -99,7 +99,7 @@ const ContactUs = () => {
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
         <div className="absolute -top-40 right-0 w-175 h-100 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
@@ -204,7 +204,7 @@ const ContactUs = () => {
             </div>
             <div className="divide-y divide-slate-800/60">
               <div className="flex items-center gap-3 px-5 py-4">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500/15 to-indigo-500/15 border border-slate-700/60 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-linear-to-br from-violet-500/15 to-indigo-500/15 border border-slate-700/60 flex items-center justify-center shrink-0">
                   <Mail className="w-4 h-4 text-violet-400" />
                 </div>
                 <div className="min-w-0">
@@ -213,7 +213,7 @@ const ContactUs = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3 px-5 py-4">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500/15 to-orange-500/15 border border-slate-700/60 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-linear-to-br from-amber-500/15 to-orange-500/15 border border-slate-700/60 flex items-center justify-center shrink-0">
                   <PhoneCall className="w-4 h-4 text-amber-400" />
                 </div>
                 <div className="min-w-0">
@@ -222,7 +222,7 @@ const ContactUs = () => {
                 </div>
               </div>
               <div className="flex items-start gap-3 px-5 py-4">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500/15 to-teal-500/15 border border-slate-700/60 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-9 h-9 rounded-lg bg-linear-to-br from-cyan-500/15 to-teal-500/15 border border-slate-700/60 flex items-center justify-center shrink-0 mt-0.5">
                   <MessageCircle className="w-4 h-4 text-cyan-400" />
                 </div>
                 <div className="min-w-0">

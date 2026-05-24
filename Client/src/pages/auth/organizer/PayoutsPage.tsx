@@ -137,7 +137,7 @@ export default function PayoutsPage() {
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
         <div className="absolute -top-40 right-0 w-175 h-100 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
@@ -165,7 +165,7 @@ export default function PayoutsPage() {
               { icon: Clock3,        iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15",  label: "Pending",        value: loading ? "—" : (totalPending > 0 ? `GHS ${totalPending.toFixed(2)}` : "—") },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-2 sm:gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-3">
-                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
                   <s.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${s.iconColor}`} />
                 </div>
                 <div className="min-w-0">

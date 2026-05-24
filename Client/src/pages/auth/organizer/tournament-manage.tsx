@@ -349,7 +349,7 @@ function getEscrowStageVisual(state: EscrowStageState): {
   if (state === "completed") {
     return {
       cardClass:
-        "border-emerald-400/35 bg-gradient-to-br from-emerald-500/20 via-emerald-500/10 to-transparent text-emerald-100",
+        "border-emerald-400/35 bg-linear-to-br from-emerald-500/20 via-emerald-500/10 to-transparent text-emerald-100",
       dotClass: "bg-emerald-300",
       badgeClass:
         "bg-emerald-500/20 text-emerald-200 border border-emerald-400/30",
@@ -360,7 +360,7 @@ function getEscrowStageVisual(state: EscrowStageState): {
   if (state === "active") {
     return {
       cardClass:
-        "border-cyan-400/35 bg-gradient-to-br from-cyan-500/20 via-cyan-500/10 to-transparent text-cyan-100",
+        "border-cyan-400/35 bg-linear-to-br from-cyan-500/20 via-cyan-500/10 to-transparent text-cyan-100",
       dotClass: "bg-cyan-300 animate-pulse",
       badgeClass: "bg-cyan-500/20 text-cyan-200 border border-cyan-400/30",
       label: "In Progress",
@@ -1318,7 +1318,7 @@ const TournamentManage = () => {
       <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
         {/* Background effects */}
         <div className="absolute -top-40 right-0 w-175 h-100 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto">
@@ -1374,7 +1374,7 @@ const TournamentManage = () => {
                 <button
                   onClick={handlePublish}
                   disabled={isPublishing}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 text-xs font-bold hover:opacity-90 disabled:opacity-60 transition-all shadow-md shadow-orange-500/20"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-to-r from-orange-500 to-amber-500 text-slate-950 text-xs font-bold hover:opacity-90 disabled:opacity-60 transition-all shadow-md shadow-orange-500/20"
                 >
                   {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                   Publish
@@ -1459,7 +1459,7 @@ const TournamentManage = () => {
           <div className="px-4 sm:px-8 pt-5 pb-5 space-y-4">
             {/* Title + status */}
             <div className="flex items-start gap-3 sm:gap-4">
-              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-linear-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
                 <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
               </div>
               <div className="flex-1 min-w-0">
@@ -1772,7 +1772,7 @@ const TournamentManage = () => {
                       className={`h-full rounded-full transition-all duration-700 ${
                         bracketCompletionPercent === 100
                           ? "bg-emerald-400"
-                          : "bg-gradient-to-r from-cyan-500 to-indigo-500"
+                          : "bg-linear-to-r from-cyan-500 to-indigo-500"
                       }`}
                       style={{ width: `${bracketCompletionPercent || 0}%` }}
                     />
@@ -2081,7 +2081,7 @@ const TournamentManage = () => {
                 </div>
                 {/* Desktop table — visible from sm up */}
                 <div className="hidden sm:block overflow-x-auto">
-                  <table className="w-full min-w-[640px]">
+                  <table className="w-full min-w-160">
                     <thead>
                       <tr className="border-b border-slate-800/60 bg-slate-950/20">
                         {["Player", "In-Game ID", "Status", "Registered", "Actions"].map(h => (
