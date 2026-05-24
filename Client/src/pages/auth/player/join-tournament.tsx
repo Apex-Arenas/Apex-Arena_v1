@@ -288,7 +288,7 @@ const JoinTournament = () => {
   const TABS: { id: ActiveTab; label: string; shortLabel: string; count?: number }[] = [
     { id: "registrations",  label: "My Registrations", shortLabel: "My Reg.", count: isLoadingRegistrations ? undefined : upcomingRegistrations.length },
     { id: "my-tournaments", label: "Active",           shortLabel: "Active", count: isLoadingRegistrations ? undefined : activeTournaments.length },
-    { id: "browse",         label: "Browse",           shortLabel: "Browse" },
+    { id: "browse",         label: "Browse",           shortLabel: "Browse", count: isLoading ? undefined : tournaments.length },
   ];
 
   return (

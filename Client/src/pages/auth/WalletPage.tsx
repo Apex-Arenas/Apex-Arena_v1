@@ -391,6 +391,8 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
 
 // ─── WalletPage ───────────────────────────────────────────────────────────────
 
+const TX_PAGE_SIZE = 10;
+
 export default function WalletPage() {
   const [wallet, setWallet]       = useState<WalletBalance | null>(null);
   const [transactions, setTransactions] = useState<TxRecord[]>([]);
@@ -398,6 +400,7 @@ export default function WalletPage() {
   const [loading, setLoading]     = useState(true);
   const [modal, setModal]         = useState<ModalView>(null);
   const [successMsg, setSuccessMsg] = useState("");
+  const [txPage, setTxPage]       = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -420,6 +423,7 @@ export default function WalletPage() {
       if (txRes.success) {
         const d = txRes.data as Record<string, unknown>;
         const raw = Array.isArray(d) ? d : ((d.transactions ?? d.data ?? []) as Record<string, unknown>[]);
+        setTxPage(0);
         setTransactions(raw.map((t) => ({
           id: String(t._id ?? t.id ?? ""),
           type: String(t.type ?? ""),
@@ -458,6 +462,8 @@ export default function WalletPage() {
   useEffect(() => { void load(); }, [load]);
 
   const balance = wallet?.balance ?? 0;
+  const txTotalPages = Math.ceil(transactions.length / TX_PAGE_SIZE);
+  const pagedTransactions = transactions.slice(txPage * TX_PAGE_SIZE, (txPage + 1) * TX_PAGE_SIZE);
 
   if (loading) {
     return (
@@ -565,36 +571,64 @@ export default function WalletPage() {
                 </div>
               </div>
             ) : (
-              <ul className="divide-y divide-slate-800/70">
-                {transactions.map((tx) => {
-                  const cfg = TX_CONFIG[tx.type] ?? {
-                    label: tx.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
-                    amountCls: tx.direction === "credit" ? "text-emerald-400" : "text-red-400",
-                    sign: tx.direction === "credit" ? "+" : "−",
-                  };
-                  const statusCls = TX_STATUS_CLS[tx.status];
-                  return (
-                    <li key={tx.id} className="flex items-center gap-3 px-5 py-4 hover:bg-slate-800/30 transition-colors">
-                      <TxIcon type={tx.type} direction={tx.direction} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-white">{cfg.label}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold capitalize ${statusCls}`}>
-                            {tx.status}
-                          </span>
+              <>
+                <ul className="divide-y divide-slate-800/70">
+                  {pagedTransactions.map((tx) => {
+                    const cfg = TX_CONFIG[tx.type] ?? {
+                      label: tx.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+                      amountCls: tx.direction === "credit" ? "text-emerald-400" : "text-red-400",
+                      sign: tx.direction === "credit" ? "+" : "−",
+                    };
+                    const statusCls = TX_STATUS_CLS[tx.status];
+                    return (
+                      <li key={tx.id} className="flex items-center gap-3 px-5 py-4 hover:bg-slate-800/30 transition-colors">
+                        <TxIcon type={tx.type} direction={tx.direction} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-white">{cfg.label}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold capitalize ${statusCls}`}>
+                              {tx.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate">
+                            {tx.description ?? (tx.gateway ? `via ${tx.gateway}` : "")}
+                            {tx.createdAt ? ` · ${fmtDate(tx.createdAt)}` : ""}
+                          </p>
                         </div>
-                        <p className="text-xs text-slate-500 mt-0.5 truncate">
-                          {tx.description ?? (tx.gateway ? `via ${tx.gateway}` : "")}
-                          {tx.createdAt ? ` · ${fmtDate(tx.createdAt)}` : ""}
-                        </p>
-                      </div>
-                      <span className={`text-sm font-bold tabular-nums shrink-0 ${cfg.amountCls}`}>
-                        {cfg.sign}{fmtGhs(tx.amount)}
+                        <span className={`text-sm font-bold tabular-nums shrink-0 ${cfg.amountCls}`}>
+                          {cfg.sign}{fmtGhs(tx.amount)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {txTotalPages > 1 && (
+                  <div className="flex items-center justify-between px-5 py-3 border-t border-slate-800">
+                    <p className="text-xs text-slate-500 tabular-nums">
+                      {txPage * TX_PAGE_SIZE + 1}–{Math.min((txPage + 1) * TX_PAGE_SIZE, transactions.length)} of {transactions.length}
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setTxPage((p) => p - 1)}
+                        disabled={txPage === 0}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-slate-600 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Prev
+                      </button>
+                      <span className="text-xs text-slate-500 tabular-nums px-1">
+                        {txPage + 1} / {txTotalPages}
                       </span>
-                    </li>
-                  );
-                })}
-              </ul>
+                      <button
+                        onClick={() => setTxPage((p) => p + 1)}
+                        disabled={txPage >= txTotalPages - 1}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-slate-600 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
