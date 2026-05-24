@@ -9,6 +9,12 @@ import {
   AlertCircle,
   ChevronLeft,
   Loader2,
+  GitBranch,
+  Shuffle,
+  LayoutGrid,
+  Repeat,
+  Sword,
+  ListOrdered,
 } from "lucide-react";
 import {
   organizerService,
@@ -1127,14 +1133,74 @@ const CreateTournament = () => {
                     </select>
                   </Field>
                   <Field label="Tournament Type" required>
-                    <select value={tournamentType} onChange={(e) => setTournamentType(e.target.value)} className={selectCls}>
-                      <option value="single_elimination">Single Elimination</option>
-                      <option value="double_elimination">Double Elimination</option>
-                      <option value="round_robin">Round Robin</option>
-                      <option value="swiss">Swiss</option>
-                      <option value="battle_royale">Battle Royale</option>
-                      <option value="league">League (Premier League style)</option>
-                    </select>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        {
+                          value: "single_elimination",
+                          label: "Single Elimination",
+                          sub: "One loss and you're out",
+                          icon: <GitBranch className="w-5 h-5" />,
+                          accent: "cyan",
+                        },
+                        {
+                          value: "double_elimination",
+                          label: "Double Elimination",
+                          sub: "Two losses to be eliminated",
+                          icon: <Repeat className="w-5 h-5" />,
+                          accent: "indigo",
+                        },
+                        {
+                          value: "round_robin",
+                          label: "Round Robin",
+                          sub: "Everyone plays everyone",
+                          icon: <LayoutGrid className="w-5 h-5" />,
+                          accent: "emerald",
+                        },
+                        {
+                          value: "swiss",
+                          label: "Swiss",
+                          sub: "Matched by similar records",
+                          icon: <Shuffle className="w-5 h-5" />,
+                          accent: "amber",
+                        },
+                        {
+                          value: "battle_royale",
+                          label: "Battle Royale",
+                          sub: "Last player standing wins",
+                          icon: <Sword className="w-5 h-5" />,
+                          accent: "red",
+                        },
+                        {
+                          value: "league",
+                          label: "League",
+                          sub: "Premier League style",
+                          icon: <ListOrdered className="w-5 h-5" />,
+                          accent: "orange",
+                        },
+                      ].map(({ value, label, sub, icon, accent }) => {
+                        const selected = tournamentType === value;
+                        const colors: Record<string, string> = {
+                          cyan:    selected ? "border-cyan-500 bg-cyan-500/10 text-cyan-300"    : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-cyan-500/50 hover:text-slate-200",
+                          indigo:  selected ? "border-indigo-500 bg-indigo-500/10 text-indigo-300"  : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-indigo-500/50 hover:text-slate-200",
+                          emerald: selected ? "border-emerald-500 bg-emerald-500/10 text-emerald-300" : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-emerald-500/50 hover:text-slate-200",
+                          amber:   selected ? "border-amber-500 bg-amber-500/10 text-amber-300"  : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-amber-500/50 hover:text-slate-200",
+                          red:     selected ? "border-red-500 bg-red-500/10 text-red-300"        : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-red-500/50 hover:text-slate-200",
+                          orange:  selected ? "border-orange-500 bg-orange-500/10 text-orange-300" : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-orange-500/50 hover:text-slate-200",
+                        };
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setTournamentType(value)}
+                            className={`flex flex-col gap-1.5 p-3 rounded-xl border text-left transition-all ${colors[accent]}`}
+                          >
+                            <span className="shrink-0">{icon}</span>
+                            <span className="text-xs font-bold leading-tight">{label}</span>
+                            <span className="text-[10px] text-slate-500 leading-tight">{sub}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </Field>
                   {tournamentType === "league" ? (
                     <Field label="League Legs" required>
