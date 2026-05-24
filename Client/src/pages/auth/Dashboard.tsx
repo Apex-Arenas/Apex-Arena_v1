@@ -271,7 +271,7 @@ const Dashboard = () => {
 
   if (isOrganizer) {
     return (
-      <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen">
         {/* ── Hero ──────────────────────────────────────────────────────── */}
         <div className="relative overflow-hidden bg-slate-900 border-b border-slate-800">
           {/* Ambient glows */}
@@ -280,7 +280,7 @@ const Dashboard = () => {
           {/* Fine grid */}
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
 
-          <div className="relative px-6 py-6 sm:px-8 sm:py-7">
+          <div className="relative max-w-7xl mx-auto px-4 py-5 sm:px-8 sm:py-6">
             <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:justify-between">
               {/* Identity */}
               <div className="flex flex-col items-center text-center gap-3 sm:flex-row sm:items-center sm:text-left">
@@ -391,7 +391,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="px-4 sm:px-6 py-6 space-y-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
         {/* ── Main grid ─────────────────────────────────────────────────── */}
         <div className="grid lg:grid-cols-[1fr_272px] gap-6">
           <div className="space-y-8 min-w-0">
@@ -420,7 +420,7 @@ const Dashboard = () => {
               </div>
 
               {organizerActiveList.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 sm:gap-4 px-6 sm:px-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {organizerActivePreview.map((t) => (
                     <OrganizerTournamentCard key={t.id} tournament={t} />
                   ))}
@@ -456,7 +456,7 @@ const Dashboard = () => {
                     {organizerDrafts.length}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 sm:gap-4 px-6 sm:px-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {organizerDrafts.slice(0, 6).map((t) => (
                     <OrganizerTournamentCard
                       key={`draft-${t.id}`}
@@ -469,7 +469,7 @@ const Dashboard = () => {
           </div>
 
           {/* Right Sidebar */}
-          <div className="space-y-4 px-6 sm:px-0">
+          <div className="space-y-4">
             <CalendarWidget events={organizerCalendarEvents} />
 
             {/* Portfolio at a glance */}
@@ -569,9 +569,9 @@ const Dashboard = () => {
   // ─── Player Dashboard ─────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen">
       {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden border-b border-slate-800 bg-slate-900">
+      <div className="relative overflow-hidden border-b border-slate-800/60 bg-slate-900">
         {/* Grid */}
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(148,163,184,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.045) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
         {/* Orange glow top-right */}
@@ -581,7 +581,7 @@ const Dashboard = () => {
         {/* Bottom fade */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 40% at 40% 120%, rgba(251,191,36,0.08), transparent)" }} />
 
-        <div className="relative px-6 py-7 sm:px-8 sm:py-8">
+        <div className="relative max-w-7xl mx-auto px-4 py-5 sm:px-8 sm:py-6">
           {/* Identity */}
           <div className="flex flex-col items-center text-center gap-4 sm:flex-row sm:items-start sm:text-left sm:justify-between">
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center">
@@ -669,7 +669,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="px-8 sm:px-6 py-8 space-y-10">
+      <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-8">
       {/* ── Main Grid ───────────────────────────────────────────────────── */}
       <div className="grid lg:grid-cols-[1fr_300px] gap-6">
         {/* Left: My Tournaments */}
@@ -703,7 +703,7 @@ const Dashboard = () => {
           </div>
 
           {tournamentTab === "active" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 sm:gap-4 px-6 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {activeRegistrations.map((reg) => (
                 <JoinedTournamentDetailsCard key={reg.id} reg={reg} />
               ))}
@@ -728,7 +728,7 @@ const Dashboard = () => {
               </Link>
             </div>
           ) : completedRegistrations.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 sm:gap-4 px-6 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {completedRegistrations.map((reg) => (
                 <JoinedTournamentDetailsCard key={reg.id} reg={reg} />
               ))}
@@ -747,7 +747,7 @@ const Dashboard = () => {
         </section>
 
         {/* Right Sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
           {/* Calendar */}
           <CalendarWidget events={playerCalendarEvents} />
 
