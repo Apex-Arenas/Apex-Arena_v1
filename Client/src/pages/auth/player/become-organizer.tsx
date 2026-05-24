@@ -254,7 +254,7 @@ function VerificationForm({ onSubmitted, isResubmission }: {
           <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
             <Building2 className="w-4 h-4 text-orange-400" />
           </div>
-          <h3 className="font-display text-sm font-bold text-white">Business Information</h3>
+          <h3 className="font-display text-base font-bold text-white">Business Information</h3>
         </div>
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Business / Event Name" required>
@@ -296,7 +296,7 @@ function VerificationForm({ onSubmitted, isResubmission }: {
           <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
             <FileText className="w-4 h-4 text-orange-400" />
           </div>
-          <h3 className="font-display text-sm font-bold text-white">Identity Documents</h3>
+          <h3 className="font-display text-base font-bold text-white">Identity Documents</h3>
         </div>
         <div className="p-5 grid grid-cols-1 gap-4">
           {(Object.keys(fileLabels) as FileKeys[]).map((key) => {
@@ -389,38 +389,23 @@ const BecomeOrganizer = () => {
   const showLanding = !showForm && (status === "not_requested" || canResubmit);
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen">
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden border-b border-slate-800 bg-slate-900 px-6 sm:px-10 py-10">
-        <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-size-[48px_48px]" />
+      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 90% -10%, rgba(249,115,22,0.15), transparent)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 70% at -5% 80%, rgba(139,92,246,0.08), transparent)" }} />
 
-        <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          {/* Icon badge */}
-          <div className="relative shrink-0">
-            <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-orange-500/20 to-amber-500/10 border border-orange-500/25 flex items-center justify-center">
-              <Shield className="w-10 h-10 text-orange-400" />
-            </div>
-            <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-orange-500 border-2 border-slate-900 flex items-center justify-center">
-              <span className="text-[8px] font-bold text-slate-950">✓</span>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs text-orange-400/80 font-bold uppercase tracking-[0.2em] mb-1">Organizer Program</p>
-            <h1 className="font-display text-3xl sm:text-4xl font-bold text-white leading-none mb-2">
-              Become an Organizer
-            </h1>
-            <p className="text-sm text-slate-400 max-w-md">
-              Apply for verified organizer status to create tournaments, manage prizes, and build your esports brand on Apex Arenas.
-            </p>
-          </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
+          <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Become an Organizer</h1>
+          <p className="text-base text-slate-400 mt-3 max-w-xl">
+            Apply for verified organizer status to create tournaments, manage prizes, and build your esports brand on Apex Arenas.
+          </p>
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-8">
 
         {/* Loading */}
         {isLoading && (
@@ -456,7 +441,7 @@ const BecomeOrganizer = () => {
               <>
                 {/* Perks grid */}
                 <div>
-                  <h2 className="font-display text-lg font-bold text-white mb-4">What you get</h2>
+                  <h2 className="font-display text-2xl font-bold text-white mb-4">What you get</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {PERKS.map(({ icon: Icon, label, desc }) => (
                       <div key={label} className="rounded-2xl border border-slate-800 bg-slate-900 p-4 hover:border-orange-500/30 hover:bg-orange-500/5 transition-all group">
@@ -472,7 +457,7 @@ const BecomeOrganizer = () => {
 
                 {/* How it works */}
                 <div>
-                  <h2 className="font-display text-lg font-bold text-white mb-4">How it works</h2>
+                  <h2 className="font-display text-2xl font-bold text-white mb-4">How it works</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {STEPS.map((step, i) => (
                       <div key={step.n} className="relative rounded-2xl border border-slate-800 bg-slate-900 p-5">
@@ -493,7 +478,7 @@ const BecomeOrganizer = () => {
             {showForm ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-display text-lg font-bold text-white">
+                  <h2 className="font-display text-2xl font-bold text-white">
                     {canResubmit ? "Resubmit Application" : "Organizer Application"}
                   </h2>
                   <button onClick={() => setShowForm(false)} className="text-xs text-slate-500 hover:text-white transition-colors">

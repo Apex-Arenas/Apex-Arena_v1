@@ -468,53 +468,54 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen">
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden border-b border-slate-800 bg-slate-900">
+      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 90% at 90% -10%, rgba(251,191,36,0.18), transparent)" }} />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 70% at -5% 60%, rgba(249,115,22,0.1), transparent)" }} />
 
-        <div className="relative px-6 py-8 sm:px-8 sm:py-10">
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center shrink-0">
-              <Wallet className="w-4.5 h-4.5 text-orange-400" />
-            </div>
-            <span className="text-xs font-bold text-orange-400 uppercase tracking-[0.18em]">Wallet</span>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7 space-y-6">
+          <div>
+            <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Wallet</h1>
+            <p className="text-base text-slate-400 mt-3">Manage your balance, deposits, and withdrawals.</p>
           </div>
 
-          <p className="text-xs text-slate-500 uppercase tracking-widest mb-1.5">Available Balance</p>
-          <p className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight leading-none">
-            {fmtGhs(balance)}
-          </p>
-          {wallet?.lastUpdated && (
-            <p className="text-xs text-slate-600 mt-2">Updated {fmtDate(wallet.lastUpdated)}</p>
-          )}
-
-          <div className="flex gap-3 mt-7">
-            <button
-              onClick={() => setModal("deposit")}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 transition-all"
-            >
-              <ArrowDownLeft className="w-4 h-4" />
-              Add Funds
-            </button>
-            <button
-              onClick={() => setModal("withdraw")}
-              disabled={balance === 0}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-700 bg-slate-800/40 text-slate-300 font-semibold text-sm hover:border-slate-600 hover:bg-slate-800/70 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <ArrowUpRight className="w-4 h-4" />
-              Withdraw
-            </button>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-widest mb-1.5">Available Balance</p>
+              <p className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight leading-none">
+                {fmtGhs(balance)}
+              </p>
+              {wallet?.lastUpdated && (
+                <p className="text-xs text-slate-600 mt-2">Updated {fmtDate(wallet.lastUpdated)}</p>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setModal("deposit")}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 transition-all"
+              >
+                <ArrowDownLeft className="w-4 h-4" />
+                Add Funds
+              </button>
+              <button
+                onClick={() => setModal("withdraw")}
+                disabled={balance === 0}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800/40 text-slate-300 font-semibold text-sm hover:border-slate-600 hover:bg-slate-800/70 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                <ArrowUpRight className="w-4 h-4" />
+                Withdraw
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
-      <div className="px-4 sm:px-6 py-6 space-y-6">
-        <div className="px-6 sm:px-0 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+        <div className="space-y-6">
 
           {successMsg && (
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-sm">
@@ -546,7 +547,7 @@ export default function WalletPage() {
           {/* ── Transaction History ─────────────────────────────────────── */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-              <h2 className="font-display text-sm font-semibold text-white">Transaction History</h2>
+              <h2 className="font-display text-xl font-semibold text-white">Transaction History</h2>
               <button onClick={() => void load()} className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1">
                 <RefreshCw className="w-3 h-3" />
                 Refresh
@@ -601,7 +602,7 @@ export default function WalletPage() {
           {payouts.length > 0 && (
             <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-800">
-                <h2 className="font-display text-sm font-semibold text-white">Withdrawal Requests</h2>
+                <h2 className="font-display text-xl font-semibold text-white">Withdrawal Requests</h2>
               </div>
               <ul className="divide-y divide-slate-800/70">
                 {payouts.map((p) => {
