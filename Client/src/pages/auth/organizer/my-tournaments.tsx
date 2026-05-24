@@ -307,36 +307,65 @@ const MyTournaments = () => {
   const past = tournaments.filter((t) => ["completed", "cancelled"].includes(t.status));
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen">
 
-      {/* ── Header ──────────────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-slate-900 border-b border-slate-800 px-6 py-7 sm:px-8 sm:py-8">
-        {/* Ambient glows */}
-        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-orange-500/12 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
-        {/* Fine grid */}
-        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
+        <div className="absolute -top-40 right-0 w-[700px] h-[400px] rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative flex flex-col items-center text-center gap-4 sm:flex-row sm:items-center sm:justify-between sm:text-left">
-          <div>
-            <h1 className="font-display text-3xl font-bold text-white">My Tournaments</h1>
-            <p className="text-sm text-slate-400 mt-1">
-              {tournaments.length > 0
-                ? `${tournaments.length} tournament${tournaments.length !== 1 ? "s" : ""} · ${active.length} active`
-                : "No tournaments yet — create your first one"}
-            </p>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-5 pb-5 space-y-4">
+          {/* Title row */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
+                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="font-display text-xl sm:text-3xl font-bold text-white leading-tight">My Tournaments</h1>
+                <p className="text-sm text-slate-400 mt-1">
+                  {isLoading ? "Loading…" : tournaments.length > 0
+                    ? `${tournaments.length} tournament${tournaments.length !== 1 ? "s" : ""} · ${active.length} active`
+                    : "No tournaments yet — create your first one"}
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/auth/organizer/create-tournament"
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 transition-colors shadow-md"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Create Tournament</span>
+              <span className="sm:hidden">Create</span>
+            </Link>
           </div>
-          <Link
-            to="/auth/organizer/create-tournament"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all shrink-0"
-          >
-            <PlusCircle className="w-4 h-4" />
-            Create Tournament
-          </Link>
+
+          {/* Stats strip */}
+          {!isLoading && tournaments.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              {[
+                { icon: Trophy,      label: "Total",   value: String(tournaments.length), accent: "text-white",       iconColor: "text-slate-400",   iconBg: "bg-slate-800 border-slate-700/50"        },
+                { icon: Users,       label: "Active",  value: String(active.length),      accent: "text-emerald-400", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10 border-emerald-500/20" },
+                { icon: Gamepad2,    label: "Drafts",  value: String(drafts.length),      accent: "text-amber-400",  iconColor: "text-amber-400",   iconBg: "bg-amber-500/10 border-amber-500/20"     },
+                { icon: CalendarDays,label: "Past",    value: String(past.length),        accent: "text-slate-400",  iconColor: "text-slate-500",   iconBg: "bg-slate-800/60 border-slate-700/50"     },
+              ].map(({ icon: Icon, label, value, accent, iconColor, iconBg }) => (
+                <div key={label} className="flex items-center gap-2.5 sm:gap-3 bg-slate-800/40 border border-slate-700/40 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3.5 hover:border-slate-600/60 transition-colors">
+                  <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
+                    <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${iconColor}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
+                    <p className={`font-display text-lg sm:text-xl font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 py-6 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-8">
       {/* ── Loading ─────────────────────────────────────────── */}
       {isLoading && (
         <div className="flex items-center justify-center py-24">
@@ -373,7 +402,7 @@ const MyTournaments = () => {
             count={active.length}
             badge="bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {active.map((t) => <TournamentCard key={t.id} tournament={t} />)}
               <CreateCard />
             </div>
@@ -384,7 +413,7 @@ const MyTournaments = () => {
             count={drafts.length}
             badge="bg-amber-500/15 text-amber-400 border-amber-500/20"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {drafts.map((t) => <TournamentCard key={t.id} tournament={t} />)}
               <CreateCard />
             </div>
@@ -395,7 +424,7 @@ const MyTournaments = () => {
             count={past.length}
             badge="bg-slate-700/60 text-slate-400 border-slate-700"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {past.map((t) => <TournamentCard key={t.id} tournament={t} />)}
             </div>
           </Section>
@@ -407,3 +436,4 @@ const MyTournaments = () => {
 };
 
 export default MyTournaments;
+
