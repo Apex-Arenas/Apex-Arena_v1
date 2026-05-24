@@ -363,7 +363,7 @@ const Dashboard = () => {
                 { icon: Wallet,   iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15", label: "Wallet",         value: organizerWalletBalance === null ? "GHS —" : `GHS ${(organizerWalletBalance / 100).toFixed(2)}` },
               ].map((s) => (
                 <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
-                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                  <div className={`w-9 h-9 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
                     <s.icon className={`w-4 h-4 ${s.iconColor}`} />
                   </div>
                   <div className="min-w-0">
@@ -628,7 +628,7 @@ const Dashboard = () => {
               { icon: Gamepad2, iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Checked In",  value: String(stats.checkedInCount) },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
-                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                <div className={`w-9 h-9 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
                   <s.icon className={`w-4 h-4 ${s.iconColor}`} />
                 </div>
                 <div className="min-w-0">

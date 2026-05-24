@@ -44,7 +44,7 @@ function PodiumCard({ result, rank }: { result: TournamentResult; rank: 1 | 2 | 
           </div>
         )}
         <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">{c.icon}</div>
-        <span className="text-xs font-semibold text-white truncate max-w-[80px] text-center">{displayName}</span>
+        <span className="text-xs font-semibold text-white truncate max-w-20 text-center">{displayName}</span>
         {result.prize_won ? (
           <span className="text-[10px] text-emerald-400 font-semibold">₵{result.prize_won.toLocaleString()}</span>
         ) : null}
@@ -264,8 +264,8 @@ export default function LeaderboardPage() {
     <div className="min-h-screen">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
-        <div className="absolute -top-40 right-0 w-[700px] h-[400px] rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute -top-40 right-0 w-175 h-100 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-125 h-[200px] rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">

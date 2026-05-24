@@ -131,7 +131,7 @@ function ResolveModal({ dispute, onClose, onResolved }: { dispute: Dispute; onCl
             </div>
             <div>
               <h2 className="font-display text-lg font-bold text-white">Resolve Dispute</h2>
-              <p className="text-xs text-slate-400 mt-0.5 truncate max-w-[280px]">
+              <p className="text-xs text-slate-400 mt-0.5 truncate max-w-70">
                 {dispute.tournament_id?.title ?? "Unknown Tournament"}
               </p>
             </div>
@@ -397,8 +397,8 @@ export default function OrganizerDisputesPage() {
     <div className="min-h-screen">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
-        <div className="absolute -top-40 right-0 w-[700px] h-[400px] rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute -top-40 right-0 w-175 h-100 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-125 h-[200px] rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7 space-y-5">
