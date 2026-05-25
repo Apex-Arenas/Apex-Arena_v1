@@ -26,6 +26,7 @@ import {
   Hash,
   Search,
   UserCheck,
+  RefreshCw,
 } from "lucide-react";
 import { adminService } from "../../services/admin.service";
 import { apiGet, apiPatch } from "../../utils/api.utils";
@@ -717,6 +718,7 @@ const TournamentDetail = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [isGeneratingBracket, setIsGeneratingBracket] = useState(false);
 
   const load = useCallback(async () => {
     if (!tournamentId) return;
@@ -756,6 +758,19 @@ const TournamentDetail = () => {
       toast.error(error.message || "Error deleting tournament");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleGenerateBracket = async (force = false) => {
+    if (!tournamentId) return;
+    setIsGeneratingBracket(true);
+    try {
+      await adminService.generateBracket(tournamentId, force);
+      toast.success(force ? "Bracket regenerated successfully" : "Bracket generated successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate bracket");
+    } finally {
+      setIsGeneratingBracket(false);
     }
   };
 
@@ -836,6 +851,15 @@ const TournamentDetail = () => {
               <span className="hidden sm:inline">Back to Tournaments</span>
             </button>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => void handleGenerateBracket(true)}
+                disabled={isGeneratingBracket}
+                title="Regenerate bracket (deletes existing matches)"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border text-violet-400 bg-violet-500/10 border-violet-500/25 hover:bg-violet-500/20 hover:border-violet-500/40 disabled:opacity-50 transition-all"
+              >
+                <RefreshCw className={`w-4 h-4 ${isGeneratingBracket ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">{isGeneratingBracket ? "Generating…" : "Regenerate Bracket"}</span>
+              </button>
               <button
                 onClick={() => setEditOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border text-amber-400 bg-amber-400/10 border-amber-400/25 hover:bg-amber-400/20 hover:border-amber-400/40 transition-all"

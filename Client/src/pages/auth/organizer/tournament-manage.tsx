@@ -1464,17 +1464,6 @@ const TournamentManage = () => {
                     <span className="hidden sm:inline">{isGeneratingBracket ? "Generating…" : hasBracketGenerated ? "Bracket Ready" : "Generate Bracket"}</span>
                     <span className="sm:hidden">{hasBracketGenerated ? "Ready" : "Generate"}</span>
                   </button>
-                  {hasBracketGenerated && (
-                    <button
-                      onClick={() => { void handleGenerateBracket(true); }}
-                      disabled={isGeneratingBracket}
-                      title="Regenerate bracket"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/60 border border-slate-600/50 text-slate-300 text-xs font-bold hover:bg-slate-600/70 hover:text-white disabled:opacity-60 transition-all"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingBracket ? "animate-spin" : ""}`} />
-                      <span className="hidden sm:inline">Regenerate</span>
-                    </button>
-                  )}
                 </div>
               )}
               {canDepositPrizePool && (

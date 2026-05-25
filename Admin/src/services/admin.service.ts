@@ -986,4 +986,13 @@ export const adminService = {
     );
     return response.success;
   },
+
+  async generateBracket(tournamentId: string, force = false): Promise<void> {
+    const url = `${TOURNAMENT_ENDPOINTS.ADMIN_TOURNAMENTS}/${tournamentId}/bracket/generate${force ? '?force=true' : ''}`;
+    const response = await apiPost(url, {}, adminHeaders());
+    if (!response.success) {
+      const msg = (response as any).error?.message ?? 'Failed to generate bracket';
+      throw new Error(msg);
+    }
+  },
 };
