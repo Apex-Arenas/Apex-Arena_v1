@@ -374,8 +374,8 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
           </button>
         )}
 
-        {/* Penalty shootout — appears when scores are equal */}
-        {scoresEqual && (() => {
+        {/* Penalty shootout — single-leg only; two-leg draws advance to leg 3 server-side */}
+        {scoresEqual && !isTwoLeg && (() => {
           const p1 = parseInt(penaltyScore1, 10);
           const p2 = parseInt(penaltyScore2, 10);
           const penaltiesEntered = penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2);
@@ -420,6 +420,12 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
             </div>
           );
         })()}
+        {/* Two-leg draw hint */}
+        {scoresEqual && isTwoLeg && currentLeg !== 3 && (
+          <p className="text-[11px] text-slate-500 text-center">
+            Equal scores — select "It was a Draw" to record this leg as a draw.
+          </p>
+        )}
 
         <div className="space-y-1.5">
           <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wide">
@@ -432,7 +438,8 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
           onClick={() => {
             const p1 = parseInt(penaltyScore1, 10);
             const p2 = parseInt(penaltyScore2, 10);
-            const hasPenalties = scoresEqual && penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2) && p1 !== p2;
+            // Inline penalties only apply to single-leg matches
+            const hasPenalties = !isTwoLeg && scoresEqual && penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2) && p1 !== p2;
             const winnerId = hasPenalties
               ? (p1 > p2 ? match!.player1Id : match!.player2Id)
               : (isDraw ? null : selectedWinnerId!);
@@ -450,10 +457,11 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
           disabled={(() => {
             if (submitting || !screenshotUrl || score1 === '' || score2 === '') return true;
             if (scoresEqual) {
+              // Two-leg draws: just need isDraw selected — no per-leg penalties
+              if (isTwoLeg) return !isDraw;
               const p1 = parseInt(penaltyScore1, 10);
               const p2 = parseInt(penaltyScore2, 10);
               const hasPenalties = penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2) && p1 !== p2;
-              // equal scores require either draw selection or valid penalties
               return !isDraw && !hasPenalties;
             }
             return !selectedWinnerId;
