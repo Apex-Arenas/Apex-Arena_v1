@@ -27,6 +27,8 @@ import {
   Search,
   UserCheck,
   RefreshCw,
+  Swords,
+  Crown,
 } from "lucide-react";
 import { adminService } from "../../services/admin.service";
 import { apiGet, apiPatch } from "../../utils/api.utils";
@@ -706,6 +708,798 @@ function ParticipantsSection({ tournamentId }: { tournamentId: string }) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   BRACKET VIEW
+══════════════════════════════════════════════════════════ */
+
+// ── Bracket constants ─────────────────────────────────────
+const BC_CARD_H   = 96;
+const BC_BASE_U   = 116;
+const BC_COL_W    = 240;
+const BC_CONN_OUT = 20;
+const BC_CONN_IN  = 32;
+
+// ── Round layout ──────────────────────────────────────────
+function bcRoundLayout(roundIndex, matchCount) {
+  const factor    = Math.pow(2, roundIndex);
+  const topOffset = ((factor - 1) * BC_BASE_U) / 2;
+  const gap       = Math.max(16, factor * BC_BASE_U - BC_CARD_H);
+  const height    = topOffset + matchCount * BC_CARD_H + Math.max(0, matchCount - 1) * gap;
+  return { topOffset, gap, height };
+}
+
+// ── Extract rounds from flat matches ──────────────────────
+function bcBuildRounds(matches) {
+  const byRound = new Map();
+  for (const m of matches) {
+    const r = Number(m.round ?? m.round_number ?? 1) || 1;
+    const arr = byRound.get(r) ?? [];
+    arr.push(m);
+    byRound.set(r, arr);
+  }
+  return Array.from(byRound.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([round, ms]) => ({
+      round,
+      round_number: round,
+      round_name: ms[0]?.round_name,
+      matches: [...ms].sort((a, b) => (a.match_number ?? 999) - (b.match_number ?? 999)),
+    }));
+}
+
+function bcExtractRounds(payload) {
+  if (Array.isArray(payload)) return bcBuildRounds(payload);
+  if (!payload || typeof payload !== "object") return [];
+  const candidate = payload.rounds ?? payload.bracket;
+  if (!Array.isArray(candidate)) return [];
+  const hasRoundShape = candidate.some(
+    (item) => item && typeof item === "object" && Array.isArray(item.matches)
+  );
+  return hasRoundShape ? candidate : bcBuildRounds(candidate);
+}
+
+// ── Round title & style ───────────────────────────────────
+function bcRoundTitle(round, index, total) {
+  const raw = round.name ?? round.round_name;
+  if (raw?.trim()) {
+    const n = raw.trim().toLowerCase();
+    const named = { final: "Final", grand_final: "Grand Final", semi_final: "Semifinal", semi_finals: "Semifinals", quarter_final: "Quarterfinal", quarter_finals: "Quarterfinals" };
+    if (named[n]) return named[n];
+    const m = n.match(/^round[_\s-]?(\d+)$/);
+    if (m) return `Round ${m[1]}`;
+    return raw.trim().split(/[_-]+/).map(w => w[0]?.toUpperCase() + w.slice(1)).join(" ");
+  }
+  const num = round.round_number ?? round.round ?? index + 1;
+  if (total >= 2 && num === total) return "Final";
+  if (total >= 3 && num === total - 1) return "Semifinal";
+  if (total >= 4 && num === total - 2) return "Quarterfinal";
+  return `Round ${num}`;
+}
+
+function bcRoundStyle(title) {
+  const t = title.toLowerCase();
+  if (t.includes("final") && !t.includes("semi") && !t.includes("quarter"))
+    return { pill: "bg-amber-500/15 text-amber-300 border-amber-500/30", glow: "shadow-[0_0_24px_rgba(251,191,36,0.12)]" };
+  if (t.includes("semi"))
+    return { pill: "bg-violet-500/15 text-violet-300 border-violet-500/30", glow: "" };
+  if (t.includes("quarter"))
+    return { pill: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30", glow: "" };
+  return { pill: "bg-slate-700/60 text-slate-400 border-slate-600/40", glow: "" };
+}
+
+// ── Status colors ─────────────────────────────────────────
+const BC_DOT: Record<string, string> = {
+  completed: "bg-emerald-400",
+  in_progress: "bg-orange-400 animate-pulse",
+  live: "bg-orange-400 animate-pulse",
+  pending: "bg-slate-500",
+  scheduled: "bg-cyan-400",
+};
+const BC_TXT: Record<string, string> = {
+  completed: "text-emerald-400",
+  in_progress: "text-orange-400",
+  live: "text-orange-400",
+  pending: "text-slate-500",
+  scheduled: "text-cyan-400",
+};
+
+// ── Participant label ─────────────────────────────────────
+function bcLabel(p) {
+  if (!p) return "TBD";
+  if (p.in_game_id) return p.in_game_id;
+  if (p.username) return p.username;
+  if (p.user_id && typeof p.user_id === "object" && p.user_id.username) return p.user_id.username;
+  return "TBD";
+}
+
+// ── Parse penalty from reason string ─────────────────────
+function bcParsePenalty(match) {
+  const raw = match as Record<string, unknown>;
+  const adminOverride = raw.admin_override as Record<string, unknown> | undefined;
+  const r = String(adminOverride?.reason ?? match.reason ?? raw.score_note ?? "");
+  const m = r.match(/Regular time:\s*(\d+)[-\u2013](\d+).*?Penalties:\s*(\d+)[-\u2013](\d+)/i);
+  if (!m) return null;
+  return { rt1: Number(m[1]), rt2: Number(m[2]), pen1: Number(m[3]), pen2: Number(m[4]) };
+}
+
+// ── Match Detail Modal ────────────────────────────────────
+function BcMatchModal({ match, onClose, onOverrideComplete }: { match: any; onClose: () => void; onOverrideComplete: () => void }) {
+  const [showOverride, setShowOverride]   = useState(false);
+  const [ovS1, setOvS1]                   = useState("");
+  const [ovS2, setOvS2]                   = useState("");
+  const [ovPen1, setOvPen1]               = useState("");
+  const [ovPen2, setOvPen2]               = useState("");
+  const [ovReason, setOvReason]           = useState("");
+  const [overriding, setOverriding]       = useState(false);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const fmtDate = (iso?: string) =>
+    iso ? new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+
+  const p          = match.participants ?? [];
+  const p1         = p[0] ?? {};
+  const p2         = p[1] ?? {};
+  const p1Win      = p1.result === "win";
+  const p2Win      = p2.result === "win";
+  const p1Label    = p1.in_game_id || p1.username || (typeof p1.user_id === "object" ? p1.user_id?.username : null) || "TBD";
+  const p2Label    = p2.in_game_id || p2.username || (typeof p2.user_id === "object" ? p2.user_id?.username : null) || "TBD";
+  const pen        = bcParsePenalty(match);
+  const displayP1  = pen ? pen.rt1 : (p1.score ?? null);
+  const displayP2  = pen ? pen.rt2 : (p2.score ?? null);
+  const decidedOnPen = !pen && displayP1 === displayP2 && (p1Win || p2Win);
+  const statusRaw  = (match.status ?? "pending").toLowerCase();
+  const dotCls     = BC_DOT[statusRaw] ?? BC_DOT.pending;
+  const txtCls     = BC_TXT[statusRaw] ?? BC_TXT.pending;
+  const dispute    = match.dispute ?? {};
+  const adminOvr   = match.admin_override ?? {};
+  const proof      = match.proof ?? {};
+  const sched      = match.schedule ?? {};
+  const screenshots = (proof.screenshots ?? []) as string[];
+  const neither    = !p1Win && !p2Win;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-slate-900 border border-slate-700/60 rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 shrink-0 bg-slate-800/30">
+          <div className="flex items-center gap-3">
+            <span className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest ${txtCls}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${dotCls}`} />
+              {statusRaw.replace(/_/g, " ")}
+            </span>
+            <span className="text-slate-700">·</span>
+            <span className="text-xs text-slate-500">
+              {match.round_name ? match.round_name.replace(/_/g, " ") : `Round ${match.round ?? "?"}`}
+              {match.match_number != null ? ` · Match #${match.match_number}` : ""}
+            </span>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700/60 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+
+          {/* ── Score Hero ── */}
+          <div className="px-5 pt-5 pb-0">
+            <div className="rounded-2xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
+
+              {/* Player rows */}
+              <div className="divide-y divide-slate-700/40">
+                {[
+                  { label: p1Label, seed: p1.seed_number, score: displayP1, penScore: pen?.pen1 ?? null, isWinner: p1Win },
+                  { label: p2Label, seed: p2.seed_number, score: displayP2, penScore: pen?.pen2 ?? null, isWinner: p2Win },
+                ].map((player, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center justify-between gap-4 px-5 py-4 ${
+                      player.isWinner
+                        ? "bg-orange-500/8"
+                        : !neither && !player.isWinner
+                        ? "opacity-50"
+                        : ""
+                    }`}
+                  >
+                    {/* Name + seed */}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {player.isWinner
+                        ? <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+                        : <div className="w-4 h-4 shrink-0" />
+                      }
+                      <div className="min-w-0">
+                        <p className={`text-base font-bold truncate leading-tight ${player.isWinner ? "text-white" : "text-slate-400"}`}>
+                          {player.label}
+                        </p>
+                        {player.seed != null && (
+                          <p className="text-[11px] text-slate-600 mt-0.5">Seed #{player.seed}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Score */}
+                    <div className="flex items-baseline gap-1.5 shrink-0">
+                      <span className={`text-4xl font-black tabular-nums leading-none ${player.isWinner ? "text-white" : neither ? "text-slate-500" : "text-slate-700"}`}>
+                        {player.score ?? "—"}
+                      </span>
+                      {player.penScore !== null && player.penScore !== undefined && (
+                        <span className="text-xl font-bold text-amber-400 tabular-nums leading-none">
+                          ({player.penScore})
+                        </span>
+                      )}
+                      {decidedOnPen && player.isWinner && (
+                        <span className="text-sm font-bold text-amber-400 leading-none">(P)</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Penalty footer */}
+              {pen && (
+                <div className="flex items-center justify-between px-5 py-3 bg-amber-500/8 border-t border-amber-500/20">
+                  <span className="text-[11px] font-bold text-amber-400 uppercase tracking-widest">Penalties</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-base font-black tabular-nums ${pen.pen1 > pen.pen2 ? "text-amber-300" : "text-slate-500"}`}>{pen.pen1}</span>
+                    <span className="text-slate-600 text-sm">—</span>
+                    <span className={`text-base font-black tabular-nums ${pen.pen2 > pen.pen1 ? "text-amber-300" : "text-slate-500"}`}>{pen.pen2}</span>
+                    <span className="text-[10px] text-slate-600 ml-2">RT: {pen.rt1}–{pen.rt2}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Timeline + Result Chain ── */}
+          <div className="grid grid-cols-2 gap-3 px-5 pt-4">
+
+            {/* Timeline */}
+            <div className="rounded-xl bg-slate-800/40 border border-slate-700/40 overflow-hidden">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 py-2.5 border-b border-slate-700/40">Timeline</p>
+              <div className="divide-y divide-slate-700/30">
+                {[
+                  { label: "Scheduled", val: sched.scheduled_time },
+                  { label: "Started",   val: sched.started_at },
+                  { label: "Completed", val: sched.completed_at },
+                  { label: "Deadline",  val: match.play_deadline },
+                ].map(({ label, val }) => (
+                  <div key={label} className="px-4 py-2">
+                    <p className="text-[10px] text-slate-600 uppercase tracking-wide">{label}</p>
+                    <p className="text-xs font-medium text-slate-300 mt-0.5 leading-tight">{fmtDate(val)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Result chain */}
+            <div className="rounded-xl bg-slate-800/40 border border-slate-700/40 overflow-hidden">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 py-2.5 border-b border-slate-700/40">Result Chain</p>
+              <div className="divide-y divide-slate-700/30">
+                {[
+                  { label: "Reported",    val: match.result_reported_at },
+                  { label: "Confirmed",   val: match.result_confirmed_at },
+                  { label: "Conf. deadline", val: match.result_confirmation_deadline },
+                ].map(({ label, val }) => (
+                  <div key={label} className="px-4 py-2">
+                    <p className="text-[10px] text-slate-600 uppercase tracking-wide">{label}</p>
+                    <p className="text-xs font-medium text-slate-300 mt-0.5 leading-tight">{fmtDate(val)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Proof ── */}
+          {(screenshots.length > 0 || proof.video_url) && (
+            <div className="px-5 pt-4">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2.5">
+                Proof{screenshots.length > 0 ? ` (${screenshots.length})` : ""}
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                {screenshots.map((url, i) => (
+                  <a
+                    key={i}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative aspect-video rounded-xl overflow-hidden border border-slate-700/60 hover:border-violet-500/50 transition-colors block bg-slate-800 w-full max-w-[280px]"
+                  >
+                    <img src={url} alt={`Screenshot ${i + 1}`} className="w-full h-full object-cover group-hover:opacity-70 transition-opacity" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/40">
+                      <Eye className="w-7 h-7 text-white drop-shadow" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+              {proof.video_url && (
+                <a href={String(proof.video_url)} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 mt-2 text-xs text-violet-400 hover:text-violet-300 transition-colors">
+                  <Eye className="w-3.5 h-3.5" /> View video proof
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* ── Dispute ── */}
+          {dispute.is_disputed && (
+            <div className="mx-5 mt-4 p-4 rounded-xl bg-red-500/8 border border-red-500/25 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-red-400 uppercase tracking-widest">Dispute</p>
+                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${dispute.resolved ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/20" : "bg-red-500/15 text-red-400 border-red-500/25"}`}>
+                  {dispute.resolved ? "Resolved" : "Open"}
+                </span>
+              </div>
+              {dispute.dispute_reason && <p className="text-xs text-slate-300 leading-relaxed">{dispute.dispute_reason}</p>}
+              {dispute.disputed_at && <p className="text-[11px] text-slate-500">Raised: {fmtDate(dispute.disputed_at)}</p>}
+              {dispute.resolution && (
+                <div className="pt-2 border-t border-red-500/15">
+                  <p className="text-xs text-slate-300">{dispute.resolution}</p>
+                  {dispute.resolved_at && <p className="text-[11px] text-slate-500 mt-1">Resolved: {fmtDate(dispute.resolved_at)}</p>}
+                </div>
+              )}
+              {(dispute.evidence ?? []).length > 0 && (
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  {(dispute.evidence ?? []).map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                      className="aspect-video rounded-lg overflow-hidden border border-red-500/30 hover:border-red-500/60 block bg-slate-800 transition-colors">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Admin Override ── */}
+          {adminOvr.overridden && (
+            <div className="mx-5 mt-4 p-4 rounded-xl bg-amber-500/8 border border-amber-500/20 space-y-1.5">
+              <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">Admin Override</p>
+              {adminOvr.reason && <p className="text-xs text-slate-300 leading-relaxed">{adminOvr.reason}</p>}
+              {adminOvr.overridden_at && <p className="text-[11px] text-slate-500">At: {fmtDate(adminOvr.overridden_at)}</p>}
+            </div>
+          )}
+
+          {/* ── Override Score ── */}
+          <div className="mx-5 mt-4 mb-1">
+            <button
+              onClick={() => { setShowOverride(v => !v); }}
+              className="flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+            >
+              <span className={`transition-transform duration-200 ${showOverride ? "rotate-90" : ""}`}>▶</span>
+              Override Score
+            </button>
+
+            {showOverride && (
+              <div className="mt-3 p-4 rounded-xl bg-slate-800/60 border border-slate-700/50 space-y-3">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Admin Score Override</p>
+
+                {/* Score inputs */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] text-slate-500 mb-1">{p1Label} score</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={ovS1}
+                      onChange={e => setOvS1(e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 tabular-nums"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-500 mb-1">{p2Label} score</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={ovS2}
+                      onChange={e => setOvS2(e.target.value)}
+                      placeholder="0"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 tabular-nums"
+                    />
+                  </div>
+                </div>
+
+                {/* Penalty inputs — only when scores are equal and both filled */}
+                {ovS1 !== "" && ovS2 !== "" && Number(ovS1) === Number(ovS2) && (
+                  <div>
+                    <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-widest mb-2">Tie — set penalty shootout scores</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-slate-500 mb-1">{p1Label} penalties</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={ovPen1}
+                          onChange={e => setOvPen1(e.target.value)}
+                          placeholder="0"
+                          className="w-full bg-slate-900 border border-amber-500/40 rounded-lg px-3 py-2 text-sm text-amber-300 placeholder-slate-600 focus:outline-none focus:border-amber-500 tabular-nums"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-slate-500 mb-1">{p2Label} penalties</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={ovPen2}
+                          onChange={e => setOvPen2(e.target.value)}
+                          placeholder="0"
+                          className="w-full bg-slate-900 border border-amber-500/40 rounded-lg px-3 py-2 text-sm text-amber-300 placeholder-slate-600 focus:outline-none focus:border-amber-500 tabular-nums"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reason */}
+                <div>
+                  <label className="block text-[11px] text-slate-500 mb-1">Reason <span className="text-red-400">*</span></label>
+                  <textarea
+                    value={ovReason}
+                    onChange={e => setOvReason(e.target.value)}
+                    placeholder="Explain why this score is being overridden…"
+                    rows={2}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500 resize-none"
+                  />
+                </div>
+
+                {/* Submit */}
+                <button
+                  disabled={overriding || ovS1 === "" || ovS2 === "" || !ovReason.trim()}
+                  onClick={async () => {
+                    const s1 = Number(ovS1);
+                    const s2 = Number(ovS2);
+                    const hasPen = s1 === s2 && ovPen1 !== "" && ovPen2 !== "";
+                    const builtReason = hasPen
+                      ? `Regular time: ${s1}\u2013${s2} \u00b7 Penalties: ${ovPen1}\u2013${ovPen2} \u00b7 ${ovReason.trim()}`
+                      : ovReason.trim();
+                    const matchId = String(match._id ?? match.id ?? "");
+                    setOverriding(true);
+                    try {
+                      await adminService.adminSetMatchScore(matchId, s1, s2, builtReason);
+                      setShowOverride(false);
+                      setOvS1(""); setOvS2(""); setOvPen1(""); setOvPen2(""); setOvReason("");
+                      onOverrideComplete();
+                    } catch (err: any) {
+                      alert(err.message ?? "Failed to override score");
+                    } finally {
+                      setOverriding(false);
+                    }
+                  }}
+                  className="w-full py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-violet-600 hover:bg-violet-500 text-white"
+                >
+                  {overriding ? "Saving…" : "Apply Override"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Match ID */}
+          <p className="text-[10px] text-slate-800 font-mono text-center py-4">{String(match._id ?? match.id ?? "")}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Match Card ────────────────────────────────────────────
+function BcMatchCard({ match, isFinal, onClick }) {
+  const p = match.participants ?? [];
+  const p1Label = bcLabel(p[0]);
+  const p2Label = bcLabel(p[1]);
+  const p1Win = p[0]?.result === "win";
+  const p2Win = p[1]?.result === "win";
+  const statusRaw = (match.status ?? "pending").toLowerCase();
+  const SCORED = new Set(["completed", "in_progress", "live", "ongoing", "awaiting_results", "verifying_results"]);
+  const isScored = SCORED.has(statusRaw);
+
+  const p1Score = isScored ? (p[0]?.score ?? null) : null;
+  const p2Score = isScored ? (p[1]?.score ?? null) : null;
+  const hasScores = isScored && (p1Score !== null || p2Score !== null);
+
+  const penaltyData = bcParsePenalty(match);
+  const displayP1 = penaltyData ? penaltyData.rt1 : p1Score;
+  const displayP2 = penaltyData ? penaltyData.rt2 : p2Score;
+  const decidedOnPen = !penaltyData && displayP1 === displayP2 && (p1Win || p2Win);
+
+  const dotCls = BC_DOT[statusRaw] ?? BC_DOT.pending;
+  const txtCls = BC_TXT[statusRaw] ?? BC_TXT.pending;
+  const scheduledAt = match.scheduled_at ?? match.scheduled_time ?? match.schedule?.scheduled_time;
+
+  function renderScore(score, pen, isWinner) {
+    if (!hasScores) return <span className="text-slate-700">—</span>;
+    if (pen !== null) {
+      return (
+        <div className="flex items-center gap-1 shrink-0">
+          <span className={`text-xs font-bold tabular-nums ${isWinner ? "text-orange-300" : "text-slate-500"}`}>{score ?? "—"}</span>
+          <span className="text-[9px] text-amber-500/80 font-bold tabular-nums">({pen})</span>
+        </div>
+      );
+    }
+    if (decidedOnPen && isWinner) {
+      return (
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-xs font-bold tabular-nums text-orange-300">{score ?? "—"}</span>
+          <span className="text-[9px] text-amber-500/80 font-bold">(P)</span>
+        </div>
+      );
+    }
+    return (
+      <span className={`text-xs font-bold tabular-nums shrink-0 ${isWinner ? "text-orange-300" : "text-slate-600"}`}>
+        {score ?? "—"}
+      </span>
+    );
+  }
+
+  const isDisputed = match.dispute?.is_disputed && !match.dispute?.resolved;
+
+  const borderCls = isDisputed
+    ? "border-red-500/50 shadow-[0_0_12px_rgba(239,68,68,0.15)]"
+    : isFinal
+    ? "border-amber-500/30 shadow-[0_0_20px_rgba(251,191,36,0.08)]"
+    : "border-slate-700/60";
+
+  return (
+    <div
+      onClick={onClick}
+      className={`relative overflow-hidden rounded-xl border bg-slate-900/90 backdrop-blur-sm transition-all duration-200 cursor-pointer hover:border-slate-500/70 hover:shadow-lg hover:shadow-black/40 hover:-translate-y-px ${borderCls}`}
+      style={{ minHeight: `${BC_CARD_H}px` }}
+    >
+      {isFinal && (
+        <div className="absolute inset-0 bg-linear-to-br from-amber-500/5 via-transparent to-orange-500/5 pointer-events-none" />
+      )}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-size-[20px_20px] pointer-events-none" />
+
+      {/* Disputed badge */}
+      {isDisputed && (
+        <div className="absolute top-1 right-1 z-10 px-1.5 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[9px] font-bold text-red-400 uppercase tracking-wider">
+          Dispute
+        </div>
+      )}
+
+      {/* Participant 1 */}
+      <div className={`relative flex items-center justify-between gap-2 px-3 py-2.5 ${
+        p1Win
+          ? "bg-linear-to-r from-orange-500/10 to-transparent border-l-2 border-orange-400"
+          : p2Win ? "border-l-2 border-transparent opacity-50" : "border-l-2 border-transparent"
+      }`}>
+        <div className="flex items-center gap-2 min-w-0">
+          {p1Win && <Crown className="w-3 h-3 text-amber-400 shrink-0" />}
+          <span className={`text-xs font-semibold truncate ${p1Win ? "text-white" : p2Win ? "text-slate-500" : "text-slate-300"}`}>
+            {p1Label}
+          </span>
+        </div>
+        {renderScore(displayP1, penaltyData ? penaltyData.pen1 : null, p1Win)}
+      </div>
+
+      <div className="h-px bg-slate-800/80 mx-2" />
+
+      {/* Participant 2 */}
+      <div className={`relative flex items-center justify-between gap-2 px-3 py-2.5 ${
+        p2Win
+          ? "bg-linear-to-r from-orange-500/10 to-transparent border-l-2 border-orange-400"
+          : p1Win ? "border-l-2 border-transparent opacity-50" : "border-l-2 border-transparent"
+      }`}>
+        <div className="flex items-center gap-2 min-w-0">
+          {p2Win && <Crown className="w-3 h-3 text-amber-400 shrink-0" />}
+          <span className={`text-xs font-semibold truncate ${p2Win ? "text-white" : p1Win ? "text-slate-500" : "text-slate-300"}`}>
+            {p2Label}
+          </span>
+        </div>
+        {renderScore(displayP2, penaltyData ? penaltyData.pen2 : null, p2Win)}
+      </div>
+
+      {/* Footer */}
+      <div className="h-px bg-slate-800/60 mx-2" />
+      <div className="flex items-center justify-between px-3 py-1.5">
+        <span className={`flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide ${txtCls}`}>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotCls}`} />
+          {statusRaw.replace(/_/g, " ")}
+        </span>
+        <span className="text-[10px] text-slate-600 tabular-nums">
+          {scheduledAt
+            ? new Date(scheduledAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+            : "TBD"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Bracket Board ─────────────────────────────────────────
+function BcBoard({ rounds, onMatchClick }) {
+  const layouts    = rounds.map((r, i) => bcRoundLayout(i, (r.matches ?? []).length));
+  const boardHeight = Math.max(...layouts.map((l) => l.height), 0);
+
+  return (
+    <div
+      className="relative flex gap-14"
+      style={{
+        minWidth:  `${rounds.length * (BC_COL_W + 56)}px`,
+        minHeight: `${boardHeight + 48}px`,
+      }}
+    >
+      {rounds.map((round, ri) => {
+        const layout     = layouts[ri];
+        const matches    = round.matches ?? [];
+        const title      = bcRoundTitle(round, ri, rounds.length);
+        const style      = bcRoundStyle(title);
+        const isFinalRnd = title.toLowerCase().includes("final") && !title.toLowerCase().includes("semi") && !title.toLowerCase().includes("quarter");
+        const connLeft   = BC_COL_W;
+
+        return (
+          <div key={ri} className="relative shrink-0" style={{ width: `${BC_COL_W}px`, minHeight: `${boardHeight}px` }}>
+            {/* Round header */}
+            <div className="flex justify-center mb-5">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-[0.14em] border ${style.pill} ${style.glow}`}>
+                {isFinalRnd && <Crown className="w-3 h-3" />}
+                {title}
+              </span>
+            </div>
+
+            {/* Match cards */}
+            <div className="relative" style={{ paddingTop: `${layout.topOffset}px` }}>
+              <div className="flex flex-col" style={{ rowGap: `${layout.gap}px` }}>
+                {matches.map((match, mi) => {
+                  const matchId = match._id ?? match.id;
+                  return (
+                    <BcMatchCard
+                      key={matchId ?? mi}
+                      match={match}
+                      isFinal={isFinalRnd}
+                      onClick={() => onMatchClick?.(match)}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Connector lines */}
+              {ri < rounds.length - 1 && matches.length > 0 && (
+                <div className="absolute inset-0 pointer-events-none" style={{ overflow: "visible" }}>
+                  {matches.map((_, mi) => {
+                    const cy = layout.topOffset + mi * (BC_CARD_H + layout.gap) + BC_CARD_H / 2;
+                    return (
+                      <div key={`out-${mi}`} className="absolute bg-slate-600/60"
+                        style={{ left: `${connLeft}px`, top: `${cy}px`, width: `${BC_CONN_OUT}px`, height: "1.5px" }} />
+                    );
+                  })}
+                  {Array.from({ length: Math.floor(matches.length / 2) }).map((_, pi) => {
+                    const top = pi * 2, bot = top + 1;
+                    const yTop = layout.topOffset + top * (BC_CARD_H + layout.gap) + BC_CARD_H / 2;
+                    const yBot = layout.topOffset + bot * (BC_CARD_H + layout.gap) + BC_CARD_H / 2;
+                    const yMid = (yTop + yBot) / 2;
+                    const xV = connLeft + BC_CONN_OUT;
+                    return (
+                      <div key={`pair-${pi}`}>
+                        <div className="absolute bg-slate-600/60" style={{ left: `${xV}px`, top: `${yTop}px`, width: "1.5px", height: `${yBot - yTop}px` }} />
+                        <div className="absolute bg-slate-600/60" style={{ left: `${xV}px`, top: `${yMid}px`, width: `${BC_CONN_IN}px`, height: "1.5px" }} />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Admin Bracket Section ─────────────────────────────────
+function AdminBracketSection({ tournamentId }: { tournamentId: string }) {
+  const [rounds, setRounds]         = useState<any[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<any>(null);
+
+  useEffect(() => {
+    if (!tournamentId) return;
+    setLoading(true);
+    setError(null);
+    adminService.fetchBracket(tournamentId)
+      .then((data) => {
+        setRounds(bcExtractRounds(data));
+      })
+      .catch((e) => setError(e.message ?? "Failed to load bracket"))
+      .finally(() => setLoading(false));
+  }, [tournamentId]);
+
+  const totalMatches   = rounds.reduce((acc, r) => acc + (r.matches?.length ?? 0), 0);
+  const completedCount = rounds.reduce((acc, r) => acc + (r.matches ?? []).filter((m) => m.status === "completed").length, 0);
+  const liveCount      = rounds.reduce((acc, r) => acc + (r.matches ?? []).filter((m) => ["in_progress", "live", "ongoing"].includes(m.status ?? "")).length, 0);
+  const disputeCount   = rounds.reduce((acc, r) => acc + (r.matches ?? []).filter((m) => m.dispute?.is_disputed && !m.dispute?.resolved).length, 0);
+
+  return (
+    <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden">
+      {/* Header */}
+      <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-slate-800 bg-slate-800/30">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-violet-400/15 border border-violet-400/25 flex items-center justify-center shrink-0">
+            <Swords className="w-4 h-4 text-violet-400" />
+          </div>
+          <h2 className="text-sm font-semibold text-white">Bracket</h2>
+        </div>
+        {!loading && !error && rounds.length > 0 && (
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
+            <span className="text-xs text-slate-500">{rounds.length} rounds · {totalMatches} matches</span>
+            {liveCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-orange-400/15 text-orange-300 border-orange-400/25">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                {liveCount} live
+              </span>
+            )}
+            {completedCount > 0 && (
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-400/10 text-emerald-400 border-emerald-400/20">
+                {completedCount}/{totalMatches} done
+              </span>
+            )}
+            {disputeCount > 0 && (
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-red-500/15 text-red-400 border-red-500/25">
+                {disputeCount} dispute{disputeCount > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Body */}
+      {loading ? (
+        <div className="flex items-center justify-center py-14 text-slate-500 gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">Loading bracket…</span>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-14 text-center px-6 gap-3">
+          <AlertCircle className="w-8 h-8 text-slate-600" />
+          <p className="text-sm text-slate-500">{error}</p>
+        </div>
+      ) : rounds.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-14 text-center px-6 gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center">
+            <Swords className="w-5 h-5 text-slate-600" />
+          </div>
+          <p className="text-sm text-slate-400 font-medium">Bracket not generated yet</p>
+          <p className="text-xs text-slate-600">Use "Regenerate Bracket" once players are registered.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto p-5 pb-6">
+          <BcBoard rounds={rounds} onMatchClick={(m) => setSelectedMatch(m)} />
+        </div>
+      )}
+
+      {selectedMatch && (
+        <BcMatchModal
+          match={selectedMatch}
+          onClose={() => setSelectedMatch(null)}
+          onOverrideComplete={() => {
+            // Re-fetch bracket so scores update, then refresh the open modal with updated match data
+            adminService.fetchBracket(tournamentId).then((data) => {
+              const newRounds = bcExtractRounds(data);
+              setRounds(newRounds);
+              // Find the updated match by ID and keep modal open with fresh data
+              const matchId = String(selectedMatch._id ?? selectedMatch.id ?? "");
+              let updated: any = null;
+              for (const r of newRounds) {
+                const found = (r.matches ?? []).find((m: any) => String(m._id ?? m.id ?? "") === matchId);
+                if (found) { updated = found; break; }
+              }
+              setSelectedMatch(updated ?? null);
+            }).catch(() => {});
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
    MAIN PAGE
 ══════════════════════════════════════════════════════════ */
 const TournamentDetail = () => {
@@ -1043,6 +1837,9 @@ const TournamentDetail = () => {
 
             {/* Participants */}
             <ParticipantsSection tournamentId={id} />
+
+            {/* Bracket */}
+            <AdminBracketSection tournamentId={id} />
 
             {/* Description */}
             {tournament.description && (

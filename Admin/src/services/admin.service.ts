@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from '../utils/api.utils';
-import { AUTH_ENDPOINTS, TOURNAMENT_ENDPOINTS, FINANCE_ENDPOINTS } from '../config/api.config';
+import { API_BASE_URLS, AUTH_ENDPOINTS, TOURNAMENT_ENDPOINTS, FINANCE_ENDPOINTS } from '../config/api.config';
 import { getAdminAccessToken } from '../utils/auth.utils';
 import type { AdminStats, ManagedUser } from '../types/admin.types';
 
@@ -994,5 +994,24 @@ export const adminService = {
       const msg = (response as any).error?.message ?? 'Failed to generate bracket';
       throw new Error(msg);
     }
+  },
+
+  async adminSetMatchScore(matchId: string, score1: number, score2: number, reason: string): Promise<void> {
+    const url = `${API_BASE_URLS.TOURNAMENT}/admin/matches/${matchId}/set-score`;
+    const response = await apiPost(url, { score1, score2, reason }, adminHeaders());
+    if (!response.success) {
+      const msg = (response as any).error?.message ?? 'Failed to set match score';
+      throw new Error(msg);
+    }
+  },
+
+  async fetchBracket(tournamentId: string): Promise<Record<string, unknown>> {
+    const url = `${API_BASE_URLS.TOURNAMENT}/bracket/${tournamentId}/bracket`;
+    const response = await apiGet(url, adminHeaders());
+    if (!response.success) {
+      const msg = (response as any).error?.message ?? 'Failed to fetch bracket';
+      throw new Error(msg);
+    }
+    return response.data as Record<string, unknown>;
   },
 };
