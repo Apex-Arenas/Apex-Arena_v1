@@ -152,8 +152,8 @@ function ScoreDisplay({ s1, s2, n1, n2, p1Won, p2Won, reason }: {
         </div>
       </div>
 
-      {/* Penalty scores — separate row */}
-      {penalty && (
+      {/* Penalty scores — full breakdown when data exists */}
+      {penalty ? (
         <div className="grid grid-cols-[1fr_auto_1fr] border-t border-amber-500/20 bg-amber-500/5">
           <div className="flex flex-col items-center py-2.5 px-3 gap-0.5">
             <p className="text-[9px] text-amber-500/70 uppercase tracking-widest">Penalties</p>
@@ -167,7 +167,14 @@ function ScoreDisplay({ s1, s2, n1, n2, p1Won, p2Won, reason }: {
             <span className={`font-display text-2xl font-bold tabular-nums ${penalty.pen2 > penalty.pen1 ? 'text-amber-300' : 'text-slate-500'}`}>{penalty.pen2}</span>
           </div>
         </div>
-      )}
+      ) : rt1 === rt2 && (p1Won || p2Won) ? (
+        /* Equal scores but a winner exists — decided on penalties, exact scores not recorded */
+        <div className="flex items-center justify-center gap-2 border-t border-amber-500/20 bg-amber-500/5 py-2">
+          <span className="text-[10px] text-amber-400 font-bold uppercase tracking-widest">
+            {p1Won ? n1 : n2} won on penalties
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -208,7 +215,15 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
     try {
       await organizerService.setMatchScore(matchId, finalS1, finalS2, reason);
       onActionComplete();
-      onClose();
+      // Reload match data in-place so the updated penalty display is immediately visible
+      setOverriding(false);
+      setShowScoreOverride(false);
+      setOverrideS1('');
+      setOverrideS2('');
+      setOverridePenalty1('');
+      setOverridePenalty2('');
+      setOverrideReason('');
+      await load();
     } catch (e: any) {
       setOverrideError(e.message ?? 'Failed to set score.');
       setOverriding(false);
@@ -419,11 +434,15 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
             const winnerId = hasPenalties
               ? (p1 > p2 ? match!.player1Id : match!.player2Id)
               : (isDraw ? null : selectedWinnerId!);
+            const penaltyNote = hasPenalties
+              ? `Regular time: ${score1}\u2013${score2} \u00B7 Penalties: ${p1}\u2013${p2}`
+              : undefined;
             doAction(() => tournamentService.submitMatchResult(
               matchId,
               winnerId,
               { screenshots: [screenshotUrl] },
-              { player1: Number(score1), player2: Number(score2) }
+              { player1: Number(score1), player2: Number(score2) },
+              penaltyNote,
             ));
           }}
           disabled={(() => {

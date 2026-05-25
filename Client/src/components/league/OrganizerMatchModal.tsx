@@ -276,14 +276,19 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
                 const pen = parsePenaltyReason(match.reason);
                 const rt1 = pen ? pen.rt1 : match.player1Score;
                 const rt2 = pen ? pen.rt2 : match.player2Score;
+                const decidedOnPen = !pen && rt1 === rt2 && (p1Won || p2Won);
                 return (
                   <>
                     <span className="text-2xl font-bold text-white tabular-nums">{rt1} – {rt2}</span>
-                    {pen && (
+                    {pen ? (
                       <span className="text-[10px] text-amber-400 font-semibold tabular-nums">
                         Pen: {pen.pen1} – {pen.pen2}
                       </span>
-                    )}
+                    ) : decidedOnPen ? (
+                      <span className="text-[10px] text-amber-400 font-semibold">
+                        {p1Won ? match.player1Name : match.player2Name} won on pens
+                      </span>
+                    ) : null}
                   </>
                 );
               })()}

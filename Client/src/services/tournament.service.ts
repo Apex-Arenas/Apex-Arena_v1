@@ -1103,6 +1103,7 @@ export const tournamentService = {
     winnerId: string | null, // null = draw
     proof?: { screenshots?: string[]; videoUrl?: string },
     scores?: { player1: number; player2: number },
+    note?: string,
   ): Promise<void> {
     const body: Record<string, unknown> = winnerId ? { winnerId } : { isDraw: true };
     if (proof) {
@@ -1112,6 +1113,7 @@ export const tournamentService = {
       };
     }
     if (scores) body.scores = scores;
+    if (note) body.note = note;
     const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_RESULT}/${matchId}/result`, body);
     if (!response.success) {
       const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to submit result';

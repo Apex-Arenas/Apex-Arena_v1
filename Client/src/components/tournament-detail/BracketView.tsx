@@ -267,7 +267,7 @@ function MatchCard({
     ? "border-amber-500/30 shadow-[0_0_20px_rgba(251,191,36,0.08)]"
     : "border-slate-700/60";
 
-  const renderScore = (regular: number | null, pen: number | null, isWinner: boolean) => {
+  const renderScore = (regular: number | null, pen: number | null, isWinner: boolean, decidedOnPen?: boolean) => {
     if (!hasScores) return <span className="text-slate-700">—</span>;
     if (pen !== null) {
       return (
@@ -278,6 +278,14 @@ function MatchCard({
           <span className="text-[9px] text-amber-500/80 font-bold tabular-nums">
             ({pen})
           </span>
+        </div>
+      );
+    }
+    if (decidedOnPen && isWinner) {
+      return (
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-xs font-bold tabular-nums text-orange-300">{regular ?? "—"}</span>
+          <span className="text-[9px] text-amber-500/80 font-bold">(P)</span>
         </div>
       );
     }
@@ -312,6 +320,7 @@ function MatchCard({
   })();
   const displayP1 = penaltyOverride ? penaltyOverride.rt1 : p1Total;
   const displayP2 = penaltyOverride ? penaltyOverride.rt2 : p2Total;
+  const decidedOnPen = !penaltyOverride && displayP1 === displayP2 && (p1Win || p2Win);
 
   return (
     <div
@@ -347,7 +356,7 @@ function MatchCard({
             </span>
           )}
         </div>
-        {renderScore(displayP1, penaltyOverride ? penaltyOverride.pen1 : null, p1Win)}
+        {renderScore(displayP1, penaltyOverride ? penaltyOverride.pen1 : null, p1Win, decidedOnPen)}
       </div>
 
       <div className="h-px bg-slate-800/80 mx-2" />
@@ -373,7 +382,7 @@ function MatchCard({
             </span>
           )}
         </div>
-        {renderScore(displayP2, penaltyOverride ? penaltyOverride.pen2 : null, p2Win)}
+        {renderScore(displayP2, penaltyOverride ? penaltyOverride.pen2 : null, p2Win, decidedOnPen)}
       </div>
 
       {/* ── Two-leg score breakdown (dropdown) ── */}
