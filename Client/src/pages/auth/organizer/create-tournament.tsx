@@ -1207,7 +1207,16 @@ const CreateTournament = () => {
                   )}
                   {["single_elimination", "double_elimination"].includes(tournamentType) && (
                     <Field label="Knockout Match Format" required>
-                      <select value={defaultBestOf} onChange={(e) => setDefaultBestOf(e.target.value)} className={selectCls}>
+                      <select
+                        value={defaultBestOf}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setDefaultBestOf(v);
+                          if (v === '2') setTournamentType('double_elimination');
+                          else if (v === '1') setTournamentType('single_elimination');
+                        }}
+                        className={selectCls}
+                      >
                         <option value="1">Single Match (standard knockout)</option>
                         <option value="2">Two Legs — UCL Style (home &amp; away)</option>
                       </select>

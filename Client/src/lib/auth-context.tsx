@@ -21,6 +21,9 @@ import { saveTokens, clearTokens } from "../utils/auth.utils";
 import {
   startTokenRefreshTimer,
   stopTokenRefreshTimer,
+  isSessionInactive,
+  clearLastActive,
+  touchLastActive,
 } from "../utils/token-refresh.utils";
 
 const AUTH_STORAGE_KEY = "apex_arenas_auth";
@@ -238,6 +241,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     try {
       await authService.logout(accessToken);
     } finally {
+      clearLastActive();
       setSession(null, null);
     }
   }, [setSession]);
@@ -293,7 +297,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           error instanceof ApiRequestError &&
           (error.status === 401 || error.status === 403);
 
-        if (isAuthError && stored.tokens.refreshToken) {
+        if (isAuthError && stored.tokens.refreshToken && !isSessionInactive()) {
           // Token expired — try refreshing directly (don't go through the
           // callback so we avoid any state-timing issues during init)
           try {
@@ -358,6 +362,15 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
     return () => stopTokenRefreshTimer();
   }, [tokens?.accessToken, refreshAccessToken]);
+
+  // Track user activity — update lastActive on any interaction while logged in
+  useEffect(() => {
+    if (!tokens?.accessToken) return;
+    const events = ['mousedown', 'keydown', 'touchstart', 'scroll'] as const;
+    const handler = () => touchLastActive();
+    events.forEach(e => window.addEventListener(e, handler, { passive: true }));
+    return () => events.forEach(e => window.removeEventListener(e, handler));
+  }, [tokens?.accessToken]);
 
   const value = useMemo<AuthContextValue>(() => {
     return {
