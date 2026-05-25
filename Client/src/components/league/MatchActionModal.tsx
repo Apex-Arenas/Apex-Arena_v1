@@ -803,7 +803,10 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
 
       // Submit form
       const accentColor = currentLeg === 3 ? 'amber' : currentLeg === 2 ? 'violet' : 'orange';
-      const label = currentLeg === 3 ? 'Enter Penalty Scores' : currentLeg === 2 ? 'Enter Leg 2 Scores' : 'Enter Leg 1 Scores';
+      const label = currentLeg === 3 ? 'Enter Penalty Scores'
+        : currentLeg === 2 ? 'Enter Leg 2 Scores'
+        : isTwoLeg ? 'Enter Leg 1 Scores'
+        : 'Enter Match Score';
       return renderScoreInputForm(label, accentColor);
     }
 
