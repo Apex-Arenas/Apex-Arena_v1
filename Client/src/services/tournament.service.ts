@@ -129,6 +129,10 @@ export interface FullMatch {
   currentLeg?: number; // 1 | 2 | 3 (penalties)
   isTwoLeg: boolean;
   legs: MatchLeg[]; // confirmed legs so far
+  // Organizer-submitted leg scores (two-leg UCL knockout flow)
+  leg1Score?: { team1: number; team2: number };
+  leg2Score?: { team1: number; team2: number };
+  penaltyScore?: { team1: number; team2: number };
   player1Id: string;
   player1Name: string;
   player1Score: number;
@@ -1065,6 +1069,10 @@ export const tournamentService = {
       completed_at: g.completed_at as string | undefined,
     }));
 
+    const rawLeg1 = m.leg1_score as Record<string, unknown> | undefined;
+    const rawLeg2 = m.leg2_score as Record<string, unknown> | undefined;
+    const rawPen = m.penalty_score as Record<string, unknown> | undefined;
+
     return {
       matchId: String(m._id ?? m.id ?? ''),
       matchweek: m.matchweek !== undefined ? Number(m.matchweek) : undefined,
@@ -1072,6 +1080,9 @@ export const tournamentService = {
       currentLeg: rawCurrentLeg,
       isTwoLeg,
       legs,
+      leg1Score: rawLeg1 ? { team1: Number(rawLeg1.team1 ?? 0), team2: Number(rawLeg1.team2 ?? 0) } : undefined,
+      leg2Score: rawLeg2 ? { team1: Number(rawLeg2.team1 ?? 0), team2: Number(rawLeg2.team2 ?? 0) } : undefined,
+      penaltyScore: rawPen ? { team1: Number(rawPen.team1 ?? 0), team2: Number(rawPen.team2 ?? 0) } : undefined,
       player1Id: extractId(p1.user_id ?? p1.team_id),
       player1Name: String(p1.in_game_id ?? p1.display_name ?? p1.username ?? '') || 'TBD',
       player1Score: Number(p1.score ?? 0),

@@ -951,6 +951,30 @@ export const organizerService = {
     }
   },
 
+  async submitMatchScore(
+    matchId: string,
+    leg: 1 | 2,
+    team1Score: number,
+    team2Score: number,
+    options?: { penaltyTeam1?: number; penaltyTeam2?: number }
+  ): Promise<{ requires_penalties: boolean }> {
+    const body: Record<string, unknown> = {
+      leg,
+      team1_score: team1Score,
+      team2_score: team2Score,
+    };
+    if (options?.penaltyTeam1 !== undefined) body.penalty_team1 = options.penaltyTeam1;
+    if (options?.penaltyTeam2 !== undefined) body.penalty_team2 = options.penaltyTeam2;
+
+    const response = await apiPost(`${TOURNAMENT_ENDPOINTS.MATCH_SCORE}/${matchId}/score`, body);
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to submit match score';
+      throw new Error(msg);
+    }
+    const data = (response as { success: true; data: Record<string, unknown> }).data;
+    return { requires_penalties: Boolean(data.requires_penalties) };
+  },
+
   async getMyDisputes(options?: { limit?: number; skip?: number }): Promise<{ disputes: any[]; total: number }> {
     const params = new URLSearchParams();
     if (options?.limit) params.set('limit', String(options.limit));

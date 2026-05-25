@@ -28,6 +28,7 @@ export interface BracketMatch {
   match_number?: number;
   bracket_position?: string; // 'upper' | 'lower' | 'grand_final' | 'main'
   status?: string;
+  current_leg?: number;
   scheduled_at?: string;
   scheduled_time?: string;
   schedule?: {
@@ -36,6 +37,10 @@ export interface BracketMatch {
   participants?: BracketParticipant[];
   games?: BracketMatchGame[];
   format?: { best_of?: number };
+  // Organizer-submitted leg scores (two-leg UCL knockout flow)
+  leg1_score?: { team1: number; team2: number };
+  leg2_score?: { team1: number; team2: number };
+  penalty_score?: { team1: number; team2: number };
   winner_id?: string | { _id?: string; id?: string };
   loser_id?: string | { _id?: string; id?: string };
   result_reported_by?: string | { _id?: string; id?: string };

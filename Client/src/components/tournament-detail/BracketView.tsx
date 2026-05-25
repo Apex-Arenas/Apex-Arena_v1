@@ -80,6 +80,8 @@ const STATUS_DOT: Record<string, string> = {
   live: "bg-orange-400 animate-pulse",
   pending: "bg-slate-500",
   scheduled: "bg-cyan-400",
+  leg1_done: "bg-amber-400",
+  awaiting_penalties: "bg-orange-400 animate-pulse",
 };
 
 const STATUS_TEXT: Record<string, string> = {
@@ -88,6 +90,21 @@ const STATUS_TEXT: Record<string, string> = {
   live: "text-orange-400",
   pending: "text-slate-500",
   scheduled: "text-cyan-400",
+  leg1_done: "text-amber-400",
+  awaiting_penalties: "text-orange-400",
+};
+
+const STATUS_DISPLAY_LABEL: Record<string, string> = {
+  pending: "Upcoming",
+  scheduled: "Scheduled",
+  leg1_done: "Leg 1 Done",
+  awaiting_penalties: "Penalties",
+  completed: "Completed",
+  in_progress: "In Progress",
+  live: "Live",
+  ongoing: "Ongoing",
+  disputed: "Disputed",
+  cancelled: "Cancelled",
 };
 
 // ─── Two-leg score helpers ────────────────────────────────────────────────────
@@ -248,7 +265,11 @@ function MatchCard({
 
   const dotCls  = STATUS_DOT[statusRaw]  ?? STATUS_DOT.pending;
   const txtCls  = STATUS_TEXT[statusRaw] ?? STATUS_TEXT.pending;
-  const statusLabel = statusRaw.replace(/_/g, " ");
+  const statusLabel = STATUS_DISPLAY_LABEL[statusRaw] ?? statusRaw.replace(/_/g, " ");
+
+  // For leg1_done: show "First Leg Complete — Second Leg to be played"
+  const isLeg1Done = statusRaw === "leg1_done";
+  const isAwaitingPenalties = statusRaw === "awaiting_penalties";
 
   const isMeInMatch = p1IsMe || p2IsMe;
   const borderAccent = isMeInMatch
@@ -374,6 +395,22 @@ function MatchCard({
         </div>
         {renderScore(displayP2, penaltyOverride ? penaltyOverride.pen2 : null, p2Win, decidedOnPen)}
       </div>
+
+      {/* ── Two-leg status banners ── */}
+      {isLeg1Done && (
+        <div className="mx-2 mb-1 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25">
+          <p className="text-[10px] font-semibold text-amber-400 text-center">
+            First Leg Complete — Second Leg to be played
+          </p>
+        </div>
+      )}
+      {isAwaitingPenalties && (
+        <div className="mx-2 mb-1 px-2.5 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/25">
+          <p className="text-[10px] font-semibold text-orange-400 text-center">
+            Aggregate level — Penalty shootout required
+          </p>
+        </div>
+      )}
 
       {/* ── Two-leg score breakdown (dropdown) ── */}
       {hasLegData && <LegScoreDropdown

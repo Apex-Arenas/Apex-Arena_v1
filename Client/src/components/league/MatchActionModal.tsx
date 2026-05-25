@@ -200,6 +200,12 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
   const [overriding, setOverriding] = useState(false);
   const [overrideError, setOverrideError] = useState<string | null>(null);
 
+  // Organizer two-leg score submission
+  const [orgS1, setOrgS1] = useState('');
+  const [orgS2, setOrgS2] = useState('');
+  const [orgSubmitting, setOrgSubmitting] = useState(false);
+  const [orgError, setOrgError] = useState<string | null>(null);
+
   async function handleScoreOverride() {
     const s1 = parseInt(overrideS1, 10);
     const s2 = parseInt(overrideS2, 10);
@@ -229,6 +235,28 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
     } catch (e: any) {
       setOverrideError(e.message ?? 'Failed to set score.');
       setOverriding(false);
+    }
+  }
+
+  async function handleOrgLegScore() {
+    if (!match) return;
+    const s1 = parseInt(orgS1, 10);
+    const s2 = parseInt(orgS2, 10);
+    if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return;
+    if (match.status === 'awaiting_penalties' && s1 === s2) return;
+    const leg = match.status === 'pending' ? 1 : match.status === 'leg1_done' ? 2 : 3;
+    setOrgSubmitting(true);
+    setOrgError(null);
+    try {
+      await organizerService.submitMatchScore(matchId, leg, s1, s2);
+      setOrgS1('');
+      setOrgS2('');
+      setOrgSubmitting(false);
+      onActionComplete();
+      await load();
+    } catch (e: any) {
+      setOrgError(e.message ?? 'Failed to submit score.');
+      setOrgSubmitting(false);
     }
   }
 
@@ -519,8 +547,104 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
     );
   }
 
+  function renderOrgLegPanel() {
+    if (!match) return null;
+    const status = match.status;
+    const leg = status === 'pending' ? 1 : status === 'leg1_done' ? 2 : 3;
+    const isPenalties = status === 'awaiting_penalties';
+    const s1v = parseInt(orgS1, 10);
+    const s2v = parseInt(orgS2, 10);
+    const validScores = orgS1 !== '' && orgS2 !== '' && !isNaN(s1v) && !isNaN(s2v) && s1v >= 0 && s2v >= 0;
+    const penaltiesEqual = isPenalties && validScores && s1v === s2v;
+    const title = isPenalties ? 'Submit Penalty Scores' : `Submit Leg ${leg} Score`;
+
+    return (
+      <div className={`rounded-2xl border overflow-hidden ${isPenalties ? 'border-amber-500/25 bg-amber-500/5' : 'border-indigo-500/20 bg-indigo-500/5'}`}>
+        <div className={`px-4 py-3 ${isPenalties ? 'bg-amber-500/10' : 'bg-indigo-500/10'}`}>
+          <div className="flex items-center gap-2">
+            <div className={`w-6 h-6 rounded-md flex items-center justify-center border ${isPenalties ? 'bg-amber-500/20 border-amber-500/30' : 'bg-indigo-500/20 border-indigo-500/30'}`}>
+              <Trophy className={`w-3.5 h-3.5 ${isPenalties ? 'text-amber-400' : 'text-indigo-400'}`} />
+            </div>
+            <span className={`text-xs font-bold uppercase tracking-widest ${isPenalties ? 'text-amber-300' : 'text-indigo-300'}`}>
+              {title}
+            </span>
+          </div>
+        </div>
+        <div className="px-4 py-4 space-y-3">
+          <div className="flex items-end gap-3">
+            <div className="flex-1 space-y-1.5">
+              <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player1Name}</p>
+              <input
+                type="number" min={0} value={orgS1}
+                onChange={e => setOrgS1(e.target.value)}
+                placeholder="0"
+                className={`w-full bg-slate-900/80 border rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none transition-colors placeholder:text-slate-700 ${isPenalties ? 'border-amber-500/30 focus:border-amber-400' : 'border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20'}`}
+              />
+            </div>
+            <div className="pb-3 text-slate-600 font-bold text-xl select-none">–</div>
+            <div className="flex-1 space-y-1.5">
+              <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player2Name}</p>
+              <input
+                type="number" min={0} value={orgS2}
+                onChange={e => setOrgS2(e.target.value)}
+                placeholder="0"
+                className={`w-full bg-slate-900/80 border rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none transition-colors placeholder:text-slate-700 ${isPenalties ? 'border-amber-500/30 focus:border-amber-400' : 'border-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20'}`}
+              />
+            </div>
+          </div>
+          {isPenalties && penaltiesEqual && (
+            <p className="text-[11px] text-rose-400">Penalty scores must not be equal — a winner is required.</p>
+          )}
+          {orgError && (
+            <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{orgError}</p>
+          )}
+          <button
+            onClick={handleOrgLegScore}
+            disabled={orgSubmitting || !validScores || penaltiesEqual}
+            className={`w-full py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-40 transition-colors flex items-center justify-center gap-2 ${isPenalties ? 'bg-amber-600 hover:bg-amber-500' : 'bg-indigo-600 hover:bg-indigo-500'}`}
+          >
+            {orgSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
+            {title}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   function renderContent() {
     if (!match) return null;
+
+    // ── LEG 1 DONE ────────────────────────────────────────────────────────
+    if (match.status === 'leg1_done') {
+      if (isOrganizer) return renderOrgLegPanel();
+      return (
+        <div className="flex flex-col items-center gap-4 py-6 text-center">
+          <div className="w-14 h-14 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+            <Clock className="w-7 h-7 text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white">First Leg Complete</p>
+            <p className="text-xs text-slate-400 mt-1">Second leg is yet to be played.</p>
+          </div>
+        </div>
+      );
+    }
+
+    // ── AWAITING PENALTIES ────────────────────────────────────────────────
+    if (match.status === 'awaiting_penalties') {
+      if (isOrganizer) return renderOrgLegPanel();
+      return (
+        <div className="flex flex-col items-center gap-4 py-6 text-center">
+          <div className="w-14 h-14 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+            <Swords className="w-7 h-7 text-orange-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white">Aggregate Level</p>
+            <p className="text-xs text-slate-400 mt-1">Penalty shootout required to determine the winner.</p>
+          </div>
+        </div>
+      );
+    }
 
     // ── COMPLETED ──────────────────────────────────────────────────────────
     if (match.status === 'completed') {
@@ -708,6 +832,10 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
     // ── ACTIVE MATCH (pending / scheduled / ongoing) ────────────────────────
     if (['ongoing', 'scheduled', 'pending'].includes(match.status)) {
       if (!iParticipant) {
+        // Organizer can submit leg scores for two-leg pending matches directly
+        if (isOrganizer && isTwoLeg && match.status === 'pending') {
+          return renderOrgLegPanel();
+        }
         return (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <div className="w-14 h-14 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
