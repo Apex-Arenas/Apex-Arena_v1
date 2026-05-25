@@ -729,6 +729,67 @@ function bcRoundLayout(roundIndex, matchCount) {
 
 // ── Extract rounds from flat matches ──────────────────────
 function bcBuildRounds(matches) {
+  // Detect double elimination by presence of 'upper'/'lower'/'grand_final' positions
+  const isDE = matches.some((m) =>
+    ["upper", "lower", "grand_final"].includes(m.bracket_position)
+  );
+
+  if (isDE) {
+    const wbMatches = matches.filter((m) =>
+      m.bracket_position === "upper" || m.bracket_position === "main"
+    );
+    const lbMatches = matches.filter((m) => m.bracket_position === "lower");
+    const gfMatches = matches.filter((m) => m.bracket_position === "grand_final");
+
+    const groupByRound = (arr) => {
+      const map = new Map();
+      for (const m of arr) {
+        const r = Number(m.round ?? 1) || 1;
+        const list = map.get(r) ?? [];
+        list.push(m);
+        map.set(r, list);
+      }
+      return Array.from(map.entries()).sort(([a], [b]) => a - b);
+    };
+
+    const wbEntries = groupByRound(wbMatches);
+    const lbEntries = groupByRound(lbMatches);
+    const wbTotal = wbEntries.length;
+    const lbTotal = lbEntries.length;
+
+    const rounds: any[] = [];
+
+    for (const [r, ms] of wbEntries) {
+      rounds.push({
+        round: r,
+        round_number: r,
+        bracket: "upper",
+        round_name: wbTotal === 1 || r === wbTotal ? "WB Finals" : `WB Round ${r}`,
+        matches: [...ms].sort((a, b) => (a.match_number ?? 999) - (b.match_number ?? 999)),
+      });
+    }
+    for (const [r, ms] of lbEntries) {
+      rounds.push({
+        round: r,
+        round_number: r,
+        bracket: "lower",
+        round_name: r === lbTotal ? "LB Finals" : `LB Round ${r}`,
+        matches: [...ms].sort((a, b) => (a.match_number ?? 999) - (b.match_number ?? 999)),
+      });
+    }
+    if (gfMatches.length > 0) {
+      rounds.push({
+        round: 1,
+        round_number: 1,
+        bracket: "grand_final",
+        round_name: "Grand Final",
+        matches: [...gfMatches].sort((a, b) => (a.match_number ?? 999) - (b.match_number ?? 999)),
+      });
+    }
+    return rounds;
+  }
+
+  // Single elimination / round robin: group by round number
   const byRound = new Map();
   for (const m of matches) {
     const r = Number(m.round ?? m.round_number ?? 1) || 1;
@@ -775,8 +836,14 @@ function bcRoundTitle(round, index, total) {
   return `Round ${num}`;
 }
 
-function bcRoundStyle(title) {
+function bcRoundStyle(title, bracket?) {
   const t = title.toLowerCase();
+  if (bracket === "grand_final" || (t.includes("grand") && t.includes("final")))
+    return { pill: "bg-amber-500/20 text-amber-300 border-amber-500/40", glow: "shadow-[0_0_32px_rgba(251,191,36,0.18)]" };
+  if (bracket === "lower" || t.includes("lb"))
+    return { pill: "bg-red-500/15 text-red-300 border-red-500/30", glow: "" };
+  if (bracket === "upper" || t.includes("wb"))
+    return { pill: "bg-violet-500/15 text-violet-300 border-violet-500/30", glow: "" };
   if (t.includes("final") && !t.includes("semi") && !t.includes("quarter"))
     return { pill: "bg-amber-500/15 text-amber-300 border-amber-500/30", glow: "shadow-[0_0_24px_rgba(251,191,36,0.12)]" };
   if (t.includes("semi"))
@@ -1329,7 +1396,7 @@ function BcBoard({ rounds, onMatchClick }) {
         const layout     = layouts[ri];
         const matches    = round.matches ?? [];
         const title      = bcRoundTitle(round, ri, rounds.length);
-        const style      = bcRoundStyle(title);
+        const style      = bcRoundStyle(title, round.bracket);
         const isFinalRnd = title.toLowerCase().includes("final") && !title.toLowerCase().includes("semi") && !title.toLowerCase().includes("quarter");
         const connLeft   = BC_COL_W;
 
