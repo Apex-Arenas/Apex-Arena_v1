@@ -243,12 +243,20 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
     const s1 = parseInt(orgS1, 10);
     const s2 = parseInt(orgS2, 10);
     if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return;
-    if (match.status === 'awaiting_penalties' && s1 === s2) return;
-    const leg = match.status === 'pending' ? 1 : match.status === 'leg1_done' ? 2 : 3;
+    const isPen = match.status === 'awaiting_penalties';
+    if (isPen && s1 === s2) return;
+    // leg is always 1 or 2 — the server determines penalty handling from match.status
+    const leg: 1 | 2 = match.status === 'pending' ? 1 : 2;
     setOrgSubmitting(true);
     setOrgError(null);
     try {
-      await organizerService.submitMatchScore(matchId, leg, s1, s2);
+      await organizerService.submitMatchScore(
+        matchId,
+        leg,
+        isPen ? 0 : s1,
+        isPen ? 0 : s2,
+        isPen ? { penaltyTeam1: s1, penaltyTeam2: s2 } : undefined,
+      );
       setOrgS1('');
       setOrgS2('');
       setOrgSubmitting(false);
