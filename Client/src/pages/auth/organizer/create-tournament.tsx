@@ -536,10 +536,13 @@ const CreateTournament = () => {
     }
   }, [isFree]);
 
-  // Double elimination requires at least 4 players — enforce the floor when type changes
+  // Enforce type-specific defaults when tournament type changes
   useEffect(() => {
     if (tournamentType === 'double_elimination') {
       setMinParticipants(prev => (Number(prev) < 4 ? '4' : prev));
+      setDefaultBestOf('2');
+    } else if (tournamentType === 'single_elimination') {
+      setDefaultBestOf('1');
     }
   }, [tournamentType]);
 
