@@ -57,31 +57,21 @@ function getRoundTitle(round: BracketRound, index: number, total: number): strin
   return `Round ${num}`;
 }
 
-function getRoundStyle(title: string): { pill: string; glow: string; label: string } {
+function getRoundStyle(title: string, bracket?: string): { pill: string; glow: string; label: string } {
   const t = title.toLowerCase();
-  if (t.includes("grand final") || t.includes("final") && !t.includes("semi") && !t.includes("quarter"))
-    return {
-      pill:  "bg-amber-500/15 text-amber-300 border-amber-500/30",
-      glow:  "shadow-[0_0_24px_rgba(251,191,36,0.12)]",
-      label: title,
-    };
+  if (bracket === "grand_final" || (t.includes("grand") && t.includes("final")))
+    return { pill: "bg-amber-500/20 text-amber-300 border-amber-500/40", glow: "shadow-[0_0_28px_rgba(251,191,36,0.18)]", label: title };
+  if (bracket === "lower" || t.includes("lb"))
+    return { pill: "bg-red-500/15 text-red-300 border-red-500/30", glow: "", label: title };
+  if (bracket === "upper" || t.includes("wb"))
+    return { pill: "bg-violet-500/15 text-violet-300 border-violet-500/30", glow: "", label: title };
+  if (t.includes("grand final") || (t.includes("final") && !t.includes("semi") && !t.includes("quarter")))
+    return { pill: "bg-amber-500/15 text-amber-300 border-amber-500/30", glow: "shadow-[0_0_24px_rgba(251,191,36,0.12)]", label: title };
   if (t.includes("semi"))
-    return {
-      pill:  "bg-violet-500/15 text-violet-300 border-violet-500/30",
-      glow:  "",
-      label: title,
-    };
+    return { pill: "bg-violet-500/15 text-violet-300 border-violet-500/30", glow: "", label: title };
   if (t.includes("quarter"))
-    return {
-      pill:  "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
-      glow:  "",
-      label: title,
-    };
-  return {
-    pill:  "bg-slate-700/60 text-slate-400 border-slate-600/40",
-    glow:  "",
-    label: title,
-  };
+    return { pill: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30", glow: "", label: title };
+  return { pill: "bg-slate-700/60 text-slate-400 border-slate-600/40", glow: "", label: title };
 }
 
 const STATUS_DOT: Record<string, string> = {
@@ -411,9 +401,9 @@ function MatchCard({
   );
 }
 
-// ─── Main BracketView ─────────────────────────────────────────────────────────
+// ─── Single section renderer (used for WB, LB, GF, or SE) ───────────────────
 
-function BracketSection({
+function BracketColumns({
   rounds,
   onMatchClick,
   currentUserId,
@@ -439,7 +429,7 @@ function BracketSection({
         const layout  = layouts[ri];
         const matches = round.matches ?? [];
         const title   = getRoundTitle(round, ri, rounds.length);
-        const style   = getRoundStyle(title);
+        const style   = getRoundStyle(title, round.bracket);
         const isFinalRound = title.toLowerCase().includes("final") && !title.toLowerCase().includes("semi") && !title.toLowerCase().includes("quarter");
         const connectorLeft = BRACKET_COLUMN_WIDTH;
 
@@ -511,6 +501,18 @@ function BracketSection({
   );
 }
 
+// ─── DE section label ─────────────────────────────────────────────────────────
+
+function DESectionLabel({ label, color }: { label: string; color: string }) {
+  return (
+    <div className={`flex items-center gap-2 mb-3 px-1`}>
+      <div className={`h-px flex-1 ${color} opacity-30`} />
+      <span className={`text-[10px] font-bold uppercase tracking-[0.18em] ${color}`}>{label}</span>
+      <div className={`h-px flex-1 ${color} opacity-30`} />
+    </div>
+  );
+}
+
 export default function BracketView({
   rounds,
   onMatchClick,
@@ -534,9 +536,43 @@ export default function BracketView({
     );
   }
 
+  // Detect double elimination
+  const isDE = rounds.some((r) => r.bracket === "lower" || r.bracket === "grand_final");
+
+  if (isDE) {
+    const wbRounds = rounds.filter((r) => r.bracket === "upper" || !r.bracket);
+    const lbRounds = rounds.filter((r) => r.bracket === "lower");
+    const gfRounds = rounds.filter((r) => r.bracket === "grand_final");
+
+    const colProps = { onMatchClick, currentUserId, currentInGameId };
+
+    return (
+      <div className="space-y-8">
+        {wbRounds.length > 0 && (
+          <div className="overflow-x-auto pb-2 -mx-1 px-1">
+            <DESectionLabel label="Winners Bracket" color="text-violet-400 bg-violet-400" />
+            <BracketColumns rounds={wbRounds} {...colProps} />
+          </div>
+        )}
+        {lbRounds.length > 0 && (
+          <div className="overflow-x-auto pb-2 -mx-1 px-1">
+            <DESectionLabel label="Losers Bracket" color="text-red-400 bg-red-400" />
+            <BracketColumns rounds={lbRounds} {...colProps} />
+          </div>
+        )}
+        {gfRounds.length > 0 && (
+          <div className="overflow-x-auto pb-4 -mx-1 px-1">
+            <DESectionLabel label="Grand Final" color="text-amber-400 bg-amber-400" />
+            <BracketColumns rounds={gfRounds} {...colProps} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto pb-4 -mx-1 px-1">
-      <BracketSection rounds={rounds} onMatchClick={onMatchClick} currentUserId={currentUserId} currentInGameId={currentInGameId} />
+      <BracketColumns rounds={rounds} onMatchClick={onMatchClick} currentUserId={currentUserId} currentInGameId={currentInGameId} />
     </div>
   );
 }

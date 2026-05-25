@@ -1076,7 +1076,7 @@ function BcMatchModal({ match, onClose, onOverrideComplete }: { match: any; onCl
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative aspect-video rounded-xl overflow-hidden border border-slate-700/60 hover:border-violet-500/50 transition-colors block bg-slate-800 w-full max-w-[280px]"
+                    className="group relative aspect-video rounded-xl overflow-hidden border border-slate-700/60 hover:border-violet-500/50 transition-colors block bg-slate-800 w-full max-w-70"
                   >
                     <img src={url} alt={`Screenshot ${i + 1}`} className="w-full h-full object-cover group-hover:opacity-70 transition-opacity" />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/40">

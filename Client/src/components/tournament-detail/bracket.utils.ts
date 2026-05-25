@@ -82,9 +82,71 @@ export function getOpponentLabel(
   return getParticipantLabel(opponent);
 }
 
-function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
-  const byRound = new Map<number, BracketMatch[]>();
+function sortByMatchNumber(matches: BracketMatch[]): BracketMatch[] {
+  return [...matches].sort(
+    (a, b) => (a.match_number ?? Number.MAX_SAFE_INTEGER) - (b.match_number ?? Number.MAX_SAFE_INTEGER),
+  );
+}
 
+function groupByRound(matches: BracketMatch[], bracket: string): BracketRound[] {
+  const byRound = new Map<number, BracketMatch[]>();
+  matches.forEach((m) => {
+    const r = Number(m.round ?? m.round_number ?? 1) || 1;
+    const arr = byRound.get(r) ?? [];
+    arr.push(m);
+    byRound.set(r, arr);
+  });
+  return Array.from(byRound.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([round, ms]) => ({
+      round,
+      round_number: round,
+      bracket,
+      matches: sortByMatchNumber(ms),
+    }));
+}
+
+function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
+  // Detect double elimination by bracket_position values
+  const isDE = matches.some((m) =>
+    m.bracket_position === "upper" ||
+    m.bracket_position === "lower" ||
+    m.bracket_position === "grand_final",
+  );
+
+  if (isDE) {
+    const wbMatches = matches.filter(
+      (m) => m.bracket_position === "upper" || m.bracket_position === "main",
+    );
+    const lbMatches = matches.filter((m) => m.bracket_position === "lower");
+    const gfMatches = matches.filter((m) => m.bracket_position === "grand_final");
+
+    const wbRounds = groupByRound(wbMatches, "upper");
+    const lbRounds = groupByRound(lbMatches, "lower");
+
+    // Label WB rounds
+    const wbTotal = wbRounds.length;
+    wbRounds.forEach((r, i) => {
+      r.round_name = wbTotal === 1 || i === wbTotal - 1 ? "WB Finals" : `WB Round ${i + 1}`;
+      r.name = r.round_name;
+    });
+
+    // Label LB rounds
+    const lbTotal = lbRounds.length;
+    lbRounds.forEach((r, i) => {
+      r.round_name = i === lbTotal - 1 ? "LB Finals" : `LB Round ${i + 1}`;
+      r.name = r.round_name;
+    });
+
+    const gfRound: BracketRound[] = gfMatches.length > 0
+      ? [{ round: 1, round_number: 1, bracket: "grand_final", round_name: "Grand Final", name: "Grand Final", matches: sortByMatchNumber(gfMatches) }]
+      : [];
+
+    return [...wbRounds, ...lbRounds, ...gfRound];
+  }
+
+  // Single elimination / round robin: group by round number
+  const byRound = new Map<number, BracketMatch[]>();
   matches.forEach((match) => {
     const roundValue = match.round ?? match.round_number ?? 1;
     const round = Number.isFinite(Number(roundValue)) ? Number(roundValue) : 1;
@@ -95,21 +157,13 @@ function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
 
   return Array.from(byRound.entries())
     .sort(([a], [b]) => a - b)
-    .map(([round, roundMatches]) => {
-      const sortedMatches = [...roundMatches].sort((a, b) => {
-        const aNum = a.match_number ?? Number.MAX_SAFE_INTEGER;
-        const bNum = b.match_number ?? Number.MAX_SAFE_INTEGER;
-        return aNum - bNum;
-      });
-
-      return {
-        round,
-        round_number: round,
-        round_name: sortedMatches[0]?.round_name,
-        name: sortedMatches[0]?.round_name,
-        matches: sortedMatches,
-      };
-    });
+    .map(([round, roundMatches]) => ({
+      round,
+      round_number: round,
+      round_name: roundMatches[0]?.round_name,
+      name: roundMatches[0]?.round_name,
+      matches: sortByMatchNumber(roundMatches),
+    }));
 }
 
 

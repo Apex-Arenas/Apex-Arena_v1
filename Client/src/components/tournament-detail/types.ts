@@ -54,6 +54,8 @@ export interface BracketRound {
   round_name?: string;
   name?: string;
   matches?: BracketMatch[];
+  /** DE only: 'upper' | 'lower' | 'grand_final' */
+  bracket?: string;
 }
 
 export const BRACKET_VISIBLE_STATUSES = new Set([

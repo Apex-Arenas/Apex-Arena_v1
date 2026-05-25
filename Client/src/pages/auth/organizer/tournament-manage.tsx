@@ -1219,20 +1219,25 @@ const TournamentManage = () => {
       ? Math.round((completedBracketMatches / totalBracketMatches) * 100)
       : 0;
 
+  // Group by bracket section + round so DE upper/lower rounds don't collide
+  const isDE = bracketMatches.some(
+    (m) => m.bracketPosition === "lower" || m.bracketPosition === "grand_final",
+  );
   const bracketRoundStats = Array.from(
     bracketMatches.reduce((acc, match) => {
-      const existing = acc.get(match.round) ?? { total: 0, completed: 0 };
+      const key = isDE
+        ? `${match.bracketPosition ?? "main"}-${match.round}`
+        : match.round;
+      const existing = acc.get(key) ?? { total: 0, completed: 0, round: match.round };
       existing.total += 1;
-      if (match.status === "completed") {
-        existing.completed += 1;
-      }
-      acc.set(match.round, existing);
+      if (match.status === "completed") existing.completed += 1;
+      acc.set(key, existing);
       return acc;
-    }, new Map<number, { total: number; completed: number }>()),
+    }, new Map<number | string, { total: number; completed: number; round: number }>()),
   )
-    .sort(([a], [b]) => a - b)
-    .map(([round, stats]) => ({
-      round,
+    .sort(([a], [b]) => String(a).localeCompare(String(b)))
+    .map(([, stats]) => ({
+      round: stats.round,
       total: stats.total,
       completed: stats.completed,
       done: stats.total > 0 && stats.completed === stats.total,
