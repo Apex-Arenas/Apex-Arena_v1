@@ -242,7 +242,7 @@ const CreateTournament = () => {
   const [mapPool, setMapPool] = useState("");
   const [antiCheatRequired, setAntiCheatRequired] = useState(true);
   const [streamRequired, setStreamRequired] = useState(false);
-  const [defaultBestOf, setDefaultBestOf] = useState("3");
+  const [defaultBestOf, setDefaultBestOf] = useState("2");
   const [inGameIdRequired, setInGameIdRequired] = useState(true);
   const [allowedRegions, setAllowedRegions] = useState("");
   const [verifiedEmailRequired, setVerifiedEmailRequired] = useState(true);
@@ -481,7 +481,7 @@ const CreateTournament = () => {
         setMapPool(mapPoolList.join(", "));
         setAntiCheatRequired(Boolean(rulesData.anti_cheat_required ?? true));
         setStreamRequired(Boolean(rulesData.stream_required ?? false));
-        setDefaultBestOf(String(rulesData.default_best_of ?? 3));
+        setDefaultBestOf(String(rulesData.default_best_of ?? 2));
         setInGameIdRequired(Boolean(rulesData.in_game_id_required ?? true));
         setAllowedRegions(allowedRegionList.join(", "));
         setVerifiedEmailRequired(
