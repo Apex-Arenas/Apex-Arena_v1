@@ -19,13 +19,17 @@ export function getParticipantEntityId(participant?: BracketParticipant): string
 
 export function getParticipantLabel(participant?: BracketParticipant): string {
   if (!participant) return "TBD";
-  if (participant.in_game_id) return participant.in_game_id;
+  const inGameId = participant.in_game_id?.trim();
+  if (inGameId && inGameId !== "TBD") return inGameId;
   if (participant.username) return participant.username;
 
   if (participant.user_id && typeof participant.user_id === "object") {
     const username = participant.user_id.username;
     if (username) return username;
   }
+
+  // Fallback: show in_game_id even if it's 'TBD' to distinguish from truly empty slot
+  if (inGameId) return inGameId;
 
   return "TBD";
 }
