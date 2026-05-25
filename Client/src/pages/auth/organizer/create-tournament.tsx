@@ -536,6 +536,13 @@ const CreateTournament = () => {
     }
   }, [isFree]);
 
+  // Double elimination requires at least 4 players — enforce the floor when type changes
+  useEffect(() => {
+    if (tournamentType === 'double_elimination') {
+      setMinParticipants(prev => (Number(prev) < 4 ? '4' : prev));
+    }
+  }, [tournamentType]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -648,8 +655,9 @@ const CreateTournament = () => {
       setError("Maximum participants must be at least 2.");
       return;
     }
-    if (!Number.isFinite(minParticipantsValue) || minParticipantsValue < 2) {
-      setError("Minimum participants must be at least 2.");
+    const minAllowed = tournamentType === 'double_elimination' ? 4 : 2;
+    if (!Number.isFinite(minParticipantsValue) || minParticipantsValue < minAllowed) {
+      setError(`Minimum participants must be at least ${minAllowed}${tournamentType === 'double_elimination' ? ' for double elimination' : ''}.`);
       return;
     }
     if (minParticipantsValue > maxParticipantsValue) {
@@ -1132,76 +1140,43 @@ const CreateTournament = () => {
                       ))}
                     </select>
                   </Field>
-                  <Field label="Tournament Type" required>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        {
-                          value: "single_elimination",
-                          label: "Single Elimination",
-                          sub: "One loss and you're out",
-                          icon: <GitBranch className="w-5 h-5" />,
-                          accent: "cyan",
-                        },
-                        {
-                          value: "double_elimination",
-                          label: "Double Elimination",
-                          sub: "Two losses to be eliminated",
-                          icon: <Repeat className="w-5 h-5" />,
-                          accent: "indigo",
-                        },
-                        {
-                          value: "round_robin",
-                          label: "Round Robin",
-                          sub: "Everyone plays everyone",
-                          icon: <LayoutGrid className="w-5 h-5" />,
-                          accent: "emerald",
-                        },
-                        {
-                          value: "swiss",
-                          label: "Swiss",
-                          sub: "Matched by similar records",
-                          icon: <Shuffle className="w-5 h-5" />,
-                          accent: "amber",
-                        },
-                        {
-                          value: "battle_royale",
-                          label: "Battle Royale",
-                          sub: "Last player standing wins",
-                          icon: <Sword className="w-5 h-5" />,
-                          accent: "red",
-                        },
-                        {
-                          value: "league",
-                          label: "League",
-                          sub: "Premier League style",
-                          icon: <ListOrdered className="w-5 h-5" />,
-                          accent: "orange",
-                        },
-                      ].map(({ value, label, sub, icon, accent }) => {
-                        const selected = tournamentType === value;
-                        const colors: Record<string, string> = {
-                          cyan:    selected ? "border-cyan-500 bg-cyan-500/10 text-cyan-300"    : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-cyan-500/50 hover:text-slate-200",
-                          indigo:  selected ? "border-indigo-500 bg-indigo-500/10 text-indigo-300"  : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-indigo-500/50 hover:text-slate-200",
-                          emerald: selected ? "border-emerald-500 bg-emerald-500/10 text-emerald-300" : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-emerald-500/50 hover:text-slate-200",
-                          amber:   selected ? "border-amber-500 bg-amber-500/10 text-amber-300"  : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-amber-500/50 hover:text-slate-200",
-                          red:     selected ? "border-red-500 bg-red-500/10 text-red-300"        : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-red-500/50 hover:text-slate-200",
-                          orange:  selected ? "border-orange-500 bg-orange-500/10 text-orange-300" : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-orange-500/50 hover:text-slate-200",
-                        };
-                        return (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => setTournamentType(value)}
-                            className={`flex flex-col gap-1.5 p-3 rounded-xl border text-left transition-all ${colors[accent]}`}
-                          >
-                            <span className="shrink-0">{icon}</span>
-                            <span className="text-xs font-bold leading-tight">{label}</span>
-                            <span className="text-[10px] text-slate-500 leading-tight">{sub}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </Field>
+                  <div className="col-span-2">
+                    <Field label="Tournament Type" required>
+                      <div className="grid grid-cols-6 gap-2">
+                        {[
+                          { value: "single_elimination", label: "Single Elim",   sub: "One loss and out",  icon: <GitBranch className="w-4 h-4" />, accent: "cyan",    disabled: false },
+                          { value: "double_elimination", label: "Double Elim",   sub: "Two losses out",    icon: <Repeat className="w-4 h-4" />,    accent: "indigo",  disabled: false },
+                          { value: "round_robin",        label: "Round Robin",   sub: "Coming soon",       icon: <LayoutGrid className="w-4 h-4" />, accent: "emerald", disabled: true },
+                          { value: "swiss",              label: "Swiss",         sub: "Coming soon",       icon: <Shuffle className="w-4 h-4" />,   accent: "amber",   disabled: true },
+                          { value: "battle_royale",      label: "Battle Royale", sub: "Coming soon",       icon: <Sword className="w-4 h-4" />,     accent: "red",     disabled: true },
+                          { value: "league",             label: "League",        sub: "PL style",          icon: <ListOrdered className="w-4 h-4" />, accent: "orange", disabled: false },
+                        ].map(({ value, label, sub, icon, accent, disabled }) => {
+                          const selected = tournamentType === value;
+                          const colors: Record<string, string> = {
+                            cyan:    selected ? "border-cyan-500 bg-cyan-500/10 text-cyan-300"         : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-cyan-500/50 hover:text-slate-200",
+                            indigo:  selected ? "border-indigo-500 bg-indigo-500/10 text-indigo-300"   : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-indigo-500/50 hover:text-slate-200",
+                            emerald: "border-slate-800 bg-slate-800/20 text-slate-600",
+                            amber:   "border-slate-800 bg-slate-800/20 text-slate-600",
+                            red:     "border-slate-800 bg-slate-800/20 text-slate-600",
+                            orange:  selected ? "border-orange-500 bg-orange-500/10 text-orange-300"   : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-orange-500/50 hover:text-slate-200",
+                          };
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              disabled={disabled}
+                              onClick={() => !disabled && setTournamentType(value)}
+                              className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-center transition-all ${colors[accent]} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                            >
+                              <span className="shrink-0">{icon}</span>
+                              <span className="text-[11px] font-bold leading-tight">{label}</span>
+                              <span className="text-[9px] leading-tight">{sub}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </Field>
+                  </div>
                   {tournamentType === "league" ? (
                     <Field label="League Legs" required>
                       <select value={leagueLegs} onChange={(e) => setLeagueLegs(e.target.value as "1" | "2")} className={selectCls}>
@@ -1341,7 +1316,10 @@ const CreateTournament = () => {
                   </Field>
                   <Field label="Min Players" required>
                     <input type="number" value={minParticipants} onChange={(e) => setMinParticipants(e.target.value)}
-                      min={2} className={inputCls} />
+                      min={tournamentType === 'double_elimination' ? 4 : 2} className={inputCls} />
+                    {tournamentType === 'double_elimination' && (
+                      <p className="text-[11px] text-slate-500 mt-1.5">Double elimination requires at least 4 players.</p>
+                    )}
                   </Field>
                 </div>
                 {isTeamFormat(format) && (
