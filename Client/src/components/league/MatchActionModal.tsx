@@ -132,8 +132,10 @@ function ScoreDisplay({ s1, s2, n1, n2, p1Won, p2Won, reason }: {
   // For penalty matches show regular time scores; otherwise show stored scores as-is
   const rt1 = penalty ? penalty.rt1 : s1;
   const rt2 = penalty ? penalty.rt2 : s2;
-  const h1 = p1Won !== undefined ? p1Won : rt1 > rt2;
-  const h2 = p2Won !== undefined ? p2Won : rt2 > rt1;
+  // Highlight the higher-scoring side — winner badge on PlayerCard already conveys who won.
+  // When scores are equal the winner (decided on penalties) gets the highlight instead.
+  const h1 = rt1 !== rt2 ? rt1 > rt2 : (p1Won ?? false);
+  const h2 = rt1 !== rt2 ? rt2 > rt1 : (p2Won ?? false);
 
   return (
     <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 overflow-hidden">

@@ -1048,7 +1048,10 @@ export const tournamentService = {
     const p1 = (parts[0] ?? {}) as Record<string, unknown>;
     const p2 = (parts[1] ?? {}) as Record<string, unknown>;
     const bestOf = Number((m.format as Record<string, unknown> | undefined)?.best_of ?? 1);
-    const isTwoLeg = bestOf === 2 && m.matchweek == null;
+    const rawCurrentLeg = m.current_leg !== undefined ? Number(m.current_leg) : 1;
+    // isTwoLeg: best_of===2 is the primary signal; current_leg>1 means the server already
+    // advanced past leg 1 so we must treat it as two-legged regardless of best_of.
+    const isTwoLeg = (bestOf === 2 || rawCurrentLeg > 1) && m.matchweek == null;
     const rawGames = Array.isArray(m.games) ? (m.games as Record<string, unknown>[]) : [];
     const legs: MatchLeg[] = rawGames.map(g => ({
       game_number: Number(g.game_number ?? 1),
@@ -1066,7 +1069,7 @@ export const tournamentService = {
       matchId: String(m._id ?? m.id ?? ''),
       matchweek: m.matchweek !== undefined ? Number(m.matchweek) : undefined,
       status: String(m.status ?? 'pending'),
-      currentLeg: m.current_leg !== undefined ? Number(m.current_leg) : (isTwoLeg ? 1 : undefined),
+      currentLeg: rawCurrentLeg,
       isTwoLeg,
       legs,
       player1Id: extractId(p1.user_id ?? p1.team_id),
