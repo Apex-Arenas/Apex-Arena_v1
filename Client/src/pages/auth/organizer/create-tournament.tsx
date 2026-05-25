@@ -1227,6 +1227,19 @@ const CreateTournament = () => {
                       </select>
                     </Field>
                   )}
+                  {["single_elimination", "double_elimination"].includes(tournamentType) && (
+                    <Field label="Knockout Match Format" required>
+                      <select value={defaultBestOf} onChange={(e) => setDefaultBestOf(e.target.value)} className={selectCls}>
+                        <option value="1">Single Match (standard knockout)</option>
+                        <option value="2">Two Legs — UCL Style (home &amp; away)</option>
+                      </select>
+                      <p className="text-[11px] text-slate-500 mt-1.5">
+                        {defaultBestOf === "2"
+                          ? "Each tie is played over two legs. Organizer submits scores per leg; aggregate decides the winner. Penalties if level."
+                          : "Each tie is a single match. The winner advances immediately."}
+                      </p>
+                    </Field>
+                  )}
                   <Field label="Region">
                     <select
                       value={region}
