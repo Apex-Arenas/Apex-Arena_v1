@@ -513,6 +513,7 @@ const TournamentManage = () => {
 
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGeneratingBracket, setIsGeneratingBracket] = useState(false);
+  const [isRepairingBracket, setIsRepairingBracket] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -849,6 +850,20 @@ const TournamentManage = () => {
     }
   };
 
+  const handleRepairBracket = async () => {
+    if (!tournamentId) return;
+    setIsRepairingBracket(true);
+    try {
+      const result = await organizerService.repairBracketAdvancement(tournamentId);
+      showToast("success", `Repaired ${result.repaired}/${result.total} match advancements.`);
+      await loadData();
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Failed to repair bracket.");
+    } finally {
+      setIsRepairingBracket(false);
+    }
+  };
+
   const handleGenerateLeagueFixtures = async () => {
     if (!tournamentId) return;
     setIsGeneratingFixtures(true);
@@ -997,19 +1012,32 @@ const TournamentManage = () => {
 
   const handleSetScore = async () => {
     if (!setScoreTarget) return;
+    const isPenMode = setScoreTarget.status === 'awaiting_penalties';
     const s1 = parseInt(setScoreInput.score1, 10);
     const s2 = parseInt(setScoreInput.score2, 10);
     if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return;
-    const isDraw = s1 === s2;
-    const p1 = parseInt(setScoreInput.penalty1, 10);
-    const p2 = parseInt(setScoreInput.penalty2, 10);
-    // For a draw, penalties are required and must not be equal
-    if (isDraw && (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2)) return;
-    // Submit penalty scores as decisive when it's a draw
-    const finalScore1 = isDraw ? p1 : s1;
-    const finalScore2 = isDraw ? p2 : s2;
-    const penaltyNote = isDraw ? `Regular time: ${s1}–${s2} · Penalties: ${p1}–${p2}` : "";
-    const reason = [penaltyNote, setScoreInput.reason].filter(Boolean).join(" · ") || undefined;
+
+    let finalScore1: number;
+    let finalScore2: number;
+    let reason: string | undefined;
+
+    if (isPenMode) {
+      // score1/score2 are penalty scores directly
+      if (s1 === s2) return;
+      finalScore1 = s1;
+      finalScore2 = s2;
+      reason = [setScoreInput.reason || `Penalty shootout: ${s1}–${s2}`].filter(Boolean).join(" · ");
+    } else {
+      const isDraw = s1 === s2;
+      const p1 = parseInt(setScoreInput.penalty1, 10);
+      const p2 = parseInt(setScoreInput.penalty2, 10);
+      if (isDraw && (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2)) return;
+      finalScore1 = isDraw ? p1 : s1;
+      finalScore2 = isDraw ? p2 : s2;
+      const penaltyNote = isDraw ? `Regular time: ${s1}–${s2} · Penalties: ${p1}–${p2}` : "";
+      reason = [penaltyNote, setScoreInput.reason].filter(Boolean).join(" · ") || undefined;
+    }
+
     setIsSettingScore(true);
     try {
       await organizerService.setMatchScore(setScoreTarget.id, finalScore1, finalScore2, reason);
@@ -1469,6 +1497,17 @@ const TournamentManage = () => {
                     <span className="hidden sm:inline">{isGeneratingBracket ? "Generating…" : hasBracketGenerated ? "Bracket Ready" : "Generate Bracket"}</span>
                     <span className="sm:hidden">{hasBracketGenerated ? "Ready" : "Generate"}</span>
                   </button>
+                  {hasBracketGenerated && (
+                    <button
+                      onClick={() => void handleRepairBracket()}
+                      disabled={isRepairingBracket}
+                      title="Re-run winner advancement for all completed matches"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 disabled:opacity-60 transition-all"
+                    >
+                      {isRepairingBracket ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      <span className="hidden sm:inline">{isRepairingBracket ? "Repairing…" : "Repair"}</span>
+                    </button>
+                  )}
                 </div>
               )}
               {canDepositPrizePool && (
@@ -2883,18 +2922,20 @@ const TournamentManage = () => {
 
 
       {/* Set Score Modal */}
-      {showSetScoreModal && setScoreTarget && (
+      {showSetScoreModal && setScoreTarget && (() => {
+        const isPenaltySubmission = setScoreTarget.status === 'awaiting_penalties';
+        return (
         <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl shadow-black/60">
             <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
-                  <Pencil className="w-4 h-4 text-orange-400" />
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isPenaltySubmission ? "bg-amber-500/15 border border-amber-500/25" : "bg-orange-500/15 border border-orange-500/25"}`}>
+                  <Pencil className={`w-4 h-4 ${isPenaltySubmission ? "text-amber-400" : "text-orange-400"}`} />
                 </div>
                 <div>
-                  <h3 className="font-display text-sm font-bold text-white">Set Match Score</h3>
+                  <h3 className="font-display text-sm font-bold text-white">{isPenaltySubmission ? "Penalty Shootout" : "Set Match Score"}</h3>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    R{setScoreTarget.round} · M{setScoreTarget.matchNumber} · Manual override
+                    R{setScoreTarget.round} · M{setScoreTarget.matchNumber} · {isPenaltySubmission ? "Aggregate level — enter penalty scores" : "Manual override"}
                   </p>
                 </div>
               </div>
@@ -2906,8 +2947,8 @@ const TournamentManage = () => {
               </button>
             </div>
             <div className="px-5 py-4 space-y-3">
-              {/* Quick outcome shortcuts */}
-              <div>
+              {/* Quick outcome shortcuts — hidden when submitting penalties */}
+              {!isPenaltySubmission && <div>
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Quick Set</p>
                 <div className="grid grid-cols-3 gap-1.5">
                   <button
@@ -2926,11 +2967,11 @@ const TournamentManage = () => {
                     onClick={() => setSetScoreInput(prev => ({ ...prev, score1: "0", score2: "0", penalty1: "", penalty2: "" }))}
                     className={`py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
                       setScoreInput.score1 === setScoreInput.score2 && setScoreInput.score1 !== ""
-                        ? "bg-slate-600/40 border-slate-500/60 text-slate-200"
+                        ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
                         : "bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white"
                     }`}
                   >
-                    Draw
+                    {(setScoreTarget.format?.best_of ?? 1) === 1 ? "Draw+Pen" : "Draw"}
                   </button>
                   <button
                     type="button"
@@ -2944,10 +2985,10 @@ const TournamentManage = () => {
                     {setScoreTarget.participants[1]?.inGameId?.split(" ")[0] || "P2"} Win
                   </button>
                 </div>
-              </div>
+              </div>}
 
-              {/* Manual score inputs */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Manual score inputs — hidden when submitting penalties */}
+              {!isPenaltySubmission && <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">
                     {setScoreTarget.participants[0]?.inGameId || "Player 1"}
@@ -2974,8 +3015,54 @@ const TournamentManage = () => {
                     className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-center text-xl font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
                   />
                 </div>
-              </div>
-              {setScoreInput.score1 !== "" && setScoreInput.score2 !== "" && (() => {
+              </div>}
+
+              {/* Penalty-only mode: aggregate level after two legs */}
+              {isPenaltySubmission && (
+                <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 space-y-2.5">
+                  <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Penalty Shootout — Required</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">
+                        {setScoreTarget.participants[0]?.inGameId || "Player 1"}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={setScoreInput.score1}
+                        onChange={e => setSetScoreInput(prev => ({ ...prev, score1: e.target.value }))}
+                        placeholder="0"
+                        className="w-full bg-slate-800/60 border border-amber-500/30 rounded-xl px-3 py-2 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-400/60 transition-colors"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">
+                        {setScoreTarget.participants[1]?.inGameId || "Player 2"}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={setScoreInput.score2}
+                        onChange={e => setSetScoreInput(prev => ({ ...prev, score2: e.target.value }))}
+                        placeholder="0"
+                        className="w-full bg-slate-800/60 border border-amber-500/30 rounded-xl px-3 py-2 text-center text-lg font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-400/60 transition-colors"
+                      />
+                    </div>
+                  </div>
+                  {(() => {
+                    const p1 = parseInt(setScoreInput.score1, 10);
+                    const p2 = parseInt(setScoreInput.score2, 10);
+                    if (!isNaN(p1) && !isNaN(p2) && setScoreInput.score1 !== "" && setScoreInput.score2 !== "") {
+                      if (p1 === p2) return <p className="text-[11px] text-rose-400">Penalty scores must not be equal — a winner is required.</p>;
+                      const winner = p1 > p2 ? setScoreTarget.participants[0]?.inGameId || "Player 1" : setScoreTarget.participants[1]?.inGameId || "Player 2";
+                      return <p className="text-[11px] text-cyan-300 font-semibold">{winner} wins on penalties</p>;
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
+
+              {!isPenaltySubmission && setScoreInput.score1 !== "" && setScoreInput.score2 !== "" && (() => {
                 const s1 = parseInt(setScoreInput.score1, 10);
                 const s2 = parseInt(setScoreInput.score2, 10);
                 if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return null;
@@ -3008,7 +3095,9 @@ const TournamentManage = () => {
 
                     {isDraw && (
                       <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 space-y-2.5">
-                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Penalty Shootout</p>
+                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
+                          Penalty Shootout{(setScoreTarget.format?.best_of ?? 1) === 1 ? " — Required" : ""}
+                        </p>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
                             <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">
@@ -3069,6 +3158,12 @@ const TournamentManage = () => {
                 onClick={() => { void handleSetScore(); }}
                 disabled={(() => {
                   if (isSettingScore) return true;
+                  if (isPenaltySubmission) {
+                    if (setScoreInput.score1 === "" || setScoreInput.score2 === "") return true;
+                    const p1 = parseInt(setScoreInput.score1, 10);
+                    const p2 = parseInt(setScoreInput.score2, 10);
+                    return isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2;
+                  }
                   if (setScoreInput.score1 === "" || setScoreInput.score2 === "") return true;
                   const s1 = parseInt(setScoreInput.score1, 10);
                   const s2 = parseInt(setScoreInput.score2, 10);
@@ -3084,12 +3179,13 @@ const TournamentManage = () => {
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {isSettingScore ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                {isSettingScore ? "Setting…" : "Confirm Score"}
+                {isSettingScore ? "Setting…" : isPenaltySubmission ? "Confirm Penalties" : "Confirm Score"}
               </button>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Match score entry for organizer-as-player */}
       {activeMatchId && user?.id && (

@@ -881,6 +881,16 @@ export const organizerService = {
     }
   },
 
+  async repairBracketAdvancement(tournamentId: string): Promise<{ repaired: number; total: number; errors: string[] }> {
+    const url = `${TOURNAMENT_ENDPOINTS.BRACKET}/${tournamentId}/bracket/repair`;
+    const response = await apiPost(url, {});
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to repair bracket advancement';
+      throw new Error(msg);
+    }
+    return (response as { data: { repaired: number; total: number; errors: string[] } }).data;
+  },
+
   async removePlayer(tournamentId: string, userId: string, reason?: string): Promise<void> {
     const response = await apiDelete(
       `${TOURNAMENT_ENDPOINTS.TOURNAMENT_REGISTRATIONS}/${tournamentId}/players/${userId}`,
