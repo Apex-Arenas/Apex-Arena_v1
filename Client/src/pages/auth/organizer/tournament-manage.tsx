@@ -2219,13 +2219,15 @@ const TournamentManage = () => {
 
               {/* ── Placements ── */}
               {(() => {
-                const gfRound = bracketRounds.find(r => r.bracket === "grand_final");
+                // For DE: find the dedicated grand_final round; for single elim: last round is the final
+                const gfRound = bracketRounds.find(r => r.bracket === "grand_final")
+                  ?? bracketRounds[bracketRounds.length - 1];
                 const gfMatch = gfRound?.matches?.find(m => m.status === "completed");
                 const champion = gfMatch?.participants?.find(p => p.result === "win");
                 const runnerUp = gfMatch?.participants?.find(p => p.result === "loss");
 
-                // 3rd: losers of the Semi Finals (last upper WB round)
-                const wbRoundsData = bracketRounds.filter(r => r.bracket === "upper" || (!r.bracket && r.bracket !== "grand_final"));
+                // 3rd: losers of the round before the final (SF for both DE and single elim)
+                const wbRoundsData = bracketRounds.filter(r => r !== gfRound && r.bracket !== "grand_final");
                 const sfRound = wbRoundsData[wbRoundsData.length - 1];
                 const sfLosers = sfRound?.matches
                   ?.filter(m => m.status === "completed")
