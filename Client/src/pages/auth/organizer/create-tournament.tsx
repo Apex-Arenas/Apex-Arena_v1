@@ -541,6 +541,14 @@ const CreateTournament = () => {
     if (tournamentType === 'double_elimination') {
       setMinParticipants(prev => (Number(prev) < 4 ? '4' : prev));
       setDefaultBestOf('2');
+      // Snap max participants to nearest valid power of 2 (min 4)
+      const DE_SIZES = [4, 8, 16, 32, 64];
+      setMaxParticipants(prev => {
+        const n = Number(prev);
+        if (DE_SIZES.includes(n)) return prev;
+        const snapped = DE_SIZES.find(s => s >= n) ?? DE_SIZES[DE_SIZES.length - 1];
+        return String(snapped);
+      });
     } else if (tournamentType === 'single_elimination') {
       setDefaultBestOf('1');
     }
@@ -1323,14 +1331,25 @@ const CreateTournament = () => {
               <SectionCard step={2} title="Participants" icon={Users}>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Max Players" required>
-                    <input type="number" value={maxParticipants} onChange={(e) => setMaxParticipants(e.target.value)}
-                      min={2} max={1024} className={inputCls} />
+                    {tournamentType === 'double_elimination' ? (
+                      <>
+                        <select value={maxParticipants} onChange={(e) => setMaxParticipants(e.target.value)} className={selectCls}>
+                          {[4, 8, 16, 32, 64].map(n => (
+                            <option key={n} value={n}>{n} players</option>
+                          ))}
+                        </select>
+                        <p className="text-[11px] text-slate-500 mt-1.5">Powers of 2 only — no auto-byes.</p>
+                      </>
+                    ) : (
+                      <input type="number" value={maxParticipants} onChange={(e) => setMaxParticipants(e.target.value)}
+                        min={2} max={1024} className={inputCls} />
+                    )}
                   </Field>
                   <Field label="Min Players" required>
                     <input type="number" value={minParticipants} onChange={(e) => setMinParticipants(e.target.value)}
                       min={tournamentType === 'double_elimination' ? 4 : 2} className={inputCls} />
                     {tournamentType === 'double_elimination' && (
-                      <p className="text-[11px] text-slate-500 mt-1.5">Double elimination requires at least 4 players.</p>
+                      <p className="text-[11px] text-slate-500 mt-1.5">Minimum 4 for double elimination.</p>
                     )}
                   </Field>
                 </div>
