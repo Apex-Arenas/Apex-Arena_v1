@@ -3,6 +3,7 @@ import { useAuth } from "../../../lib/auth-context";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ChevronLeft,
+  ChevronDown,
   Users,
   CheckCircle2,
   XCircle,
@@ -517,6 +518,7 @@ const TournamentManage = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGeneratingBracket, setIsGeneratingBracket] = useState(false);
   const [isRepairingBracket, setIsRepairingBracket] = useState(false);
+  const [tournamentInfoOpen, setTournamentInfoOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1500,17 +1502,7 @@ const TournamentManage = () => {
                     <span className="hidden sm:inline">{isGeneratingBracket ? "Generating…" : hasBracketGenerated ? "Bracket Ready" : "Generate Bracket"}</span>
                     <span className="sm:hidden">{hasBracketGenerated ? "Ready" : "Generate"}</span>
                   </button>
-                  {hasBracketGenerated && (
-                    <button
-                      onClick={() => void handleRepairBracket()}
-                      disabled={isRepairingBracket}
-                      title="Re-run winner advancement for all completed matches"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 disabled:opacity-60 transition-all"
-                    >
-                      {isRepairingBracket ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                      <span className="hidden sm:inline">{isRepairingBracket ? "Repairing…" : "Repair"}</span>
-                    </button>
-                  )}
+                  {/* Repair button hidden for now */}
                 </div>
               )}
               {canDepositPrizePool && (
@@ -2195,13 +2187,18 @@ const TournamentManage = () => {
         <div className="w-full lg:w-72 shrink-0 space-y-4 lg:sticky lg:top-6">
           {/* Tournament Info */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-800/60 bg-slate-950/20">
-              <div className="w-8 h-8 rounded-xl bg-slate-700/60 border border-slate-600/50 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setTournamentInfoOpen(v => !v)}
+              className="lg:pointer-events-none w-full flex items-center gap-2.5 px-5 py-4 border-b border-slate-800/60 bg-slate-950/20"
+            >
+              <div className="w-8 h-8 rounded-xl bg-slate-700/60 border border-slate-600/50 flex items-center justify-center shrink-0">
                 <CalendarDays className="w-4 h-4 text-slate-300" />
               </div>
-              <h2 className="font-display text-sm font-bold text-white">Tournament Info</h2>
-            </div>
-            <div className="p-4 space-y-2.5">
+              <h2 className="font-display text-sm font-bold text-white flex-1 text-left">Tournament Info</h2>
+              <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 lg:hidden ${tournamentInfoOpen ? "rotate-180" : ""}`} />
+            </button>
+            <div className={`p-4 space-y-2.5 ${tournamentInfoOpen ? "block" : "hidden"} lg:block`}>
               {[
                 { label: "Game", value: tournament.game?.name ?? "—" },
                 { label: "Type", value: (tournament.tournamentType ?? "—").replace(/_/g, " ") },
