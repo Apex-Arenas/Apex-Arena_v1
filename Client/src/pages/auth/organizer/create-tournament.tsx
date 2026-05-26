@@ -540,7 +540,7 @@ const CreateTournament = () => {
   useEffect(() => {
     if (tournamentType === 'double_elimination') {
       setMinParticipants(prev => (Number(prev) < 4 ? '4' : prev));
-      setDefaultBestOf('2');
+      setDefaultBestOf('2'); // always two legs, no choice
       // Snap max participants to nearest valid power of 2 (min 4)
       const DE_SIZES = [4, 8, 16, 32, 64];
       setMaxParticipants(prev => {
@@ -1214,21 +1214,10 @@ const CreateTournament = () => {
                     </Field>
                   )}
                   {tournamentType === 'double_elimination' && (
-                    <Field label="Knockout Match Format" required>
-                      <select
-                        value={defaultBestOf}
-                        onChange={(e) => setDefaultBestOf(e.target.value)}
-                        className={selectCls}
-                      >
-                        <option value="1">Single Match (standard knockout)</option>
-                        <option value="2">Two Legs — UCL Style (home &amp; away)</option>
-                      </select>
-                      <p className="text-[11px] text-slate-500 mt-1.5">
-                        {defaultBestOf === "2"
-                          ? "Each tie is played over two legs. Organizer submits scores per leg; aggregate decides the winner. Penalties if level."
-                          : "Each tie is a single match. The winner advances immediately."}
-                      </p>
-                    </Field>
+                    <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-2.5">
+                      <p className="text-xs font-semibold text-indigo-300">Two Legs — UCL Style</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Each tie is played over two legs. Aggregate score decides the winner. Penalties if level.</p>
+                    </div>
                   )}
                   <Field label="Region">
                     <select
