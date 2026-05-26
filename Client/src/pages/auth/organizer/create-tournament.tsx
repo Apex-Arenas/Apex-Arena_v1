@@ -536,6 +536,33 @@ const CreateTournament = () => {
     }
   }, [isFree]);
 
+  // Set default schedule dates on create (not edit)
+  useEffect(() => {
+    if (isEditMode) return;
+    const now = new Date();
+    const regClose = new Date(now.getTime() + 5 * 60_000);
+    const tourStart = new Date(now.getTime() + 10 * 60_000);
+    setRegistrationStart(toDateTimeLocalValue(now.toISOString()));
+    setRegistrationEnd(toDateTimeLocalValue(regClose.toISOString()));
+    setTournamentStart(toDateTimeLocalValue(tourStart.toISOString()));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-set check-in between tournament start and end; clear if no end
+  useEffect(() => {
+    if (isEditMode) return;
+    if (!tournamentStart || !tournamentEnd) {
+      setCheckInStart("");
+      setCheckInEnd("");
+      return;
+    }
+    const start = new Date(tournamentStart);
+    if (isNaN(start.getTime())) return;
+    const checkInS = new Date(start.getTime() - 30 * 60_000);
+    setCheckInStart(toDateTimeLocalValue(checkInS.toISOString()));
+    setCheckInEnd(tournamentStart);
+  }, [tournamentStart, tournamentEnd, isEditMode]);
+
   // Enforce type-specific defaults when tournament type changes
   useEffect(() => {
     if (tournamentType === 'double_elimination') {
