@@ -128,21 +128,39 @@ function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
     const wbRounds = groupByRound(wbMatches, "upper");
     const lbRounds = groupByRound(lbMatches, "lower");
 
+    // Determine if this is a simplified bracket (WB Finals moved into grand_final slot,
+    // no separate LB Finals / Grand Final match). Happens for 4-player DE (R=2).
+    const hasGrandFinalMatch = gfMatches.length > 0;
+    // In simplified mode the WB Finals IS the grand_final match — it shows in gfRound.
+    // In full DE the last wbRound is WB Finals leading into a separate Grand Final.
+    const simplifiedDE = hasGrandFinalMatch && wbRounds.length === 1;
+
     // Label WB rounds
     const wbTotal = wbRounds.length;
     wbRounds.forEach((r, i) => {
-      r.round_name = wbTotal === 1 || i === wbTotal - 1 ? "WB Finals" : `WB Round ${i + 1}`;
+      if (simplifiedDE) {
+        // WBR1 leads into Grand Final — call it "Semi Finals"
+        r.round_name = "Semi Finals";
+      } else {
+        r.round_name = wbTotal === 1 || i === wbTotal - 1 ? "WB Finals" : `WB Round ${i + 1}`;
+      }
       r.name = r.round_name;
     });
 
     // Label LB rounds
     const lbTotal = lbRounds.length;
     lbRounds.forEach((r, i) => {
-      r.round_name = i === lbTotal - 1 ? "LB Finals" : `LB Round ${i + 1}`;
+      if (!simplifiedDE && i === lbTotal - 1) {
+        r.round_name = "LB Finals";
+      } else if (simplifiedDE) {
+        r.round_name = "Consolation";
+      } else {
+        r.round_name = `LB Round ${i + 1}`;
+      }
       r.name = r.round_name;
     });
 
-    const gfRound: BracketRound[] = gfMatches.length > 0
+    const gfRound: BracketRound[] = hasGrandFinalMatch
       ? [{ round: 1, round_number: 1, bracket: "grand_final", round_name: "Grand Final", name: "Grand Final", matches: sortByMatchNumber(gfMatches) }]
       : [];
 
