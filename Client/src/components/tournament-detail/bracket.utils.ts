@@ -128,21 +128,21 @@ function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
     const wbRounds = groupByRound(wbMatches, "upper");
     const lbRounds = groupByRound(lbMatches, "lower");
 
-    // Determine if this is a simplified bracket (WB Finals moved into grand_final slot,
-    // no separate LB Finals / Grand Final match). Happens for 4-player DE (R=2).
     const hasGrandFinalMatch = gfMatches.length > 0;
-    // In simplified mode the WB Finals IS the grand_final match — it shows in gfRound.
-    // In full DE the last wbRound is WB Finals leading into a separate Grand Final.
-    const simplifiedDE = hasGrandFinalMatch && wbRounds.length === 1;
+    // Simplified 4-player DE: WBR1 → WB Finals → Grand Final
+    //                                  LBR1 (WBR1 losers) → Grand Final
+    // Detected when there's exactly 1 LB round and a separate Grand Final exists.
+    const simplifiedDE = hasGrandFinalMatch && lbRounds.length === 1 && wbRounds.length <= 2;
 
     // Label WB rounds
     const wbTotal = wbRounds.length;
     wbRounds.forEach((r, i) => {
-      if (simplifiedDE) {
-        // WBR1 leads into Grand Final — call it "Semi Finals"
+      if (simplifiedDE && i === 0 && wbTotal > 1) {
         r.round_name = "Semi Finals";
+      } else if (wbTotal === 1 || i === wbTotal - 1) {
+        r.round_name = "WB Finals";
       } else {
-        r.round_name = wbTotal === 1 || i === wbTotal - 1 ? "WB Finals" : `WB Round ${i + 1}`;
+        r.round_name = `WB Round ${i + 1}`;
       }
       r.name = r.round_name;
     });
@@ -150,10 +150,9 @@ function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
     // Label LB rounds
     const lbTotal = lbRounds.length;
     lbRounds.forEach((r, i) => {
+      // Only call it "LB Finals" in full DE where the LB has multiple rounds
       if (!simplifiedDE && i === lbTotal - 1) {
         r.round_name = "LB Finals";
-      } else if (simplifiedDE) {
-        r.round_name = "Consolation";
       } else {
         r.round_name = `LB Round ${i + 1}`;
       }
