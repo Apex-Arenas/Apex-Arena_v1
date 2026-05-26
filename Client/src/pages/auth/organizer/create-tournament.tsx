@@ -1333,12 +1333,26 @@ const CreateTournament = () => {
                   <Field label="Max Players" required>
                     {tournamentType === 'double_elimination' ? (
                       <>
-                        <select value={maxParticipants} onChange={(e) => setMaxParticipants(e.target.value)} className={selectCls}>
-                          {[4, 8, 16, 32, 64].map(n => (
-                            <option key={n} value={n}>{n} players</option>
-                          ))}
-                        </select>
-                        <p className="text-[11px] text-slate-500 mt-1.5">Powers of 2 only — no auto-byes.</p>
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {[4, 8, 16, 32, 64].map(n => {
+                            const selected = Number(maxParticipants) === n;
+                            return (
+                              <button
+                                key={n}
+                                type="button"
+                                onClick={() => setMaxParticipants(String(n))}
+                                className={`py-2 rounded-xl border text-xs font-bold transition-all ${
+                                  selected
+                                    ? 'border-indigo-500 bg-indigo-500/15 text-indigo-300'
+                                    : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:border-indigo-500/50 hover:text-slate-200'
+                                }`}
+                              >
+                                {n}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1.5">Powers of 2 — clean bracket, no auto-byes.</p>
                       </>
                     ) : (
                       <input type="number" value={maxParticipants} onChange={(e) => setMaxParticipants(e.target.value)}
