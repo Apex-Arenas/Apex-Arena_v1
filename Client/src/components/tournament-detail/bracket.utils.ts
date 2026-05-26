@@ -132,9 +132,9 @@ function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
     // Simplified 4-player DE: WBR1 → WB Finals → Grand Final
     //                                  LBR1 (WBR1 losers) → Grand Final
     // Detected when there's exactly 1 LB round and a separate Grand Final exists.
-    // Simplified 4-player DE: 1 WB round (Semi Finals) + 1 LB round + Grand Final.
-    // Both SF winners meet in GF directly — no WB Finals round.
-    const simplifiedDE = hasGrandFinalMatch && lbRounds.length === 1 && wbRounds.length === 1;
+    // Simplified 4-player DE: 1 WB round (Semi Finals) + Grand Final (no LB).
+    // Both SF winners meet in GF directly — no WB Finals, no Losers Bracket.
+    const simplifiedDE = hasGrandFinalMatch && lbRounds.length === 0 && wbRounds.length === 1;
 
     // Label WB rounds
     const wbTotal = wbRounds.length;

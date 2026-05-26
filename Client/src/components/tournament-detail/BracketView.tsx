@@ -583,48 +583,23 @@ export default function BracketView({
 
     const colProps = { onMatchClick, currentUserId, currentInGameId };
 
-    // Simplified 4-player DE: Semi Finals → Grand Final (left-to-right)
-    //                          LB Round 1 (consolation/3rd place, below)
-    // No WB Finals — both SF winners meet directly in Grand Final.
-    const isSimplifiedDE = wbRounds.length === 1 && lbRounds.length === 1 && gfRounds.length === 1;
+    // Simplified 4-player DE: Semi Finals → Grand Final (left-to-right), no LB.
+    const isSimplifiedDE = wbRounds.length === 1 && lbRounds.length === 0 && gfRounds.length === 1;
 
     if (isSimplifiedDE) {
-      // Merge WB rounds + Grand Final into one horizontal flow so GF appears to the right.
       const mainFlow = [...wbRounds, ...gfRounds];
       return (
-        <div className="space-y-6">
-          <div className="overflow-x-auto pb-2 -mx-1 px-1">
-            <DESectionLabel label="Semi Finals → Grand Final" color="text-violet-400 bg-violet-400" />
-            <BracketColumns rounds={mainFlow} {...colProps} />
-          </div>
-          <div className="overflow-x-auto pb-4 -mx-1 px-1">
-            <DESectionLabel label="Losers Bracket" color="text-red-400 bg-red-400" />
-            <BracketColumns rounds={lbRounds} {...colProps} />
-          </div>
+        <div className="overflow-x-auto pb-4 -mx-1 px-1">
+          <BracketColumns rounds={mainFlow} {...colProps} />
         </div>
       );
     }
 
+    // Full DE (8+ players): WB rounds → Grand Final, no LB
+    const fullFlow = [...wbRounds, ...gfRounds];
     return (
-      <div className="space-y-8">
-        {wbRounds.length > 0 && (
-          <div className="overflow-x-auto pb-2 -mx-1 px-1">
-            <DESectionLabel label="Winners Bracket" color="text-violet-400 bg-violet-400" />
-            <BracketColumns rounds={wbRounds} {...colProps} />
-          </div>
-        )}
-        {lbRounds.length > 0 && (
-          <div className="overflow-x-auto pb-2 -mx-1 px-1">
-            <DESectionLabel label="Losers Bracket" color="text-red-400 bg-red-400" />
-            <BracketColumns rounds={lbRounds} {...colProps} />
-          </div>
-        )}
-        {gfRounds.length > 0 && (
-          <div className="overflow-x-auto pb-4 -mx-1 px-1">
-            <DESectionLabel label="Grand Final" color="text-amber-400 bg-amber-400" />
-            <BracketColumns rounds={gfRounds} {...colProps} />
-          </div>
-        )}
+      <div className="overflow-x-auto pb-4 -mx-1 px-1">
+        <BracketColumns rounds={fullFlow} {...colProps} />
       </div>
     );
   }
