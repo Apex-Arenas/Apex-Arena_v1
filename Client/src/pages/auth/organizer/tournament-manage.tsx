@@ -2235,13 +2235,13 @@ const TournamentManage = () => {
                 if (!champion) return null;
 
                 const placements = [
-                  { icon: <Crown className="w-4 h-4 text-amber-400" />, label: "Champion", player: champion, nameClass: "text-amber-300 font-bold" },
-                  { icon: <Medal className="w-4 h-4 text-slate-400" />, label: "2nd Place", player: runnerUp, nameClass: "text-slate-300 font-semibold" },
-                  { icon: <Medal className="w-4 h-4 text-orange-700" />, label: "3rd Place", player: thirdPlace, nameClass: "text-slate-400 font-semibold" },
+                  { icon: <Crown className="w-3.5 h-3.5 text-amber-400" />, label: "Champion", player: champion, nameClass: "text-amber-300 font-bold" },
+                  { icon: <Medal className="w-3.5 h-3.5 text-slate-400" />, label: "2nd Place", player: runnerUp, nameClass: "text-slate-300 font-semibold" },
+                  { icon: <Medal className="w-3.5 h-3.5 text-orange-700" />, label: "3rd Place", player: thirdPlace, nameClass: "text-slate-400 font-semibold" },
                 ];
 
                 return (
-                  <div className="pt-3 mt-2 border-t border-slate-800/60 space-y-3">
+                  <div className="pt-3 mt-10 border-t border-slate-800/60 space-y-3">
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Results</p>
                     {placements.map(({ icon, label, player, nameClass }) => (
                       <div key={label} className="flex items-center justify-between gap-3 py-0.5">
