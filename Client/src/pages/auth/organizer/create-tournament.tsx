@@ -550,7 +550,7 @@ const CreateTournament = () => {
         return String(snapped);
       });
     } else if (tournamentType === 'single_elimination') {
-      setDefaultBestOf('1');
+      setDefaultBestOf('1'); // always single match, no choice
     }
   }, [tournamentType]);
 
@@ -1213,16 +1213,11 @@ const CreateTournament = () => {
                       </select>
                     </Field>
                   )}
-                  {["single_elimination", "double_elimination"].includes(tournamentType) && (
+                  {tournamentType === 'double_elimination' && (
                     <Field label="Knockout Match Format" required>
                       <select
                         value={defaultBestOf}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setDefaultBestOf(v);
-                          if (v === '2') setTournamentType('double_elimination');
-                          else if (v === '1') setTournamentType('single_elimination');
-                        }}
+                        onChange={(e) => setDefaultBestOf(e.target.value)}
                         className={selectCls}
                       >
                         <option value="1">Single Match (standard knockout)</option>
@@ -1331,33 +1326,28 @@ const CreateTournament = () => {
               <SectionCard step={2} title="Participants" icon={Users}>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Max Players" required>
-                    {tournamentType === 'double_elimination' ? (
-                      <>
-                        <div className="grid grid-cols-5 gap-1.5">
-                          {[4, 8, 16, 32, 64].map(n => {
-                            const selected = Number(maxParticipants) === n;
-                            return (
-                              <button
-                                key={n}
-                                type="button"
-                                onClick={() => setMaxParticipants(String(n))}
-                                className={`py-2 rounded-xl border text-xs font-bold transition-all ${
-                                  selected
-                                    ? 'border-indigo-500 bg-indigo-500/15 text-indigo-300'
-                                    : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:border-indigo-500/50 hover:text-slate-200'
-                                }`}
-                              >
-                                {n}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-1.5">Powers of 2 — clean bracket, no auto-byes.</p>
-                      </>
-                    ) : (
-                      <input type="number" value={maxParticipants} onChange={(e) => setMaxParticipants(e.target.value)}
-                        min={2} max={1024} className={inputCls} />
-                    )}
+                    <input
+                      type="number"
+                      value={maxParticipants}
+                      onChange={(e) => setMaxParticipants(e.target.value)}
+                      min={tournamentType === 'double_elimination' ? 4 : 2}
+                      max={1024}
+                      className={inputCls}
+                    />
+                    {tournamentType === 'double_elimination' && (() => {
+                      const n = Number(maxParticipants);
+                      const isPow2 = n > 0 && (n & (n - 1)) === 0;
+                      if (!isPow2 && n >= 4) {
+                        const next = Math.pow(2, Math.ceil(Math.log2(n)));
+                        const prev = Math.pow(2, Math.floor(Math.log2(n)));
+                        return (
+                          <p className="text-[11px] text-amber-400 mt-1.5">
+                            {n} isn't a power of 2 — players outside slots will get auto-byes. Use {prev} or {next} for a clean bracket.
+                          </p>
+                        );
+                      }
+                      return <p className="text-[11px] text-slate-500 mt-1.5">Use powers of 2 (4, 8, 16, 32, 64, 128…) for a clean bracket with no auto-byes.</p>;
+                    })()}
                   </Field>
                   <Field label="Min Players" required>
                     <input type="number" value={minParticipants} onChange={(e) => setMinParticipants(e.target.value)}
