@@ -517,7 +517,6 @@ const TournamentManage = () => {
 
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGeneratingBracket, setIsGeneratingBracket] = useState(false);
-  const [isRepairingBracket, setIsRepairingBracket] = useState(false);
   const [tournamentInfoOpen, setTournamentInfoOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -855,19 +854,6 @@ const TournamentManage = () => {
     }
   };
 
-  const handleRepairBracket = async () => {
-    if (!tournamentId) return;
-    setIsRepairingBracket(true);
-    try {
-      const result = await organizerService.repairBracketAdvancement(tournamentId);
-      showToast("success", `Repaired ${result.repaired}/${result.total} match advancements.`);
-      await loadData();
-    } catch (err) {
-      showToast("error", err instanceof Error ? err.message : "Failed to repair bracket.");
-    } finally {
-      setIsRepairingBracket(false);
-    }
-  };
 
   const handleGenerateLeagueFixtures = async () => {
     if (!tournamentId) return;
@@ -1538,7 +1524,7 @@ const TournamentManage = () => {
               <div className="flex-1 min-w-0 space-y-2">
                 {/* Title row */}
                 <div className="flex items-start gap-2 flex-wrap">
-                  <h1 className="font-display text-xl sm:text-2xl font-bold text-white leading-tight break-words">
+                  <h1 className="font-display text-xl sm:text-2xl font-bold text-white leading-tight wrap-break-word">
                     {tournament.title}
                   </h1>
                   <span className={`shrink-0 self-center text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border ${
@@ -3246,7 +3232,16 @@ const TournamentManage = () => {
           onClose={() => setActiveMatchId(null)}
           onActionComplete={() => {
             setActiveMatchId(null);
-            if (tournamentId) void loadBracketProgress(tournamentId, { silent: true });
+            if (tournamentId) {
+              const refresh = async () => {
+                if (isLeague) {
+                  try { await tournamentService.recalculateLeagueStandings(tournamentId); } catch { /* silent */ }
+                }
+                await loadData();
+                await loadBracketProgress(tournamentId, { silent: true });
+              };
+              void refresh();
+            }
           }}
         />
       )}
