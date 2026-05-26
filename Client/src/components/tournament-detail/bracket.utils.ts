@@ -132,32 +132,21 @@ function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
     // Simplified 4-player DE: WBR1 → WB Finals → Grand Final
     //                                  LBR1 (WBR1 losers) → Grand Final
     // Detected when there's exactly 1 LB round and a separate Grand Final exists.
-    // Simplified 4-player DE: 1 WB round (Semi Finals) + Grand Final (no LB).
-    // Both SF winners meet in GF directly — no WB Finals, no Losers Bracket.
-    const simplifiedDE = hasGrandFinalMatch && lbRounds.length === 0 && wbRounds.length === 1;
-
-    // Label WB rounds
+    // Label WB rounds: last = Semi Finals, second-to-last = Quarter Finals, earlier = Round N
     const wbTotal = wbRounds.length;
     wbRounds.forEach((r, i) => {
-      if (simplifiedDE) {
-        r.round_name = "Semi Finals";
-      } else if (wbTotal === 1 || i === wbTotal - 1) {
-        r.round_name = "WB Finals";
-      } else {
-        r.round_name = `WB Round ${i + 1}`;
-      }
+      const isLast = i === wbTotal - 1;
+      const isSecondToLast = i === wbTotal - 2;
+      if (isLast) r.round_name = "Semi Finals";
+      else if (isSecondToLast) r.round_name = "Quarter Finals";
+      else r.round_name = `Round ${i + 1}`;
       r.name = r.round_name;
     });
 
     // Label LB rounds
     const lbTotal = lbRounds.length;
     lbRounds.forEach((r, i) => {
-      // Only call it "LB Finals" in full DE where the LB has multiple rounds
-      if (!simplifiedDE && i === lbTotal - 1) {
-        r.round_name = "LB Finals";
-      } else {
-        r.round_name = `LB Round ${i + 1}`;
-      }
+      r.round_name = i === lbTotal - 1 ? "LB Finals" : `LB Round ${i + 1}`;
       r.name = r.round_name;
     });
 

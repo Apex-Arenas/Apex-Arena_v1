@@ -619,6 +619,118 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
     );
   }
 
+  function renderOrgOverrideSection() {
+    if (!match) return null;
+    return (
+      <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 overflow-hidden">
+        <button
+          onClick={() => setShowScoreOverride(v => !v)}
+          className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-indigo-500/10 hover:bg-indigo-500/15 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+              <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-widest text-indigo-300">Override Score</span>
+          </div>
+          <ChevronDown className={`w-4 h-4 text-indigo-400 transition-transform duration-200 ${showScoreOverride ? 'rotate-180' : ''}`} />
+        </button>
+
+        {showScoreOverride && (
+          <div className="px-4 py-4 space-y-3 border-t border-indigo-500/15">
+            <div className="flex items-end gap-3">
+              <div className="flex-1 space-y-1.5">
+                <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player1Name}</p>
+                <input
+                  type="number" min={0} value={overrideS1}
+                  onChange={e => setOverrideS1(e.target.value)}
+                  placeholder={String(match.player1Score ?? 0)}
+                  className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-colors placeholder:text-slate-700"
+                />
+              </div>
+              <div className="pb-3 text-slate-600 font-bold text-xl select-none">–</div>
+              <div className="flex-1 space-y-1.5">
+                <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player2Name}</p>
+                <input
+                  type="number" min={0} value={overrideS2}
+                  onChange={e => setOverrideS2(e.target.value)}
+                  placeholder={String(match.player2Score ?? 0)}
+                  className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-colors placeholder:text-slate-700"
+                />
+              </div>
+            </div>
+
+            {overrideS1 !== '' && overrideS2 !== '' && (() => {
+              const s1 = parseInt(overrideS1, 10);
+              const s2 = parseInt(overrideS2, 10);
+              if (isNaN(s1) || isNaN(s2) || s1 !== s2) return null;
+              const p1 = parseInt(overridePenalty1, 10);
+              const p2 = parseInt(overridePenalty2, 10);
+              const penaltiesEntered = overridePenalty1 !== '' && overridePenalty2 !== '' && !isNaN(p1) && !isNaN(p2);
+              return (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2.5">
+                  <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Penalty Shootout</p>
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1 space-y-1.5">
+                      <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player1Name}</p>
+                      <input type="number" min={0} value={overridePenalty1}
+                        onChange={e => setOverridePenalty1(e.target.value)} placeholder="0"
+                        className="w-full bg-slate-900/80 border border-amber-500/30 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-amber-400 transition-colors placeholder:text-slate-700"
+                      />
+                    </div>
+                    <div className="pb-3 text-slate-600 font-bold text-xl select-none">–</div>
+                    <div className="flex-1 space-y-1.5">
+                      <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player2Name}</p>
+                      <input type="number" min={0} value={overridePenalty2}
+                        onChange={e => setOverridePenalty2(e.target.value)} placeholder="0"
+                        className="w-full bg-slate-900/80 border border-amber-500/30 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-amber-400 transition-colors placeholder:text-slate-700"
+                      />
+                    </div>
+                  </div>
+                  {penaltiesEntered && p1 === p2 && (
+                    <p className="text-[11px] text-rose-400">Penalty scores must not be equal — a winner is required.</p>
+                  )}
+                </div>
+              );
+            })()}
+
+            <input
+              type="text" value={overrideReason}
+              onChange={e => setOverrideReason(e.target.value)}
+              placeholder="Reason for override (optional)"
+              className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-colors"
+            />
+
+            {overrideError && (
+              <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{overrideError}</p>
+            )}
+
+            <button
+              onClick={handleScoreOverride}
+              disabled={(() => {
+                if (overriding || overrideS1 === '' || overrideS2 === '') return true;
+                const s1 = parseInt(overrideS1, 10);
+                const s2 = parseInt(overrideS2, 10);
+                if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return true;
+                if (s1 === s2) {
+                  const p1 = parseInt(overridePenalty1, 10);
+                  const p2 = parseInt(overridePenalty2, 10);
+                  if (overridePenalty1 === '' || overridePenalty2 === '') return true;
+                  if (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2) return true;
+                }
+                return false;
+              })()}
+              className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-500 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
+            >
+              {overriding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Edit3 className="w-4 h-4" />}
+              Confirm Override
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   function renderContent() {
     if (!match) return null;
 
@@ -678,132 +790,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
             {p1Won ? `${match.player1Name} advances` : p2Won ? `${match.player2Name} advances` : 'Match finalised'}
           </p>
 
-          {/* Organizer score override */}
-          {isOrganizer && (
-            <div className="mt-5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 overflow-hidden">
-              {/* toggle header */}
-              <button
-                onClick={() => setShowScoreOverride(v => !v)}
-                className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-indigo-500/10 hover:bg-indigo-500/15 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
-                    <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-300">Override Score</span>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-indigo-400 transition-transform duration-200 ${showScoreOverride ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showScoreOverride && (
-              <div className="px-4 py-4 space-y-3 border-t border-indigo-500/15">
-                {/* score inputs */}
-                <div className="flex items-end gap-3">
-                  <div className="flex-1 space-y-1.5">
-                    <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player1Name}</p>
-                    <input
-                      type="number"
-                      min={0}
-                      value={overrideS1}
-                      onChange={e => setOverrideS1(e.target.value)}
-                      placeholder={String(match.player1Score ?? 0)}
-                      className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-colors placeholder:text-slate-700"
-                    />
-                  </div>
-                  <div className="pb-3 text-slate-600 font-bold text-xl select-none">–</div>
-                  <div className="flex-1 space-y-1.5">
-                    <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player2Name}</p>
-                    <input
-                      type="number"
-                      min={0}
-                      value={overrideS2}
-                      onChange={e => setOverrideS2(e.target.value)}
-                      placeholder={String(match.player2Score ?? 0)}
-                      className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-colors placeholder:text-slate-700"
-                    />
-                  </div>
-                </div>
-
-                {/* Penalty shootout — shown when scores are equal */}
-                {overrideS1 !== '' && overrideS2 !== '' && (() => {
-                  const s1 = parseInt(overrideS1, 10);
-                  const s2 = parseInt(overrideS2, 10);
-                  if (isNaN(s1) || isNaN(s2) || s1 !== s2) return null;
-                  const p1 = parseInt(overridePenalty1, 10);
-                  const p2 = parseInt(overridePenalty2, 10);
-                  const penaltiesEntered = overridePenalty1 !== '' && overridePenalty2 !== '' && !isNaN(p1) && !isNaN(p2);
-                  return (
-                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2.5">
-                      <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Penalty Shootout</p>
-                      <div className="flex items-end gap-3">
-                        <div className="flex-1 space-y-1.5">
-                          <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player1Name}</p>
-                          <input
-                            type="number"
-                            min={0}
-                            value={overridePenalty1}
-                            onChange={e => setOverridePenalty1(e.target.value)}
-                            placeholder="0"
-                            className="w-full bg-slate-900/80 border border-amber-500/30 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-amber-400 transition-colors placeholder:text-slate-700"
-                          />
-                        </div>
-                        <div className="pb-3 text-slate-600 font-bold text-xl select-none">–</div>
-                        <div className="flex-1 space-y-1.5">
-                          <p className="text-[11px] font-semibold text-slate-400 text-center truncate">{match.player2Name}</p>
-                          <input
-                            type="number"
-                            min={0}
-                            value={overridePenalty2}
-                            onChange={e => setOverridePenalty2(e.target.value)}
-                            placeholder="0"
-                            className="w-full bg-slate-900/80 border border-amber-500/30 rounded-xl px-3 py-3 text-2xl font-bold text-white text-center focus:outline-none focus:border-amber-400 transition-colors placeholder:text-slate-700"
-                          />
-                        </div>
-                      </div>
-                      {penaltiesEntered && p1 === p2 && (
-                        <p className="text-[11px] text-rose-400">Penalty scores must not be equal — a winner is required.</p>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* reason */}
-                <input
-                  type="text"
-                  value={overrideReason}
-                  onChange={e => setOverrideReason(e.target.value)}
-                  placeholder="Reason for override (optional)"
-                  className="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-colors"
-                />
-
-                {overrideError && (
-                  <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{overrideError}</p>
-                )}
-
-                <button
-                  onClick={handleScoreOverride}
-                  disabled={(() => {
-                    if (overriding || overrideS1 === '' || overrideS2 === '') return true;
-                    const s1 = parseInt(overrideS1, 10);
-                    const s2 = parseInt(overrideS2, 10);
-                    if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return true;
-                    if (s1 === s2) {
-                      const p1 = parseInt(overridePenalty1, 10);
-                      const p2 = parseInt(overridePenalty2, 10);
-                      if (overridePenalty1 === '' || overridePenalty2 === '') return true;
-                      if (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2) return true;
-                    }
-                    return false;
-                  })()}
-                  className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-500 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
-                >
-                  {overriding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Edit3 className="w-4 h-4" />}
-                  Confirm Override
-                </button>
-              </div>
-              )}
-            </div>
-          )}
+          {/* Organizer score override — rendered by the outer modal body for all statuses */}
         </div>
       );
     }
@@ -1078,7 +1065,12 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
               </div>
               <p className="text-sm text-red-400">{error}</p>
             </div>
-          ) : renderContent()}
+          ) : (
+            <div className="space-y-4">
+              {renderContent()}
+              {isOrganizer && match && renderOrgOverrideSection()}
+            </div>
+          )}
 
           {!loading && error && match && (
             <p className="mt-3 text-xs text-red-400 text-center">{error}</p>
