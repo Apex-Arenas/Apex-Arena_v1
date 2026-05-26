@@ -1282,29 +1282,7 @@ const CreateTournament = () => {
                   Enable waitlist when tournament is full
                 </label>
 
-                <div className="pt-2 border-t border-slate-800 space-y-3">
-                  <Field label="Match Play Deadline">
-                    <select value={matchDeadline} onChange={(e) => { setMatchDeadline(e.target.value as typeof matchDeadline); setMatchDeadlineCustomDate(''); }} className={selectCls}>
-                      <option value="none">No Deadline</option>
-                      <option value="24h">24 Hours</option>
-                      <option value="48h">2 Days</option>
-                      <option value="168h">1 Week</option>
-                      <option value="custom">Custom Date</option>
-                    </select>
-                    <p className="text-[11px] text-slate-500 mt-1.5">
-                      {matchDeadline === 'none' ? 'Players can play their match at any time.'
-                        : matchDeadline === 'custom' ? 'All matches must be played before the chosen date.'
-                        : `Each match must be played within ${matchDeadline === '24h' ? '24 hours' : matchDeadline === '48h' ? '2 days' : '1 week'} of its scheduled time.`}
-                    </p>
-                  </Field>
-                  {matchDeadline === 'custom' && (
-                    <Field label="Deadline Date & Time" required>
-                      <DateTimePicker value={matchDeadlineCustomDate} onChange={setMatchDeadlineCustomDate}
-                        placeholder="Pick deadline date & time"
-                        minDate={tournamentStart ? new Date(tournamentStart) : undefined} />
-                    </Field>
-                  )}
-                </div>
+                {/* Match Play Deadline hidden for now */}
               </SectionCard>
             </div>
 
