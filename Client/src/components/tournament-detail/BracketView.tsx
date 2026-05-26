@@ -538,17 +538,6 @@ function BracketColumns({
   );
 }
 
-// ─── DE section label ─────────────────────────────────────────────────────────
-
-function DESectionLabel({ label, color }: { label: string; color: string }) {
-  return (
-    <div className={`flex items-center gap-2 mb-3 px-1`}>
-      <div className={`h-px flex-1 ${color} opacity-30`} />
-      <span className={`text-[10px] font-bold uppercase tracking-[0.18em] ${color}`}>{label}</span>
-      <div className={`h-px flex-1 ${color} opacity-30`} />
-    </div>
-  );
-}
 
 export default function BracketView({
   rounds,
