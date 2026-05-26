@@ -412,7 +412,10 @@ const TournamentDetail = () => {
     myRegistration?.checkedIn === true ||
     myRegistration?.status === "checked_in";
   const canWithdraw =
-    myRegistration !== null && ACTIVE_STATUSES.has(myRegistration.status);
+    myRegistration !== null &&
+    ACTIVE_STATUSES.has(myRegistration.status) &&
+    !isCheckedIn &&
+    !["locked", "started", "ongoing", "in_progress", "completed", "cancelled"].includes(tournament.status);
 
   const checkInWindow = checkInStatus?.checkInWindow as
     | { start?: string; end?: string; isOpen?: boolean }
@@ -1068,7 +1071,7 @@ const TournamentDetail = () => {
                       )}
 
                     {/* Withdraw */}
-                    {canWithdraw && myRegistration.status !== "checked_in" && (
+                    {canWithdraw && (
                       <button
                         onClick={() => setShowWithdrawModal(true)}
                         className="w-full py-2.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-sm font-bold hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center justify-center gap-2"
