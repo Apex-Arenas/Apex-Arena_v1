@@ -9,6 +9,8 @@ import {
   Loader2,
   AlertCircle,
   Trophy,
+  Crown,
+  Medal,
   CalendarDays,
   UserCheck,
   Search,
@@ -44,6 +46,7 @@ import { DateTimePicker } from "../../../components/ui/DateTimePicker";
 import {
   BracketView,
   extractBracketRounds,
+  getParticipantLabel,
   type BracketRound,
 } from "../../../components/tournament-detail";
 import { MatchActionModal } from "../../../components/league/MatchActionModal";
@@ -2213,6 +2216,46 @@ const TournamentManage = () => {
                   <span className="text-[12px] font-medium text-slate-300 text-right capitalize">{value}</span>
                 </div>
               ))}
+
+              {/* ── Placements ── */}
+              {(() => {
+                const gfRound = bracketRounds.find(r => r.bracket === "grand_final");
+                const gfMatch = gfRound?.matches?.find(m => m.status === "completed");
+                const champion = gfMatch?.participants?.find(p => p.result === "win");
+                const runnerUp = gfMatch?.participants?.find(p => p.result === "loss");
+
+                // 3rd: losers of the Semi Finals (last upper WB round)
+                const wbRoundsData = bracketRounds.filter(r => r.bracket === "upper" || (!r.bracket && r.bracket !== "grand_final"));
+                const sfRound = wbRoundsData[wbRoundsData.length - 1];
+                const sfLosers = sfRound?.matches
+                  ?.filter(m => m.status === "completed")
+                  ?.flatMap(m => m.participants?.filter(p => p.result === "loss") ?? []) ?? [];
+                const thirdPlace = sfLosers[0] ?? null;
+
+                if (!champion) return null;
+
+                const placements = [
+                  { icon: <Crown className="w-4 h-4 text-amber-400" />, label: "Champion", player: champion, nameClass: "text-amber-300 font-bold" },
+                  { icon: <Medal className="w-4 h-4 text-slate-400" />, label: "2nd Place", player: runnerUp, nameClass: "text-slate-300 font-semibold" },
+                  { icon: <Medal className="w-4 h-4 text-orange-700" />, label: "3rd Place", player: thirdPlace, nameClass: "text-slate-400 font-semibold" },
+                ];
+
+                return (
+                  <div className="pt-3 mt-2 border-t border-slate-800/60 space-y-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Results</p>
+                    {placements.map(({ icon, label, player, nameClass }) => (
+                      <div key={label} className="flex items-center justify-between gap-3 py-0.5">
+                        <span className="flex items-center gap-2 text-xs font-semibold text-slate-400 shrink-0">
+                          {icon} {label}
+                        </span>
+                        <span className={`text-sm truncate text-right ${nameClass}`}>
+                          {player ? getParticipantLabel(player) : "—"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
