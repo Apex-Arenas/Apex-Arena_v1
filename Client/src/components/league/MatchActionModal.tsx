@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   X, Loader2, AlertTriangle, Swords, Clock,
-  Shield, Trophy, CheckCheck, Flag, Timer, Crown, Edit3, ChevronDown,
+  Shield, Trophy, CheckCheck, Flag, Timer, Crown, Edit3, ChevronDown, ImageIcon,
 } from 'lucide-react';
 import { tournamentService } from '../../services/tournament.service';
 import type { FullMatch } from '../../services/tournament.service';
@@ -1068,6 +1068,23 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
           ) : (
             <div className="space-y-4">
               {renderContent()}
+              {isOrganizer && match && match.screenshotUrl && (
+                <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-800/60 bg-slate-800/30">
+                    <ImageIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Score Proof</span>
+                    <span className="ml-auto text-[10px] text-slate-600">submitted by player</span>
+                  </div>
+                  <a href={match.screenshotUrl} target="_blank" rel="noopener noreferrer" className="block">
+                    <img
+                      src={match.screenshotUrl}
+                      alt="Match score proof"
+                      className="w-full object-cover max-h-64 hover:opacity-90 transition-opacity cursor-zoom-in"
+                    />
+                    <p className="text-[10px] text-slate-500 text-center py-1.5">Tap to view full size</p>
+                  </a>
+                </div>
+              )}
               {isOrganizer && match && renderOrgOverrideSection()}
             </div>
           )}

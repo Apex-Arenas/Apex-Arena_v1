@@ -540,9 +540,10 @@ const CreateTournament = () => {
   useEffect(() => {
     if (isEditMode) return;
     const now = new Date();
-    const regClose = new Date(now.getTime() + 5 * 60_000);
-    const tourStart = new Date(now.getTime() + 10 * 60_000);
-    setRegistrationStart(toDateTimeLocalValue(now.toISOString()));
+    const regOpen  = new Date(now.getTime() + 5  * 60_000);
+    const regClose = new Date(now.getTime() + 10 * 60_000);
+    const tourStart = new Date(now.getTime() + 15 * 60_000);
+    setRegistrationStart(toDateTimeLocalValue(regOpen.toISOString()));
     setRegistrationEnd(toDateTimeLocalValue(regClose.toISOString()));
     setTournamentStart(toDateTimeLocalValue(tourStart.toISOString()));
   // eslint-disable-next-line react-hooks/exhaustive-deps
