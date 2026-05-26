@@ -1441,7 +1441,7 @@ const TournamentManage = () => {
 
             {/* Row 2: action buttons — horizontally scrollable on mobile */}
             <div className="flex items-center gap-2 px-4 sm:px-8 pb-3 overflow-x-auto scrollbar-none">
-            <div className="flex items-center gap-2 flex-nowrap">
+            <div className="flex items-center gap-2 flex-nowrap w-full">
               {canPublish && (
                 <button
                   onClick={handlePublish}
@@ -1488,7 +1488,7 @@ const TournamentManage = () => {
                 </button>
               )}
               {(canGenerateBracket || hasBracketGenerated) && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 ml-auto">
                   <button
                     onClick={() => { if (!hasBracketGenerated) void handleGenerateBracket(); }}
                     disabled={isGeneratingBracket || hasBracketGenerated}
