@@ -58,7 +58,7 @@ function PlayerCell({ name, avatar, isMe, isWinner, isLoser, align }: {
   const initials = name.charAt(0).toUpperCase();
   const nameEl = (
     <div className={`min-w-0 ${align === 'right' ? 'text-right' : ''}`}>
-      <span className={`text-sm font-semibold block truncate ${
+      <span className={`text-xs sm:text-sm font-semibold block truncate ${
         isMe ? 'text-orange-300' : isWinner ? 'text-white' : 'text-slate-300'
       }`}>
         {name}
@@ -67,11 +67,11 @@ function PlayerCell({ name, avatar, isMe, isWinner, isLoser, align }: {
     </div>
   );
   const avatarEl = avatar ? (
-    <div className="w-9 h-9 rounded-full overflow-hidden border border-slate-700 shrink-0 relative bg-slate-800">
+    <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full overflow-hidden border border-slate-700 shrink-0 relative bg-slate-800">
       <FadeImage src={avatar} alt={name} className="absolute inset-0 w-full h-full object-cover" />
     </div>
   ) : (
-    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold border border-slate-700 shrink-0 ${
+    <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-white text-xs font-bold border border-slate-700 shrink-0 ${
       align === 'left'
         ? 'bg-linear-to-br from-orange-800 to-amber-800'
         : 'bg-linear-to-br from-violet-800 to-indigo-800'
@@ -81,7 +81,7 @@ function PlayerCell({ name, avatar, isMe, isWinner, isLoser, align }: {
   );
 
   return (
-    <div className={`flex items-center gap-2.5 flex-1 ${isLoser ? 'opacity-40' : ''} ${align === 'right' ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex items-center gap-1.5 sm:gap-2.5 flex-1 ${isLoser ? 'opacity-40' : ''} ${align === 'right' ? 'flex-row-reverse' : ''}`}>
       {avatarEl}
       {nameEl}
     </div>
@@ -117,9 +117,9 @@ function MatchCard({ match, highlightUserId, onClick }: {
         </span>
       )}
 
-      <div className="px-4 pt-4 pb-3">
+      <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2.5 sm:pb-3">
         {/* Players row */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <PlayerCell
             name={match.player1Name} avatar={match.player1Avatar}
             isMe={involvesMeP1} isWinner={isP1Winner} isLoser={isP2Winner}
@@ -127,26 +127,26 @@ function MatchCard({ match, highlightUserId, onClick }: {
           />
 
           {/* Score / VS */}
-          <div className="shrink-0 flex items-center gap-2">
+          <div className="shrink-0 flex items-center gap-1 sm:gap-2">
             {isCompleted && match.score1 !== undefined ? (
               (() => {
                 const overridden = (isP1Winner && match.score1 < match.score2!) || (isP2Winner && match.score2! < match.score1);
                 const d1 = overridden ? match.score2! : match.score1;
                 const d2 = overridden ? match.score1 : match.score2!;
                 return (
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-2xl font-display font-bold w-8 text-center tabular-nums ${isP1Winner ? 'text-white' : 'text-slate-500'}`}>
+                <div className="flex items-center gap-1">
+                  <span className={`text-xl sm:text-2xl font-display font-bold w-6 sm:w-8 text-center tabular-nums ${isP1Winner ? 'text-white' : 'text-slate-500'}`}>
                     {d1}
                   </span>
                   <span className="text-slate-600 text-sm font-bold">–</span>
-                  <span className={`text-2xl font-display font-bold w-8 text-center tabular-nums ${isP2Winner ? 'text-white' : 'text-slate-500'}`}>
+                  <span className={`text-xl sm:text-2xl font-display font-bold w-6 sm:w-8 text-center tabular-nums ${isP2Winner ? 'text-white' : 'text-slate-500'}`}>
                     {d2}
                   </span>
                 </div>
                 );
               })()
             ) : (
-              <div className="px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700">
+              <div className="px-2 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700">
                 <span className="text-xs font-bold text-slate-400 tracking-widest">VS</span>
               </div>
             )}

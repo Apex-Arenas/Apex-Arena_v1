@@ -117,20 +117,20 @@ export function LeagueTable({ table, highlightUserId }: LeagueTableProps) {
       {/* Table */}
       <div className="rounded-2xl border border-slate-800 overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-sm min-w-135">
+          <table className="w-full text-sm min-w-[340px]">
             <thead>
               <tr className="bg-slate-900 border-b border-slate-800 text-slate-500 uppercase text-[10px] tracking-widest">
-                <th className="pl-4 pr-2 py-3 text-left w-12">#</th>
-                <th className="px-2 py-3 text-left">Player</th>
-                <th className="px-2 py-3 text-center w-8" title="Played">P</th>
-                <th className="px-2 py-3 text-center w-8 text-emerald-500/80" title="Won">W</th>
-                <th className="px-2 py-3 text-center w-8 text-amber-500/80" title="Drawn">D</th>
-                <th className="px-2 py-3 text-center w-8 text-red-500/80" title="Lost">L</th>
-                <th className="px-2 py-3 text-center w-10 hidden sm:table-cell" title="Goals For">GF</th>
-                <th className="px-2 py-3 text-center w-10 hidden sm:table-cell" title="Goals Against">GA</th>
-                <th className="px-2 py-3 text-center w-10" title="Goal Difference">GD</th>
-                <th className="px-4 py-3 text-center w-14 text-white font-bold" title="Points">Pts</th>
-                <th className="px-2 py-3 text-center hidden md:table-cell">Form</th>
+                <th className="pl-3 sm:pl-4 pr-1 sm:pr-2 py-3 text-left w-10 sm:w-12">#</th>
+                <th className="px-1 sm:px-2 py-3 text-left">Player</th>
+                <th className="px-1 sm:px-2 py-3 text-center w-7 sm:w-8" title="Played">P</th>
+                <th className="px-1 sm:px-2 py-3 text-center w-7 sm:w-8 text-emerald-500/80" title="Won">W</th>
+                <th className="px-1 sm:px-2 py-3 text-center w-7 sm:w-8 text-amber-500/80 hidden xs:table-cell" title="Drawn">D</th>
+                <th className="px-1 sm:px-2 py-3 text-center w-7 sm:w-8 text-red-500/80" title="Lost">L</th>
+                <th className="px-1 sm:px-2 py-3 text-center w-10 hidden sm:table-cell" title="Goals For">GF</th>
+                <th className="px-1 sm:px-2 py-3 text-center w-10 hidden sm:table-cell" title="Goals Against">GA</th>
+                <th className="px-1 sm:px-2 py-3 text-center w-9 sm:w-10 hidden xs:table-cell" title="Goal Difference">GD</th>
+                <th className="px-2 sm:px-4 py-3 text-center w-11 sm:w-14 text-white font-bold" title="Points">Pts</th>
+                <th className="px-1 sm:px-2 py-3 text-center hidden md:table-cell">Form</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/40">
@@ -146,11 +146,11 @@ export function LeagueTable({ table, highlightUserId }: LeagueTableProps) {
                     } ${rowAccent(row.position, table.length)}`}
                   >
                     {/* Position */}
-                    <td className="pl-4 pr-2 py-3">
-                      <div className="flex items-center gap-1.5">
+                    <td className="pl-3 sm:pl-4 pr-1 sm:pr-2 py-3">
+                      <div className="flex items-center gap-1">
                         <Trend change={row.positionChange} />
                         {row.position <= 3 ? (
-                          <span className="text-base leading-none">
+                          <span className="text-sm sm:text-base leading-none">
                             {row.position === 1 ? '🥇' : row.position === 2 ? '🥈' : '🥉'}
                           </span>
                         ) : (
@@ -162,36 +162,36 @@ export function LeagueTable({ table, highlightUserId }: LeagueTableProps) {
                     </td>
 
                     {/* Player */}
-                    <td className="px-2 py-3">
-                      <div className="flex items-center gap-2.5">
+                    <td className="px-1 sm:px-2 py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-2.5">
                         <Avatar avatarUrl={row.avatarUrl} displayName={row.displayName} size="sm" />
                         <div className="min-w-0">
-                          <span className={`font-semibold text-sm block truncate max-w-30 sm:max-w-none ${isMe ? 'text-orange-300' : 'text-slate-200'}`}>
+                          <span className={`font-semibold text-xs sm:text-sm block truncate max-w-[80px] xs:max-w-[100px] sm:max-w-none ${isMe ? 'text-orange-300' : 'text-slate-200'}`}>
                             {row.displayName}
-                            {isMe && <span className="ml-1.5 text-[10px] text-orange-500 font-bold">(you)</span>}
+                            {isMe && <span className="ml-1 text-[10px] text-orange-500 font-bold">(you)</span>}
                           </span>
                           {row.inGameId && (
-                            <span className="text-[10px] text-slate-500 block">{row.inGameId}</span>
+                            <span className="text-[10px] text-slate-500 block truncate max-w-[80px] sm:max-w-none">{row.inGameId}</span>
                           )}
                         </div>
                       </div>
                     </td>
 
-                    <td className="px-2 py-3 text-center text-slate-400 text-xs tabular-nums">{row.played}</td>
-                    <td className="px-2 py-3 text-center text-emerald-400 font-bold text-xs tabular-nums">{row.won}</td>
-                    <td className="px-2 py-3 text-center text-amber-400 font-semibold text-xs tabular-nums">{row.drawn}</td>
-                    <td className="px-2 py-3 text-center text-red-400 font-semibold text-xs tabular-nums">{row.lost}</td>
-                    <td className="px-2 py-3 text-center text-slate-400 text-xs tabular-nums hidden sm:table-cell">{row.goalsFor}</td>
-                    <td className="px-2 py-3 text-center text-slate-400 text-xs tabular-nums hidden sm:table-cell">{row.goalsAgainst}</td>
-                    <td className="px-2 py-3 text-center text-xs tabular-nums">
+                    <td className="px-1 sm:px-2 py-3 text-center text-slate-400 text-xs tabular-nums">{row.played}</td>
+                    <td className="px-1 sm:px-2 py-3 text-center text-emerald-400 font-bold text-xs tabular-nums">{row.won}</td>
+                    <td className="px-1 sm:px-2 py-3 text-center text-amber-400 font-semibold text-xs tabular-nums hidden xs:table-cell">{row.drawn}</td>
+                    <td className="px-1 sm:px-2 py-3 text-center text-red-400 font-semibold text-xs tabular-nums">{row.lost}</td>
+                    <td className="px-1 sm:px-2 py-3 text-center text-slate-400 text-xs tabular-nums hidden sm:table-cell">{row.goalsFor}</td>
+                    <td className="px-1 sm:px-2 py-3 text-center text-slate-400 text-xs tabular-nums hidden sm:table-cell">{row.goalsAgainst}</td>
+                    <td className="px-1 sm:px-2 py-3 text-center text-xs tabular-nums hidden xs:table-cell">
                       <span className={row.goalDifference > 0 ? 'text-emerald-400 font-semibold' : row.goalDifference < 0 ? 'text-red-400' : 'text-slate-500'}>
                         {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
                       </span>
                     </td>
 
                     {/* Points */}
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex items-center justify-center w-9 h-7 rounded-lg text-sm font-bold tabular-nums ${
+                    <td className="px-2 sm:px-4 py-3 text-center">
+                      <span className={`inline-flex items-center justify-center w-7 sm:w-9 h-6 sm:h-7 rounded-lg text-xs sm:text-sm font-bold tabular-nums ${
                         row.position === 1
                           ? 'bg-amber-500/20 text-amber-300'
                           : isMe
@@ -203,7 +203,7 @@ export function LeagueTable({ table, highlightUserId }: LeagueTableProps) {
                     </td>
 
                     {/* Form */}
-                    <td className="px-2 py-3 hidden md:table-cell">
+                    <td className="px-1 sm:px-2 py-3 hidden md:table-cell">
                       <div className="flex items-center gap-0.5 justify-center">
                         {row.form.length > 0
                           ? row.form.slice(-5).map((r, i) => <FormBadge key={i} result={r} />)
@@ -218,15 +218,15 @@ export function LeagueTable({ table, highlightUserId }: LeagueTableProps) {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 px-4 py-3 bg-slate-900/80 border-t border-slate-800 text-[10px] text-slate-500 flex-wrap">
-          <span className="flex items-center gap-1.5"><span className="w-2 h-3.5 rounded-sm bg-amber-400 inline-block" /> 1st place</span>
+        <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-900/80 border-t border-slate-800 text-[10px] text-slate-500 flex-wrap">
+          <span className="flex items-center gap-1.5"><span className="w-2 h-3.5 rounded-sm bg-amber-400 inline-block" /> 1st</span>
           <span className="flex items-center gap-1.5"><span className="w-2 h-3.5 rounded-sm bg-emerald-500 inline-block" /> Top 3</span>
           <span className="flex items-center gap-1.5"><span className="w-2 h-3.5 rounded-sm bg-red-500/60 inline-block" /> Bottom 3</span>
-          <span className="ml-auto hidden sm:flex items-center gap-3">
-            <span>P = Played</span>
-            <span>W / D / L</span>
-            <span>GD = Goal Diff</span>
-            <span>Pts = Points</span>
+          <span className="ml-auto hidden xs:flex items-center gap-2 sm:gap-3">
+            <span>P=Played</span>
+            <span className="hidden sm:inline">W / D / L</span>
+            <span className="hidden xs:inline">GD=Goal Diff</span>
+            <span>Pts</span>
           </span>
         </div>
       </div>

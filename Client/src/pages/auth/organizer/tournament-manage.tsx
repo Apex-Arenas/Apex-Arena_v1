@@ -517,7 +517,7 @@ const TournamentManage = () => {
 
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGeneratingBracket, setIsGeneratingBracket] = useState(false);
-  const [tournamentInfoOpen, setTournamentInfoOpen] = useState(false);
+  const [tournamentInfoOpen, setTournamentInfoOpen] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1425,9 +1425,8 @@ const TournamentManage = () => {
             </div>
             </div>
 
-            {/* Row 2: action buttons — horizontally scrollable on mobile */}
-            <div className="flex items-center gap-2 px-4 sm:px-8 pb-3 overflow-x-auto scrollbar-none">
-            <div className="flex items-center gap-2 flex-nowrap w-full">
+            {/* Row 2: action buttons — wrapping on mobile */}
+            <div className="flex items-center gap-2 flex-wrap px-4 sm:px-8 pb-3">
               {canPublish && (
                 <button
                   onClick={handlePublish}
@@ -1465,31 +1464,24 @@ const TournamentManage = () => {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
                 >
                   {isAdvancingMatchweek ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">
-                    {isAdvancingMatchweek ? "Advancing…" : leagueSettings?.legs === 2
-                      ? `Advance Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}–${(leagueSettings?.currentMatchweek ?? 0) + 2}`
-                      : `Advance Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}`}
-                  </span>
-                  <span className="sm:hidden">Advance</span>
+                  {isAdvancingMatchweek ? "Advancing…" : leagueSettings?.legs === 2
+                    ? `Advance Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}–${(leagueSettings?.currentMatchweek ?? 0) + 2}`
+                    : `Advance Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}`}
                 </button>
               )}
               {(canGenerateBracket || hasBracketGenerated) && (
-                <div className="flex items-center gap-1.5 ml-auto">
-                  <button
-                    onClick={() => { if (!hasBracketGenerated) void handleGenerateBracket(); }}
-                    disabled={isGeneratingBracket || hasBracketGenerated}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-60 ${
-                      hasBracketGenerated
-                        ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
-                        : "bg-indigo-500 text-white hover:bg-indigo-400"
-                    }`}
-                  >
-                    {isGeneratingBracket ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : hasBracketGenerated ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Trophy className="w-3.5 h-3.5" />}
-                    <span className="hidden sm:inline">{isGeneratingBracket ? "Generating…" : hasBracketGenerated ? "Bracket Ready" : "Generate Bracket"}</span>
-                    <span className="sm:hidden">{hasBracketGenerated ? "Ready" : "Generate"}</span>
-                  </button>
-                  {/* Repair button hidden for now */}
-                </div>
+                <button
+                  onClick={() => { if (!hasBracketGenerated) void handleGenerateBracket(); }}
+                  disabled={isGeneratingBracket || hasBracketGenerated}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-60 ${
+                    hasBracketGenerated
+                      ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
+                      : "bg-indigo-500 text-white hover:bg-indigo-400"
+                  }`}
+                >
+                  {isGeneratingBracket ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : hasBracketGenerated ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Trophy className="w-3.5 h-3.5" />}
+                  {isGeneratingBracket ? "Generating…" : hasBracketGenerated ? "Bracket Ready" : "Generate Bracket"}
+                </button>
               )}
               {canDepositPrizePool && (
                 <button
@@ -1510,7 +1502,6 @@ const TournamentManage = () => {
                   {canSubmitWinners ? "Submit Winners" : "Review Winners"}
                 </button>
               )}
-            </div>{/* end flex-nowrap */}
             </div>{/* end row 2 */}
           </div>{/* end nav bar */}
 
@@ -1752,13 +1743,13 @@ const TournamentManage = () => {
                     ].map(({ label, value, accent }) => (
                       <div
                         key={label}
-                        className="rounded-xl bg-slate-800/40 border border-slate-800 px-4 py-3 text-center"
+                        className="rounded-xl bg-slate-800/40 border border-slate-800 px-2 py-2.5 sm:px-4 sm:py-3 text-center"
                       >
-                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">
+                        <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1 truncate">
                           {label}
                         </p>
                         <p
-                          className={`font-display text-xl font-bold tabular-nums ${accent}`}
+                          className={`font-display text-lg sm:text-xl font-bold tabular-nums ${accent}`}
                         >
                           {value}
                         </p>
@@ -1927,7 +1918,7 @@ const TournamentManage = () => {
               <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
                 {/* Podium cards for top 3 */}
                 {tournamentResults.slice(0, 3).length > 0 && (
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                     {[
                       {
                         pos: 1,
@@ -1963,10 +1954,10 @@ const TournamentManage = () => {
                       return (
                         <div
                           key={pos}
-                          className={`rounded-xl border bg-linear-to-b ${color} ${border} p-3 text-center`}
+                          className={`rounded-xl border bg-linear-to-b ${color} ${border} p-2 sm:p-3 text-center`}
                         >
-                          <div className="text-2xl mb-1">{medal}</div>
-                          <p className="text-xs font-bold text-white truncate">
+                          <div className="text-xl sm:text-2xl mb-1">{medal}</div>
+                          <p className="text-[10px] sm:text-xs font-bold text-white truncate">
                             {String(
                               entry.in_game_id ??
                                 entry.inGameId ??
@@ -1975,7 +1966,7 @@ const TournamentManage = () => {
                             )}
                           </p>
                           <p
-                            className={`text-[11px] font-semibold mt-1 px-2 py-0.5 rounded-full border inline-block ${badge}`}
+                            className={`text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded-full border inline-block ${badge}`}
                           >
                             {entry.prize_amount_ghs
                               ? `GHS ${String(entry.prize_amount_ghs)}`

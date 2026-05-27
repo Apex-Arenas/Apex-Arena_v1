@@ -2,6 +2,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --breakpoint-xs: 475px;
+}
+
 :root {
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
 }
@@ -12,6 +16,9 @@
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
 .font-display {
   font-family: "Space Grotesk", sans-serif;
