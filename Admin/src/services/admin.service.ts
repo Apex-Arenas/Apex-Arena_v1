@@ -997,7 +997,7 @@ export const adminService = {
   },
 
   async generateLeagueFixtures(tournamentId: string): Promise<void> {
-    const url = `${TOURNAMENT_ENDPOINTS.LEAGUE}/${tournamentId}/generate`;
+    const url = `${TOURNAMENT_ENDPOINTS.ADMIN_TOURNAMENTS}/${tournamentId}/league/generate`;
     const response = await apiPost(url, {}, adminHeaders());
     if (!response.success) {
       const msg = (response as any).error?.message ?? 'Failed to generate league fixtures';
