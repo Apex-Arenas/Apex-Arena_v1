@@ -17,6 +17,9 @@ interface LeagueViewProps {
   legs?: number;
   highlightUserId?: string;
   isOrganizer?: boolean;
+  isFixturesGenerated?: boolean;
+  onGenerateFixtures?: () => void;
+  isGeneratingFixtures?: boolean;
 }
 
 type ActiveTab = "table" | "fixtures";
@@ -28,6 +31,9 @@ export function LeagueView({
   legs = 1,
   highlightUserId,
   isOrganizer = false,
+  isFixturesGenerated,
+  onGenerateFixtures,
+  isGeneratingFixtures,
 }: LeagueViewProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("table");
   const [table, setTable] = useState<LeagueTableRow[]>([]);
@@ -55,7 +61,16 @@ export function LeagueView({
         tournamentService.getLeagueMatchweeks(tournamentId),
       ]);
       setTable(tableData);
-      setMatchweeks(mwData);
+
+      // If the bulk endpoint returns nothing but we know the current week,
+      // fall back to fetching that specific week directly (handles cases where
+      // the backend auto-advanced without going through the advance mechanism).
+      let resolvedMwData = mwData;
+      if (mwData.length === 0 && currentMatchweek > 0) {
+        const weekData = await tournamentService.getLeagueMatchweek(tournamentId, currentMatchweek);
+        if (weekData && weekData.matches.length > 0) resolvedMwData = [weekData];
+      }
+      setMatchweeks(resolvedMwData);
       if (mwData.length > 0 && selectedWeek === 0) {
         setSelectedWeek(
           legs >= 2 && currentMatchweek > 0
@@ -164,6 +179,9 @@ export function LeagueView({
           onWeekChange={setSelectedWeek}
           highlightUserId={highlightUserId}
           onMatchClick={(id) => setActiveMatchId(id)}
+          isFixturesGenerated={isFixturesGenerated}
+          onGenerateFixtures={onGenerateFixtures}
+          isGeneratingFixtures={isGeneratingFixtures}
         />
       )}
 

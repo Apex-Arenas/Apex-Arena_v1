@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Clock, CheckCircle2, Swords, AlertCircle, CalendarClock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, CheckCircle2, Swords, AlertCircle, CalendarClock, Loader2 } from 'lucide-react';
 import type { LeagueMatchweek, LeagueMatch } from '../../services/tournament.service';
 import { FadeImage } from '../ui/FadeImage';
 
@@ -8,6 +8,9 @@ interface MatchweekFixturesProps {
   onWeekChange: (week: number) => void;
   highlightUserId?: string;
   onMatchClick?: (matchId: string) => void;
+  isFixturesGenerated?: boolean;
+  onGenerateFixtures?: () => void;
+  isGeneratingFixtures?: boolean;
 }
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -183,14 +186,29 @@ function MatchCard({ match, highlightUserId, onClick }: {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-export function MatchweekFixtures({ matchweeks, currentWeek, onWeekChange, highlightUserId, onMatchClick }: MatchweekFixturesProps) {
+export function MatchweekFixtures({ matchweeks, currentWeek, onWeekChange, highlightUserId, onMatchClick, isFixturesGenerated, onGenerateFixtures, isGeneratingFixtures }: MatchweekFixturesProps) {
   const activeMatchweek = matchweeks.find((mw) => mw.week === currentWeek);
   const totalWeeks = matchweeks.length;
 
   if (matchweeks.length === 0) {
+    if (onGenerateFixtures && !isFixturesGenerated) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 gap-4 rounded-2xl border border-dashed border-slate-700">
+          <p className="text-slate-500 text-sm">Fixtures haven't been generated yet.</p>
+          <button
+            onClick={onGenerateFixtures}
+            disabled={isGeneratingFixtures}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 disabled:opacity-60 transition-colors"
+          >
+            {isGeneratingFixtures ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarClock className="w-3.5 h-3.5" />}
+            {isGeneratingFixtures ? 'Generating…' : 'Generate Fixtures'}
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="text-center py-16 rounded-2xl border border-dashed border-slate-700 text-slate-500 text-sm">
-        No fixtures generated yet.
+        {isFixturesGenerated ? 'No matches found for this matchweek.' : 'No fixtures generated yet.'}
       </div>
     );
   }
