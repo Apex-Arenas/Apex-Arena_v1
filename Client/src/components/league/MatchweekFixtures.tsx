@@ -100,6 +100,14 @@ function MatchCard({ match, highlightUserId, onClick }: {
   const involvesMe = involvesMeP1 || involvesMeP2;
   const actionNeeded = needsAction(match, highlightUserId);
 
+  // Parse penalty/override info from reason string
+  const penParsed = (() => {
+    if (!match.reason) return null;
+    const m = match.reason.match(/Regular time:\s*(\d+)[-–](\d+).*?Penalties:\s*(\d+)[-–](\d+)/i);
+    if (!m) return null;
+    return { rt1: Number(m[1]), rt2: Number(m[2]), pen1: Number(m[3]), pen2: Number(m[4]) };
+  })();
+
   return (
     <div
       onClick={onClick}
@@ -127,24 +135,24 @@ function MatchCard({ match, highlightUserId, onClick }: {
           />
 
           {/* Score / VS */}
-          <div className="shrink-0 flex items-center gap-1 sm:gap-2">
-            {isCompleted && match.score1 !== undefined ? (
-              (() => {
-                const overridden = (isP1Winner && match.score1 < match.score2!) || (isP2Winner && match.score2! < match.score1);
-                const d1 = overridden ? match.score2! : match.score1;
-                const d2 = overridden ? match.score1 : match.score2!;
-                return (
+          <div className="shrink-0 flex flex-col items-center gap-0.5">
+            {isCompleted && (penParsed || match.score1 !== undefined) ? (
+              <>
                 <div className="flex items-center gap-1">
                   <span className={`text-xl sm:text-2xl font-display font-bold w-6 sm:w-8 text-center tabular-nums ${isP1Winner ? 'text-white' : 'text-slate-500'}`}>
-                    {d1}
+                    {penParsed ? penParsed.rt1 : match.score1}
                   </span>
                   <span className="text-slate-600 text-sm font-bold">–</span>
                   <span className={`text-xl sm:text-2xl font-display font-bold w-6 sm:w-8 text-center tabular-nums ${isP2Winner ? 'text-white' : 'text-slate-500'}`}>
-                    {d2}
+                    {penParsed ? penParsed.rt2 : match.score2}
                   </span>
                 </div>
-                );
-              })()
+                {penParsed && (
+                  <span className="text-[10px] text-slate-500 font-semibold">
+                    Pen: {penParsed.pen1}–{penParsed.pen2}
+                  </span>
+                )}
+              </>
             ) : (
               <div className="px-2 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700">
                 <span className="text-xs font-bold text-slate-400 tracking-widest">VS</span>

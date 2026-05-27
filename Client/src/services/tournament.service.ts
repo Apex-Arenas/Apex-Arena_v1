@@ -99,6 +99,7 @@ export interface LeagueMatch {
   winnerId?: string;
   scheduledAt?: string;
   playDeadline?: string;
+  reason?: string;
 }
 
 export interface LeagueMatchweek {
@@ -420,6 +421,7 @@ function mapLeagueMatches(list: Record<string, unknown>[]): LeagueMatch[] {
       winnerId: m.winner_id as string | undefined,
       scheduledAt: scheduledTime as string | undefined,
       playDeadline: m.play_deadline as string | undefined,
+      reason: (m.reason ?? m.score_note ?? (m.admin_override as Record<string, unknown> | undefined)?.reason) as string | undefined,
     };
   });
 }
