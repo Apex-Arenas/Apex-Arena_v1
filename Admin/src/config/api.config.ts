@@ -199,6 +199,9 @@ export const TOURNAMENT_ENDPOINTS = {
 
   // Admin Tournament Management
   ADMIN_TOURNAMENTS: `${API_BASE_URLS.TOURNAMENT}/admin/tournaments`, // GET (list), DELETE + /:tournamentId
+
+  // League
+  LEAGUE: `${API_BASE_URLS.TOURNAMENT}/league`, // + /:tournamentId/generate | /advance | /matchweeks | /table
 } as const;
 
 
