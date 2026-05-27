@@ -13,6 +13,7 @@ interface Props {
   currentUserId: string;
   currentMatchweek?: number;
   isOrganizer?: boolean;
+  isLeague?: boolean;
   onClose: () => void;
   onActionComplete: () => void;
 }
@@ -183,7 +184,7 @@ function ScoreDisplay({ s1, s2, n1, n2, p1Won, p2Won, reason }: {
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
-export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isOrganizer, onClose, onActionComplete }: Props) {
+export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isOrganizer, isLeague, onClose, onActionComplete }: Props) {
   const [match, setMatch] = useState<FullMatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -210,14 +211,18 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
     const s1 = parseInt(overrideS1, 10);
     const s2 = parseInt(overrideS2, 10);
     if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return;
-    const isDrawScore = s1 === s2;
-    const p1 = parseInt(overridePenalty1, 10);
-    const p2 = parseInt(overridePenalty2, 10);
-    if (isDrawScore && (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2)) return;
-    const finalS1 = isDrawScore ? p1 : s1;
-    const finalS2 = isDrawScore ? p2 : s2;
-    const penaltyNote = isDrawScore ? `Regular time: ${s1}–${s2} · Penalties: ${p1}–${p2}` : '';
-    const reason = [penaltyNote, overrideReason].filter(Boolean).join(' · ') || undefined;
+    let finalS1 = s1;
+    let finalS2 = s2;
+    let reason: string | undefined = overrideReason || undefined;
+    if (!isLeague && s1 === s2) {
+      const p1 = parseInt(overridePenalty1, 10);
+      const p2 = parseInt(overridePenalty2, 10);
+      if (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2) return;
+      finalS1 = p1 > p2 ? 1 : 0;
+      finalS2 = p2 > p1 ? 1 : 0;
+      const penaltyNote = `Regular time: ${s1}–${s2} · Penalties: ${p1}–${p2}`;
+      reason = [penaltyNote, overrideReason].filter(Boolean).join(' · ') || undefined;
+    }
     setOverriding(true);
     setOverrideError(null);
     try {
@@ -410,8 +415,8 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
           </button>
         )}
 
-        {/* Penalty shootout — single-leg only; two-leg draws advance to leg 3 server-side */}
-        {scoresEqual && !isTwoLeg && (() => {
+        {/* Penalty shootout — single-leg non-league only; two-leg draws advance to leg 3 server-side */}
+        {scoresEqual && !isTwoLeg && !isLeague && (() => {
           const p1 = parseInt(penaltyScore1, 10);
           const p2 = parseInt(penaltyScore2, 10);
           const penaltiesEntered = penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2);
@@ -474,8 +479,8 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
           onClick={() => {
             const p1 = parseInt(penaltyScore1, 10);
             const p2 = parseInt(penaltyScore2, 10);
-            // Inline penalties only apply to single-leg matches
-            const hasPenalties = !isTwoLeg && scoresEqual && penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2) && p1 !== p2;
+            // Inline penalties only apply to single-leg non-league matches
+            const hasPenalties = !isTwoLeg && !isLeague && scoresEqual && penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2) && p1 !== p2;
             const winnerId = hasPenalties
               ? (p1 > p2 ? match!.player1Id : match!.player2Id)
               : (isDraw ? null : selectedWinnerId!);
@@ -493,8 +498,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
           disabled={(() => {
             if (submitting || !screenshotUrl || score1 === '' || score2 === '') return true;
             if (scoresEqual) {
-              // Two-leg draws: just need isDraw selected — no per-leg penalties
-              if (isTwoLeg) return !isDraw;
+              if (isTwoLeg || isLeague) return !isDraw && !selectedWinnerId;
               const p1 = parseInt(penaltyScore1, 10);
               const p2 = parseInt(penaltyScore2, 10);
               const hasPenalties = penaltyScore1 !== '' && penaltyScore2 !== '' && !isNaN(p1) && !isNaN(p2) && p1 !== p2;
@@ -660,7 +664,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
               </div>
             </div>
 
-            {overrideS1 !== '' && overrideS2 !== '' && (() => {
+            {!isLeague && overrideS1 !== '' && overrideS2 !== '' && (() => {
               const s1 = parseInt(overrideS1, 10);
               const s2 = parseInt(overrideS2, 10);
               if (isNaN(s1) || isNaN(s2) || s1 !== s2) return null;
@@ -712,7 +716,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
                 const s1 = parseInt(overrideS1, 10);
                 const s2 = parseInt(overrideS2, 10);
                 if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return true;
-                if (s1 === s2) {
+                if (!isLeague && s1 === s2) {
                   const p1 = parseInt(overridePenalty1, 10);
                   const p2 = parseInt(overridePenalty2, 10);
                   if (overridePenalty1 === '' || overridePenalty2 === '') return true;

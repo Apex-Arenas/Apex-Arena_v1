@@ -12,6 +12,7 @@ interface Props {
   matchId: string;
   currentUserId?: string;
   currentMatchweek?: number;
+  isLeague?: boolean;
   onClose: () => void;
   onActionComplete: () => void;
 }
@@ -51,7 +52,7 @@ function PlayerCard({
   );
 }
 
-export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, onClose, onActionComplete }: Props) {
+export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, isLeague, onClose, onActionComplete }: Props) {
   const [match, setMatch] = useState<FullMatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -147,21 +148,21 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
     const s2 = parseInt(setScoreVal2, 10);
     if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return;
     const isDraw = s1 === s2;
-    const p1 = parseInt(setScorePenalty1, 10);
-    const p2 = parseInt(setScorePenalty2, 10);
-    if (isDraw && (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2)) return;
     setSubmitting(true);
     setError(null);
     try {
       let finalS1 = s1;
       let finalS2 = s2;
       let reason = setScoreReason;
-      if (isDraw) {
+      if (!isLeague && isDraw) {
+        const p1 = parseInt(setScorePenalty1, 10);
+        const p2 = parseInt(setScorePenalty2, 10);
+        if (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2) { setSubmitting(false); return; }
         finalS1 = p1 > p2 ? 1 : 0;
         finalS2 = p2 > p1 ? 1 : 0;
         reason = `Regular time: ${s1}\u2013${s2} \u00B7 Penalties: ${p1}\u2013${p2}${setScoreReason ? ` \u00B7 ${setScoreReason}` : ''}`;
       }
-      await organizerService.setMatchScore(matchId, finalS1, finalS2, reason);
+      await organizerService.setMatchScore(matchId, finalS1, finalS2, reason || undefined);
       onActionComplete();
       onClose();
     } catch (e: any) {
@@ -359,7 +360,7 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
                     />
                   </div>
                 </div>
-                {setScoreVal1 !== '' && setScoreVal2 !== '' && !isNaN(Number(setScoreVal1)) && !isNaN(Number(setScoreVal2)) && Number(setScoreVal1) === Number(setScoreVal2) && (
+                {!isLeague && setScoreVal1 !== '' && setScoreVal2 !== '' && !isNaN(Number(setScoreVal1)) && !isNaN(Number(setScoreVal2)) && Number(setScoreVal1) === Number(setScoreVal2) && (
                   <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 space-y-2">
                     <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Penalty Shootout</p>
                     <div className="flex items-center gap-3">
@@ -403,7 +404,7 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
                 <button
                   onClick={handleSetScore}
                   disabled={submitting || setScoreVal1 === '' || setScoreVal2 === '' || (
-                    !isNaN(Number(setScoreVal1)) && !isNaN(Number(setScoreVal2)) && Number(setScoreVal1) === Number(setScoreVal2) && (
+                    !isLeague && !isNaN(Number(setScoreVal1)) && !isNaN(Number(setScoreVal2)) && Number(setScoreVal1) === Number(setScoreVal2) && (
                       setScorePenalty1 === '' || setScorePenalty2 === '' || Number(setScorePenalty1) === Number(setScorePenalty2)
                     )
                   )}
@@ -558,7 +559,7 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
                 <button
                   onClick={handleSetScore}
                   disabled={submitting || setScoreVal1 === '' || setScoreVal2 === '' || (
-                    !isNaN(Number(setScoreVal1)) && !isNaN(Number(setScoreVal2)) && Number(setScoreVal1) === Number(setScoreVal2) && (
+                    !isLeague && !isNaN(Number(setScoreVal1)) && !isNaN(Number(setScoreVal2)) && Number(setScoreVal1) === Number(setScoreVal2) && (
                       setScorePenalty1 === '' || setScorePenalty2 === '' || Number(setScorePenalty1) === Number(setScorePenalty2)
                     )
                   )}

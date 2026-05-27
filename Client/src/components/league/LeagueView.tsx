@@ -173,6 +173,7 @@ export function LeagueView({
           matchId={activeMatchId}
           currentUserId={highlightUserId}
           currentMatchweek={currentMatchweek}
+          isLeague
           onClose={() => setActiveMatchId(null)}
           onActionComplete={() => {
             setActiveMatchId(null);
@@ -185,6 +186,7 @@ export function LeagueView({
           matchId={activeMatchId}
           currentUserId={highlightUserId}
           currentMatchweek={currentMatchweek}
+          isLeague
           onClose={() => setActiveMatchId(null)}
           onActionComplete={() => {
             setActiveMatchId(null);
