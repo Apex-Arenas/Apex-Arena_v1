@@ -1536,7 +1536,7 @@ function AdminLeagueSection({ tournamentId }: { tournamentId: string }) {
               onClick={() => setActiveTab(tab)}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 activeTab === tab
-                  ? "bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/20"
+                  ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/20"
                   : "text-slate-400 hover:text-white hover:bg-slate-800/60"
               }`}
             >
@@ -1583,7 +1583,7 @@ function AdminLeagueSection({ tournamentId }: { tournamentId: string }) {
                   return (
                     <tr key={row.userId ?? row.user_id ?? row.teamId ?? row.team_id ?? i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
                       <td className="py-2 pr-2 text-slate-400 tabular-nums">{pos}</td>
-                      <td className="py-2 pr-2 font-medium text-white truncate max-w-[120px]">{name}</td>
+                      <td className="py-2 pr-2 font-medium text-white truncate max-w-30">{name}</td>
                       <td className="py-2 px-1 text-center tabular-nums text-slate-300">{row.played ?? 0}</td>
                       <td className="py-2 px-1 text-center tabular-nums text-emerald-400">{row.won ?? 0}</td>
                       <td className="py-2 px-1 text-center tabular-nums text-amber-400">{row.drawn ?? 0}</td>
