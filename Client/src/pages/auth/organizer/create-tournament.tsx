@@ -99,16 +99,16 @@ function SectionCard({
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900">
       {/* Section header */}
-      <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-800 bg-slate-900/80 rounded-t-2xl">
-        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-500/15 border border-orange-500/25 shrink-0">
-          <span className="font-display text-sm font-bold text-orange-400">{step}</span>
+      <div className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-900/80 rounded-t-2xl">
+        <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-orange-500/15 border border-orange-500/25 shrink-0">
+          <span className="font-display text-xs sm:text-sm font-bold text-orange-400">{step}</span>
         </div>
         <div className="flex items-center gap-2 min-w-0">
           <Icon className="w-4 h-4 text-orange-400 shrink-0" />
-          <h2 className="font-display text-base font-bold text-white">{title}</h2>
+          <h2 className="font-display text-sm sm:text-base font-bold text-white">{title}</h2>
         </div>
       </div>
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         {children}
       </div>
     </div>
@@ -948,11 +948,11 @@ const CreateTournament = () => {
     <div className="max-w-7xl mx-auto">
 
       {/* ── Header ────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-slate-900 border-b border-slate-800 px-6 py-6 sm:px-8">
+      <div className="relative overflow-hidden bg-slate-900 border-b border-slate-800 px-4 py-4 sm:px-8 sm:py-6">
         <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-orange-500/12 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-violet-600/8 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
-        <div className="relative flex flex-col items-center text-center gap-3 sm:flex-row sm:text-left">
+        <div className="relative flex items-center gap-3 sm:gap-4">
           <button
             onClick={() => navigate("/auth/organizer/tournaments")}
             className="p-2 rounded-xl border border-slate-700 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800/60 transition-colors shrink-0"
@@ -960,10 +960,10 @@ const CreateTournament = () => {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="font-display text-2xl font-bold text-white">
+            <h1 className="font-display text-xl sm:text-2xl font-bold text-white">
               {isEditMode ? "Edit Tournament" : "Create Tournament"}
             </h1>
-            <p className="text-sm text-slate-400 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-400 mt-0.5 leading-snug">
               {isEditMode
                 ? "Update your tournament details before it goes live."
                 : "Fill in the details below to publish your tournament."}
@@ -972,7 +972,7 @@ const CreateTournament = () => {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 py-6 space-y-6">
+      <div className="px-3 sm:px-6 py-4 sm:py-6 space-y-5 sm:space-y-6">
       {isLoadingTournament && (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
@@ -1165,7 +1165,7 @@ const CreateTournament = () => {
                     className={`${inputCls} resize-none`} />
                 </Field>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="Game" required>
                     <select value={gameId} onChange={(e) => setGameId(e.target.value)} className={selectCls}>
                       <option value="">Select a game</option>
@@ -1181,7 +1181,7 @@ const CreateTournament = () => {
                   </Field>
                   <div className="col-span-2">
                     <Field label="Tournament Type" required>
-                      <div className="grid grid-cols-6 gap-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                         {[
                           { value: "single_elimination", label: "Single Elim",   sub: "One loss and out",  icon: <GitBranch className="w-4 h-4" />, accent: "cyan",    disabled: false },
                           { value: "double_elimination", label: "Double Elim",   sub: "Two losses out",    icon: <Repeat className="w-4 h-4" />,    accent: "indigo",  disabled: false },
@@ -1205,11 +1205,11 @@ const CreateTournament = () => {
                               type="button"
                               disabled={disabled}
                               onClick={() => !disabled && setTournamentType(value)}
-                              className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-center transition-all ${colors[accent]} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                              className={`relative flex flex-col items-center gap-1 sm:gap-1.5 py-2.5 sm:py-3 px-1 sm:px-2 rounded-xl border text-center transition-all ${colors[accent]} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                             >
                               <span className="shrink-0">{icon}</span>
-                              <span className="text-[11px] font-bold leading-tight">{label}</span>
-                              <span className="text-[9px] leading-tight">{sub}</span>
+                              <span className="text-[10px] sm:text-[11px] font-bold leading-tight">{label}</span>
+                              <span className="hidden sm:block text-[9px] leading-tight">{sub}</span>
                             </button>
                           );
                         })}
@@ -1278,7 +1278,7 @@ const CreateTournament = () => {
 
               {/* 3 · Schedule */}
               <SectionCard step={3} title="Schedule" icon={CalendarDays}>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="Registration Opens" required>
                     <DateTimePicker value={registrationStart} onChange={setRegistrationStart} placeholder="Pick date & time" />
                   </Field>
@@ -1319,7 +1319,7 @@ const CreateTournament = () => {
 
               {/* 2 · Participants */}
               <SectionCard step={2} title="Participants" icon={Users}>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="Max Players" required>
                     <input
                       type="number"
