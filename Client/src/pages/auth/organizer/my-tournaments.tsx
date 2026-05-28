@@ -282,6 +282,7 @@ const MyTournaments = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [pastOpen, setPastOpen] = useState(false);
   const hasFetched = useRef(false);
 
   const load = useCallback(async () => {
@@ -317,7 +318,7 @@ const MyTournaments = () => {
         <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7 space-y-4">
+        <div className="relative max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 pt-10 pb-7 space-y-4">
           {/* Title row */}
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -391,7 +392,7 @@ const MyTournaments = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-8">
+      <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 py-4 sm:py-6 space-y-8">
       {/* ── Loading ─────────────────────────────────────────── */}
       {isLoading && (
         <div className="flex items-center justify-center py-24">
@@ -445,15 +446,28 @@ const MyTournaments = () => {
             </div>
           </Section>
 
-          <Section
-            title="Past"
-            count={past.length}
-            badge="bg-slate-700/60 text-slate-400 border-slate-700"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {past.map((t) => <TournamentCard key={t.id} tournament={t} />)}
+          {past.length > 0 && (
+            <div className="space-y-4">
+              <button
+                onClick={() => setPastOpen(v => !v)}
+                className="w-full flex items-center justify-between gap-3 group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-1 h-5 rounded-full bg-slate-600 shrink-0" />
+                  <span className="font-display text-base font-bold text-white">Past</span>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-700/60 text-slate-400 border border-slate-700">
+                    {past.length}
+                  </span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${pastOpen ? "rotate-180" : ""}`} />
+              </button>
+              {pastOpen && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {past.map((t) => <TournamentCard key={t.id} tournament={t} />)}
+                </div>
+              )}
             </div>
-          </Section>
+          )}
         </div>
       )}
       </div>

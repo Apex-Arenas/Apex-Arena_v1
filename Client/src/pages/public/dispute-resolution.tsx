@@ -22,17 +22,19 @@ const STEPS = [
 const DisputeResolution = () => {
   return (
     <div className="bg-slate-950 text-white">
-      <section className="border-b border-slate-800/70">
-        <div className="mx-auto max-w-5xl px-6 py-16">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-300">
-            Dispute Resolution
-          </p>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
+      <section className="border-b border-slate-800/60 bg-slate-950">
+        <div className="mx-auto max-w-5xl px-6 py-8 sm:py-10">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-semibold uppercase tracking-widest text-emerald-400">
+              <ShieldCheck className="w-3 h-3" />
+              Dispute Resolution
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
             Resolve match disputes in under 24 hours
           </h1>
-          <p className="mt-4 text-base text-slate-300 sm:text-lg">
-            Every report is handled by verified moderators. Clear evidence means
-            faster rulings.
+          <p className="mt-2 text-sm text-slate-400 max-w-xl">
+            Every report is handled by verified moderators. Clear evidence means faster rulings.
           </p>
         </div>
       </section>

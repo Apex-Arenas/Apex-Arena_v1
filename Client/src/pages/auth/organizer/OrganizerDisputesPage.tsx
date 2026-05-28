@@ -396,24 +396,40 @@ export default function OrganizerDisputesPage() {
   return (
     <div className="min-h-screen">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
-        <div className="absolute -top-40 right-0 w-175 h-100 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7 space-y-5">
-          {/* Title row */}
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 flex-wrap mb-3">
-                <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Disputes</h1>
-                {pending.length > 0 && (
-                  <span className="text-[11px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border bg-amber-500/15 text-amber-300 border-amber-500/25">
-                    {pending.length} pending
-                  </span>
-                )}
+      <div className="border-b border-slate-800/60 bg-slate-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                  <Gavel className="w-4 h-4 text-amber-400" />
+                </div>
+                <h1 className="font-display text-xl sm:text-2xl font-bold text-white">Disputes</h1>
               </div>
-              <p className="text-base text-slate-400">Review and resolve disputed matches across your tournaments.</p>
+              {pending.length > 0 && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border bg-amber-500/15 text-amber-300 border-amber-500/25">
+                  {pending.length} pending
+                </span>
+              )}
+              <div className="hidden sm:flex items-center gap-1 text-slate-600">
+                <span className="w-1 h-1 rounded-full bg-slate-700" />
+              </div>
+              <div className="hidden sm:flex items-center gap-3 text-sm text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="tabular-nums text-white font-semibold">{disputes.length}</span> total
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="tabular-nums text-emerald-400 font-semibold">{resolved.length}</span> resolved
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="tabular-nums text-cyan-400 font-semibold">
+                    {disputes.length > 0 ? `${Math.round((resolved.length / disputes.length) * 100)}%` : "—"}
+                  </span> rate
+                </span>
+              </div>
             </div>
             <button
               onClick={() => void fetchDisputes()}
@@ -424,26 +440,7 @@ export default function OrganizerDisputesPage() {
               <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
-
-          {/* Stats strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-            {[
-              { icon: ShieldAlert,   label: "Total",           value: String(disputes.length),  accent: "text-white",       iconColor: "text-slate-400",   iconBg: "bg-slate-800 border-slate-700/50"           },
-              { icon: AlertTriangle, label: "Pending",         value: String(pending.length),   accent: "text-amber-400",   iconColor: "text-amber-400",   iconBg: "bg-amber-500/10 border-amber-500/20"        },
-              { icon: CheckCircle2,  label: "Resolved",        value: String(resolved.length),  accent: "text-emerald-400", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10 border-emerald-500/20"    },
-              { icon: Gavel,         label: "Resolution Rate", value: disputes.length > 0 ? `${Math.round((resolved.length / disputes.length) * 100)}%` : "—", accent: "text-cyan-400", iconColor: "text-cyan-400", iconBg: "bg-cyan-500/10 border-cyan-500/20" },
-            ].map(({ icon: Icon, label, value, accent, iconColor, iconBg }) => (
-              <div key={label} className="flex items-center gap-2.5 sm:gap-3 bg-slate-800/40 border border-slate-700/40 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3.5 hover:border-slate-600/60 transition-colors">
-                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
-                  <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${iconColor}`} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
-                  <p className={`font-display text-lg sm:text-xl font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="mt-1.5 text-sm text-slate-500">Review and resolve disputed matches across your tournaments.</p>
         </div>
       </div>
 
