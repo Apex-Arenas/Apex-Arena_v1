@@ -999,7 +999,17 @@ export const adminService = {
 
   async fetchDisputedMatches(limit = 20): Promise<Record<string, unknown>[]> {
     const response = await apiGet(
-      `${TOURNAMENT_ENDPOINTS.MATCH_ADMIN_DISPUTES}?limit=${limit}`,
+      `${TOURNAMENT_ENDPOINTS.MATCH_ADMIN_DISPUTES}?limit=${limit}&type=open`,
+      adminHeaders(),
+    );
+    if (!response.success) return [];
+    const data = response.data as Record<string, unknown>;
+    return (Array.isArray(data) ? data : (data.disputes ?? [])) as Record<string, unknown>[];
+  },
+
+  async fetchResolvedDisputes(limit = 30): Promise<Record<string, unknown>[]> {
+    const response = await apiGet(
+      `${TOURNAMENT_ENDPOINTS.MATCH_ADMIN_DISPUTES}?limit=${limit}&type=resolved`,
       adminHeaders(),
     );
     if (!response.success) return [];

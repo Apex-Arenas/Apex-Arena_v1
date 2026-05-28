@@ -12,6 +12,7 @@ import {
   Link,
   RefreshCw,
   ChevronRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { adminService } from '../../services/admin.service';
 
@@ -28,6 +29,15 @@ interface DisputeInfo {
   disputedAt: string;
   reason: string;
   evidenceUrl?: string;
+  resolved?: boolean;
+  resolvedAt?: string;
+}
+
+interface AdminOverrideInfo {
+  overridden: boolean;
+  overriddenBy?: string;
+  overriddenAt?: string;
+  reason?: string;
 }
 
 interface PlayerResult {
@@ -45,10 +55,13 @@ interface MatchDetail {
   player1: MatchPlayer;
   player2: MatchPlayer;
   dispute: DisputeInfo | null;
+  adminOverride: AdminOverrideInfo | null;
   player1Result: PlayerResult | null;
   player2Result: PlayerResult | null;
   winnerName?: string;
 }
+
+type TabKey = 'open' | 'resolved';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,7 +81,6 @@ function extractPlayerFromParticipants(raw: Record<string, unknown>): { p1: Matc
     return { p1: fromParticipant(participants[0]), p2: fromParticipant(participants[1]) };
   }
 
-  // Fallback: named fields
   const fallback = (key1: string, key2?: string): MatchPlayer => {
     const p = (raw[key1] ?? (key2 ? raw[key2] : undefined) ?? {}) as Record<string, unknown>;
     return {
@@ -83,6 +95,7 @@ function extractPlayerFromParticipants(raw: Record<string, unknown>): { p1: Matc
 function mapMatchDetail(raw: Record<string, unknown>): MatchDetail {
   const tournamentRaw = (raw.tournament_id ?? raw.tournament ?? {}) as Record<string, unknown>;
   const disputeRaw = (raw.dispute ?? {}) as Record<string, unknown>;
+  const overrideRaw = (raw.admin_override ?? {}) as Record<string, unknown>;
   const { p1, p2 } = extractPlayerFromParticipants(raw);
 
   const results = (raw.results ?? []) as Record<string, unknown>[];
@@ -94,6 +107,8 @@ function mapMatchDetail(raw: Record<string, unknown>): MatchDetail {
   });
 
   const winner = (raw.winner_id ?? raw.winner ?? {}) as Record<string, unknown>;
+
+  const overrideUser = (overrideRaw.overridden_by_user ?? overrideRaw.overridden_by ?? {}) as Record<string, unknown>;
 
   return {
     id: String(raw._id ?? raw.id ?? ''),
@@ -114,6 +129,16 @@ function mapMatchDetail(raw: Record<string, unknown>): MatchDetail {
           disputedAt: String(disputeRaw.disputed_at ?? raw.disputed_at ?? ''),
           reason: String(disputeRaw.reason ?? raw.dispute_reason ?? ''),
           evidenceUrl: (disputeRaw.evidence_url ?? raw.evidence_url) as string | undefined,
+          resolved: Boolean(disputeRaw.resolved),
+          resolvedAt: String(disputeRaw.resolved_at ?? ''),
+        }
+      : null,
+    adminOverride: overrideRaw.overridden
+      ? {
+          overridden: true,
+          overriddenBy: String(overrideUser.username ?? overrideUser._id ?? overrideRaw.overridden_by ?? ''),
+          overriddenAt: String(overrideRaw.overridden_at ?? ''),
+          reason: String(overrideRaw.reason ?? ''),
         }
       : null,
     player1Result: results[0] ? mapResult(results[0]) : null,
@@ -154,10 +179,18 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function DisputeManagement() {
-  // ── Recent disputes list ──
-  const [recentDisputes, setRecentDisputes] = useState<MatchDetail[]>([]);
-  const [recentLoading, setRecentLoading] = useState(true);
-  const [recentError, setRecentError] = useState('');
+  const [activeTab, setActiveTab] = useState<TabKey>('open');
+
+  // ── Open disputes list ──
+  const [openDisputes, setOpenDisputes] = useState<MatchDetail[]>([]);
+  const [openLoading, setOpenLoading] = useState(true);
+  const [openError, setOpenError] = useState('');
+
+  // ── Resolved disputes list ──
+  const [resolvedDisputes, setResolvedDisputes] = useState<MatchDetail[]>([]);
+  const [resolvedLoading, setResolvedLoading] = useState(false);
+  const [resolvedLoaded, setResolvedLoaded] = useState(false);
+  const [resolvedError, setResolvedError] = useState('');
 
   // ── Lookup / active match ──
   const [matchIdInput, setMatchIdInput] = useState('');
@@ -172,18 +205,36 @@ export default function DisputeManagement() {
   const [overrideSuccess, setOverrideSuccess] = useState('');
   const [overrideError, setOverrideError] = useState('');
 
-  const loadRecentDisputes = useCallback(async () => {
-    setRecentLoading(true);
-    setRecentError('');
+  const loadOpenDisputes = useCallback(async () => {
+    setOpenLoading(true);
+    setOpenError('');
     const raw = await adminService.fetchDisputedMatches(20);
-    if (!raw.length && recentDisputes.length === 0) {
-      setRecentError(''); // No disputes is fine
-    }
-    setRecentDisputes(raw.map(mapMatchDetail));
-    setRecentLoading(false);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    setOpenDisputes(raw.map(mapMatchDetail));
+    setOpenLoading(false);
+  }, []);
 
-  useEffect(() => { void loadRecentDisputes(); }, [loadRecentDisputes]);
+  const loadResolvedDisputes = useCallback(async () => {
+    setResolvedLoading(true);
+    setResolvedError('');
+    const raw = await adminService.fetchResolvedDisputes(30);
+    setResolvedDisputes(raw.map(mapMatchDetail));
+    setResolvedLoading(false);
+    setResolvedLoaded(true);
+  }, []);
+
+  useEffect(() => { void loadOpenDisputes(); }, [loadOpenDisputes]);
+
+  // Lazy-load resolved disputes when that tab is first opened
+  useEffect(() => {
+    if (activeTab === 'resolved' && !resolvedLoaded && !resolvedLoading) {
+      void loadResolvedDisputes();
+    }
+  }, [activeTab, resolvedLoaded, resolvedLoading, loadResolvedDisputes]);
+
+  const handleRefresh = () => {
+    if (activeTab === 'open') void loadOpenDisputes();
+    else { setResolvedLoaded(false); void loadResolvedDisputes(); }
+  };
 
   const openMatch = (detail: MatchDetail) => {
     setMatch(detail);
@@ -225,18 +276,21 @@ export default function DisputeManagement() {
       setOverrideSuccess('Match result overridden successfully.');
       setOverrideWinnerId('');
       setOverrideReason('');
-      // Refresh the list so the resolved dispute disappears
-      void loadRecentDisputes();
+      void loadOpenDisputes();
+      setResolvedLoaded(false);
     } else {
       setOverrideError('Failed to override match result. Check the match ID and try again.');
     }
   };
 
+  const activeList = activeTab === 'open' ? openDisputes : resolvedDisputes;
+  const isListLoading = activeTab === 'open' ? openLoading : resolvedLoading;
+  const listError = activeTab === 'open' ? openError : resolvedError;
   const players = match ? [match.player1, match.player2].filter((p) => p.id) : [];
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Full-bleed Hero */}
+      {/* Header */}
       <div className="border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -245,9 +299,9 @@ export default function DisputeManagement() {
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-2xl font-display font-bold text-white">Dispute Management</h1>
-                  {!recentLoading && recentDisputes.length > 0 && (
+                  {!openLoading && openDisputes.length > 0 && (
                     <span className="text-xs px-2.5 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 font-semibold">
-                      {recentDisputes.length} open
+                      {openDisputes.length} open
                     </span>
                   )}
                 </div>
@@ -255,11 +309,11 @@ export default function DisputeManagement() {
               </div>
             </div>
             <button
-              onClick={() => void loadRecentDisputes()}
-              disabled={recentLoading}
+              onClick={handleRefresh}
+              disabled={isListLoading}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900/60 text-sm text-slate-300 hover:text-white hover:border-slate-600 transition-colors disabled:opacity-50"
             >
-              <RefreshCw className={`w-4 h-4 ${recentLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isListLoading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
           </div>
@@ -268,40 +322,75 @@ export default function DisputeManagement() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* ── Two-column layout on large screens ── */}
         <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-6 items-start">
 
-          {/* LEFT: recent disputes list */}
+          {/* LEFT: tab list */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
-            <div className="px-4 py-3.5 border-b border-slate-800 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-400" />
-                Open Disputes
-                {!recentLoading && recentDisputes.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-semibold">
-                    {recentDisputes.length}
+
+            {/* Tab bar */}
+            <div className="flex border-b border-slate-800">
+              <button
+                onClick={() => setActiveTab('open')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'open'
+                    ? 'text-red-300 border-b-2 border-red-400 bg-red-500/5'
+                    : 'text-slate-400 hover:text-slate-300'
+                }`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Open
+                {!openLoading && openDisputes.length > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-semibold">
+                    {openDisputes.length}
                   </span>
                 )}
-              </h2>
+              </button>
+              <button
+                onClick={() => setActiveTab('resolved')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'resolved'
+                    ? 'text-emerald-300 border-b-2 border-emerald-400 bg-emerald-500/5'
+                    : 'text-slate-400 hover:text-slate-300'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Resolved
+                {!resolvedLoading && resolvedLoaded && resolvedDisputes.length > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold">
+                    {resolvedDisputes.length}
+                  </span>
+                )}
+              </button>
             </div>
 
-            {recentLoading ? (
+            {/* List */}
+            {isListLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
               </div>
-            ) : recentError ? (
+            ) : listError ? (
               <div className="flex items-center gap-2 px-4 py-3 text-sm text-red-400">
-                <AlertCircle className="w-4 h-4 shrink-0" /> {recentError}
+                <AlertCircle className="w-4 h-4 shrink-0" /> {listError}
               </div>
-            ) : recentDisputes.length === 0 ? (
+            ) : activeList.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500/40 mb-2" />
-                <p className="text-sm text-slate-400 font-medium">No open disputes</p>
-                <p className="text-xs text-slate-500 mt-1">All matches are resolved.</p>
+                {activeTab === 'open' ? (
+                  <>
+                    <CheckCircle2 className="w-8 h-8 text-emerald-500/40 mb-2" />
+                    <p className="text-sm text-slate-400 font-medium">No open disputes</p>
+                    <p className="text-xs text-slate-500 mt-1">All matches are resolved.</p>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-8 h-8 text-slate-600 mb-2" />
+                    <p className="text-sm text-slate-400 font-medium">No resolved disputes yet</p>
+                    <p className="text-xs text-slate-500 mt-1">Overridden matches will appear here.</p>
+                  </>
+                )}
               </div>
             ) : (
               <div className="divide-y divide-slate-800">
-                {recentDisputes.map((d) => (
+                {activeList.map((d) => (
                   <button
                     key={d.id}
                     type="button"
@@ -315,14 +404,23 @@ export default function DisputeManagement() {
                       <p className="text-sm text-white font-medium truncate">
                         {d.player1.name} <span className="text-slate-500 font-normal">vs</span> {d.player2.name}
                       </p>
-                      {d.dispute?.disputedAt && (
+                      {activeTab === 'open' && d.dispute?.disputedAt && (
                         <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {new Date(d.dispute.disputedAt).toLocaleString()}
                         </p>
                       )}
-                      {d.dispute?.reason && (
+                      {activeTab === 'open' && d.dispute?.reason && (
                         <p className="text-xs text-slate-400 mt-1 truncate italic">"{d.dispute.reason}"</p>
+                      )}
+                      {activeTab === 'resolved' && d.adminOverride?.overriddenAt && (
+                        <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-emerald-500/60" />
+                          Overridden {new Date(d.adminOverride.overriddenAt).toLocaleString()}
+                        </p>
+                      )}
+                      {activeTab === 'resolved' && d.winnerName && (
+                        <p className="text-xs text-emerald-400 mt-0.5">Winner: {d.winnerName}</p>
                       )}
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
@@ -331,7 +429,7 @@ export default function DisputeManagement() {
               </div>
             )}
 
-            {/* Manual lookup at the bottom of the list */}
+            {/* Manual lookup */}
             <div className="px-4 py-3.5 border-t border-slate-800 space-y-2">
               <p className="text-xs text-slate-500">Or look up by Match ID</p>
               <div className="flex items-center gap-2">
@@ -393,17 +491,37 @@ export default function DisputeManagement() {
                   </div>
                 </div>
 
+                {/* Admin override summary (for resolved) */}
+                {match.adminOverride?.overridden && (
+                  <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 space-y-3">
+                    <h3 className="text-sm font-semibold text-emerald-300 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4" /> Admin Override Applied
+                    </h3>
+                    <InfoRow icon={User}  label="By"       value={match.adminOverride.overriddenBy ?? ''} />
+                    <InfoRow icon={Clock} label="At"       value={match.adminOverride.overriddenAt ? new Date(match.adminOverride.overriddenAt).toLocaleString() : ''} />
+                    <InfoRow icon={FileText} label="Reason" value={match.adminOverride.reason ?? ''} />
+                  </div>
+                )}
+
                 {/* Dispute details */}
                 {match.dispute ? (
                   <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-5 space-y-3">
                     <h3 className="text-sm font-semibold text-red-300 flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4" /> Dispute Details
+                      {match.dispute.resolved && (
+                        <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          Resolved
+                        </span>
+                      )}
                     </h3>
                     <InfoRow icon={User}     label="Disputed by" value={match.dispute.disputedBy} />
                     <InfoRow icon={Clock}    label="Disputed at" value={match.dispute.disputedAt ? new Date(match.dispute.disputedAt).toLocaleString() : ''} />
                     <InfoRow icon={FileText} label="Reason"      value={match.dispute.reason} />
                     {match.dispute.evidenceUrl && (
                       <InfoRow icon={Link} label="Evidence" value={match.dispute.evidenceUrl} />
+                    )}
+                    {match.dispute.resolvedAt && (
+                      <InfoRow icon={Clock} label="Resolved at" value={new Date(match.dispute.resolvedAt).toLocaleString()} />
                     )}
                   </div>
                 ) : (
@@ -433,68 +551,70 @@ export default function DisputeManagement() {
                   </div>
                 )}
 
-                {/* Admin override */}
-                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 space-y-4">
-                  <h3 className="text-sm font-semibold text-amber-300 flex items-center gap-2">
-                    <Gavel className="w-4 h-4" /> Admin Override
-                  </h3>
+                {/* Admin override form — only show for open disputes */}
+                {match.status !== 'completed' && (
+                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 space-y-4">
+                    <h3 className="text-sm font-semibold text-amber-300 flex items-center gap-2">
+                      <Gavel className="w-4 h-4" /> Admin Override
+                    </h3>
 
-                  {overrideSuccess && (
-                    <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-sm">
-                      <CheckCircle2 className="w-4 h-4 shrink-0" /> {overrideSuccess}
-                    </div>
-                  )}
-                  {overrideError && (
-                    <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
-                      <AlertCircle className="w-4 h-4 shrink-0" /> {overrideError}
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1.5 block">Select Winner</label>
-                      <div className="flex flex-wrap gap-2">
-                        {players.map((player) => (
-                          <button
-                            key={player.id}
-                            type="button"
-                            onClick={() => setOverrideWinnerId(player.id)}
-                            className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                              overrideWinnerId === player.id
-                                ? 'bg-amber-500/20 border-amber-500 text-amber-200'
-                                : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-amber-500/50'
-                            }`}
-                          >
-                            {player.name}
-                          </button>
-                        ))}
-                        {players.length === 0 && (
-                          <p className="text-xs text-slate-500">Player data not available. Use the match ID lookup to load full details.</p>
-                        )}
+                    {overrideSuccess && (
+                      <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-300 text-sm">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" /> {overrideSuccess}
                       </div>
-                    </div>
+                    )}
+                    {overrideError && (
+                      <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+                        <AlertCircle className="w-4 h-4 shrink-0" /> {overrideError}
+                      </div>
+                    )}
 
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1.5 block">Override Reason (required)</label>
-                      <textarea
-                        value={overrideReason}
-                        onChange={(e) => setOverrideReason(e.target.value)}
-                        rows={2}
-                        placeholder="Explain the basis for this override…"
-                        className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors resize-none"
-                      />
-                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1.5 block">Select Winner</label>
+                        <div className="flex flex-wrap gap-2">
+                          {players.map((player) => (
+                            <button
+                              key={player.id}
+                              type="button"
+                              onClick={() => setOverrideWinnerId(player.id)}
+                              className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                                overrideWinnerId === player.id
+                                  ? 'bg-amber-500/20 border-amber-500 text-amber-200'
+                                  : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-amber-500/50'
+                              }`}
+                            >
+                              {player.name}
+                            </button>
+                          ))}
+                          {players.length === 0 && (
+                            <p className="text-xs text-slate-500">Player data not available. Use the match ID lookup to load full details.</p>
+                          )}
+                        </div>
+                      </div>
 
-                    <button
-                      onClick={() => void handleOverride()}
-                      disabled={isOverriding || !overrideWinnerId || !overrideReason.trim()}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-sm font-semibold hover:bg-amber-400 disabled:opacity-50 transition-colors"
-                    >
-                      {isOverriding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gavel className="w-4 h-4" />}
-                      {isOverriding ? 'Overriding…' : 'Override Result'}
-                    </button>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1.5 block">Override Reason (required)</label>
+                        <textarea
+                          value={overrideReason}
+                          onChange={(e) => setOverrideReason(e.target.value)}
+                          rows={2}
+                          placeholder="Explain the basis for this override…"
+                          className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors resize-none"
+                        />
+                      </div>
+
+                      <button
+                        onClick={() => void handleOverride()}
+                        disabled={isOverriding || !overrideWinnerId || !overrideReason.trim()}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-sm font-semibold hover:bg-amber-400 disabled:opacity-50 transition-colors"
+                      >
+                        {isOverriding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gavel className="w-4 h-4" />}
+                        {isOverriding ? 'Overriding…' : 'Override Result'}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             )}
           </div>
