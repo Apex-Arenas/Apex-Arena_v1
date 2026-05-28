@@ -23,7 +23,6 @@ import {
 import {
   CalendarWidget,
   type CalendarEvent,
-  EmptyState,
   JoinedTournamentDetailsCard,
   OrganizerTournamentCard,
 } from "../../components/dashboard";
@@ -620,7 +619,7 @@ const Dashboard = () => {
                   <s.icon className={`w-4 h-4 ${s.iconColor}`} />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-display text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
+                  <p className="font-display text-base sm:text-xl font-bold tabular-nums text-white leading-none truncate">{s.value}</p>
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
                 </div>
               </div>
@@ -637,7 +636,7 @@ const Dashboard = () => {
           <section className="min-w-0 space-y-5">
             {/* Section header with tabs */}
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mt-10">
                 <h2 className="font-display text-2xl font-bold text-white">My Tournaments</h2>
                 {registrations.length > 0 && (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/20">

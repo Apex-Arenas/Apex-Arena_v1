@@ -518,7 +518,7 @@ export default function WalletPage() {
                 <p className="text-xs text-slate-600 mt-2">Updated {fmtDate(wallet.lastUpdated)}</p>
               )}
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <button
                 onClick={() => setModal("deposit")}
                 className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 transition-all"
