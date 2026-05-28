@@ -411,7 +411,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-4 sm:py-6 space-y-6">
+        <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 py-4 sm:py-6 space-y-6">
         {/* ── Main grid ─────────────────────────────────────────────────── */}
         <div className="grid lg:grid-cols-[1fr_272px] gap-6">
           <div className="space-y-8 min-w-0">
