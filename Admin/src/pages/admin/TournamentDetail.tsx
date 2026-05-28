@@ -1525,16 +1525,25 @@ function AdminLeagueSection({ tournamentId }: { tournamentId: string }) {
     );
   }
 
+  const positionStyle = (pos: number) => {
+    if (pos === 1) return { dot: "bg-amber-400", row: "bg-amber-500/5", badge: "text-amber-400 bg-amber-500/15 border-amber-500/30" };
+    if (pos === 2) return { dot: "bg-slate-300", row: "bg-slate-700/10", badge: "text-slate-300 bg-slate-600/20 border-slate-600/30" };
+    if (pos === 3) return { dot: "bg-orange-600", row: "bg-orange-900/5", badge: "text-orange-400 bg-orange-500/10 border-orange-500/20" };
+    return { dot: "bg-slate-700", row: "", badge: "text-slate-400 bg-slate-800 border-slate-700" };
+  };
+
+  const gdLabel = (gd: number) => gd > 0 ? `+${gd}` : String(gd);
+
   return (
     <Section title="League" icon={Trophy}>
       {/* Tab bar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-1.5 bg-slate-950/60 border border-slate-800 rounded-2xl p-1.5">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-1 bg-slate-950/60 border border-slate-800 rounded-xl p-1">
           {(["table", "fixtures"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === tab
                   ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/20"
                   : "text-slate-400 hover:text-white hover:bg-slate-800/60"
@@ -1548,60 +1557,82 @@ function AdminLeagueSection({ tournamentId }: { tournamentId: string }) {
         <button
           onClick={() => loadData(true)}
           disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-50 transition-colors"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
           {refreshing ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 
-      {/* Standings Table */}
+      {/* ── Standings Table ── */}
       {activeTab === "table" && (
         table.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-8">No standings yet.</p>
+          <div className="flex flex-col items-center gap-2 py-12 text-center">
+            <Trophy className="w-8 h-8 text-slate-700" />
+            <p className="text-sm text-slate-500">No standings yet.</p>
+          </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-slate-500 border-b border-slate-800">
-                  <th className="text-left pb-2 pr-2 font-semibold">#</th>
-                  <th className="text-left pb-2 pr-2 font-semibold">Player</th>
-                  <th className="text-center pb-2 px-1 font-semibold">P</th>
-                  <th className="text-center pb-2 px-1 font-semibold">W</th>
-                  <th className="text-center pb-2 px-1 font-semibold">D</th>
-                  <th className="text-center pb-2 px-1 font-semibold">L</th>
-                  <th className="text-center pb-2 px-1 font-semibold">GF</th>
-                  <th className="text-center pb-2 px-1 font-semibold">GA</th>
-                  <th className="text-center pb-2 px-1 font-semibold">GD</th>
-                  <th className="text-center pb-2 font-semibold text-orange-400">Pts</th>
-                </tr>
-              </thead>
-              <tbody>
-                {table.map((row: any, i: number) => {
-                  const pos = Number(row.position ?? row.rank ?? i + 1);
-                  const name = String(row.displayName ?? row.display_name ?? row.in_game_id ?? row.username ?? "—");
-                  return (
-                    <tr key={row.userId ?? row.user_id ?? row.teamId ?? row.team_id ?? i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
-                      <td className="py-2 pr-2 text-slate-400 tabular-nums">{pos}</td>
-                      <td className="py-2 pr-2 font-medium text-white truncate max-w-30">{name}</td>
-                      <td className="py-2 px-1 text-center tabular-nums text-slate-300">{row.played ?? 0}</td>
-                      <td className="py-2 px-1 text-center tabular-nums text-emerald-400">{row.won ?? 0}</td>
-                      <td className="py-2 px-1 text-center tabular-nums text-amber-400">{row.drawn ?? 0}</td>
-                      <td className="py-2 px-1 text-center tabular-nums text-red-400">{row.lost ?? 0}</td>
-                      <td className="py-2 px-1 text-center tabular-nums text-slate-300">{row.goalsFor ?? row.goals_for ?? 0}</td>
-                      <td className="py-2 px-1 text-center tabular-nums text-slate-300">{row.goalsAgainst ?? row.goals_against ?? 0}</td>
-                      <td className="py-2 px-1 text-center tabular-nums text-slate-300">{row.goalDifference ?? row.goal_difference ?? 0}</td>
-                      <td className="py-2 text-center tabular-nums font-bold text-orange-400">{row.points ?? 0}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="rounded-xl border border-slate-800 overflow-hidden">
+            {/* Header row */}
+            <div className="grid grid-cols-[2rem_1fr_2.5rem_2.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3rem_3.5rem] gap-0 px-3 py-2 bg-slate-800/60 border-b border-slate-800">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">#</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Player</span>
+              {["P","W","D","L","GF","GA","GD"].map(h => (
+                <span key={h} className="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">{h}</span>
+              ))}
+              <span className="text-[10px] font-bold text-orange-400 uppercase tracking-wider text-center">Pts</span>
+            </div>
+
+            {/* Data rows */}
+            {table.map((row: any, i: number) => {
+              const pos  = Number(row.position ?? row.rank ?? i + 1);
+              const name = String(row.displayName ?? row.display_name ?? row.in_game_id ?? row.username ?? "—");
+              const st   = positionStyle(pos);
+              const gd   = Number(row.goalDifference ?? row.goal_difference ?? 0);
+              return (
+                <div
+                  key={row.userId ?? row.user_id ?? i}
+                  className={`grid grid-cols-[2rem_1fr_2.5rem_2.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3rem_3.5rem] gap-0 items-center px-3 py-2.5 border-b border-slate-800/60 last:border-b-0 hover:bg-slate-800/30 transition-colors ${st.row}`}
+                >
+                  {/* Position */}
+                  <div className="flex items-center justify-center">
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-950 ${st.dot}`}>
+                      {pos}
+                    </span>
+                  </div>
+
+                  {/* Player name */}
+                  <div className="pl-1 min-w-0">
+                    <p className="text-sm font-semibold text-white truncate leading-tight">{name}</p>
+                  </div>
+
+                  {/* P W D L */}
+                  <span className="text-center text-xs tabular-nums text-slate-400">{row.played ?? 0}</span>
+                  <span className="text-center text-xs tabular-nums font-semibold text-emerald-400">{row.won ?? 0}</span>
+                  <span className="text-center text-xs tabular-nums text-amber-400">{row.drawn ?? 0}</span>
+                  <span className="text-center text-xs tabular-nums text-red-400">{row.lost ?? 0}</span>
+
+                  {/* GF GA GD */}
+                  <span className="text-center text-xs tabular-nums text-slate-300">{row.goalsFor ?? row.goals_for ?? 0}</span>
+                  <span className="text-center text-xs tabular-nums text-slate-300">{row.goalsAgainst ?? row.goals_against ?? 0}</span>
+                  <span className={`text-center text-xs tabular-nums font-medium ${gd > 0 ? "text-emerald-400" : gd < 0 ? "text-red-400" : "text-slate-400"}`}>
+                    {gdLabel(gd)}
+                  </span>
+
+                  {/* Points */}
+                  <div className="flex justify-center">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-md border tabular-nums ${st.badge}`}>
+                      {row.points ?? 0}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )
       )}
 
-      {/* Fixtures */}
+      {/* ── Fixtures ── */}
       {activeTab === "fixtures" && (
         <div className="space-y-4">
           {/* Week selector */}
@@ -1613,7 +1644,7 @@ function AdminLeagueSection({ tournamentId }: { tournamentId: string }) {
                   <button
                     key={wk}
                     onClick={() => setSelectedWeek(wk)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       selectedWeek === wk
                         ? "bg-orange-500/20 text-orange-300 border border-orange-500/40"
                         : "text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500"
@@ -1626,35 +1657,81 @@ function AdminLeagueSection({ tournamentId }: { tournamentId: string }) {
             </div>
           )}
 
-          {/* Matches for selected week */}
+          {/* Matches */}
           {currentWeekMatches.length === 0 ? (
-            <p className="text-sm text-slate-500 text-center py-8">No fixtures for this week.</p>
+            <div className="flex flex-col items-center gap-2 py-12 text-center">
+              <Calendar className="w-8 h-8 text-slate-700" />
+              <p className="text-sm text-slate-500">No fixtures for this week.</p>
+            </div>
           ) : (
             <div className="space-y-2">
               {currentWeekMatches.map((m: any) => {
-                const matchId = String(m._id ?? m.id ?? m.matchId ?? "");
-                const parts = Array.isArray(m.participants) ? m.participants : [];
-                const p1 = parts[0] ?? {};
-                const p2 = parts[1] ?? {};
-                const p1Name = String(p1.in_game_id ?? p1.display_name ?? p1.username ?? "TBD");
-                const p2Name = String(p2.in_game_id ?? p2.display_name ?? p2.username ?? "TBD");
-                const p1Score = m.status === "completed" ? (p1.score ?? "—") : "—";
-                const p2Score = m.status === "completed" ? (p2.score ?? "—") : "—";
-                const status = String(m.status ?? "pending");
-                const statusColor = status === "completed" ? "text-slate-400" : status === "ongoing" ? "text-orange-400" : "text-slate-500";
+                const matchId  = String(m._id ?? m.id ?? m.matchId ?? "");
+                const parts    = Array.isArray(m.participants) ? m.participants : [];
+                const p1       = parts[0] ?? {};
+                const p2       = parts[1] ?? {};
+                const p1Name   = String(p1.in_game_id ?? p1.display_name ?? p1.username ?? "TBD");
+                const p2Name   = String(p2.in_game_id ?? p2.display_name ?? p2.username ?? "TBD");
+                const done     = m.status === "completed";
+                const live     = ["ongoing", "in_progress", "live"].includes(m.status ?? "");
+                const p1Score  = done ? String(p1.score ?? 0) : live ? String(p1.score ?? 0) : null;
+                const p2Score  = done ? String(p2.score ?? 0) : live ? String(p2.score ?? 0) : null;
+
+                // determine result for winner highlight
+                const p1Win = done && p1Score !== null && p2Score !== null && Number(p1Score) > Number(p2Score);
+                const p2Win = done && p1Score !== null && p2Score !== null && Number(p2Score) > Number(p1Score);
+
                 return (
                   <button
                     key={matchId}
                     onClick={() => setSelectedMatch(m)}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-slate-800/40 border border-slate-700/40 hover:bg-slate-800/70 hover:border-slate-600 transition-all text-left"
+                    className="w-full rounded-xl bg-slate-800/40 border border-slate-700/50 hover:bg-slate-800/70 hover:border-slate-600 transition-all text-left group"
                   >
-                    <span className="text-sm text-white font-medium truncate flex-1">{p1Name}</span>
-                    <span className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-sm font-bold tabular-nums text-slate-200">{p1Score}</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${statusColor}`}>vs</span>
-                      <span className="text-sm font-bold tabular-nums text-slate-200">{p2Score}</span>
-                    </span>
-                    <span className="text-sm text-white font-medium truncate flex-1 text-right">{p2Name}</span>
+                    {/* Status bar */}
+                    <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
+                      <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                        done ? "text-slate-500" : live ? "text-orange-400" : "text-slate-600"
+                      }`}>
+                        {done ? "Full Time" : live ? "● Live" : "Upcoming"}
+                      </span>
+                      <span className="text-[10px] text-slate-600 group-hover:text-slate-400 transition-colors">View →</span>
+                    </div>
+
+                    {/* Match row */}
+                    <div className="flex items-center gap-3 px-4 pb-3">
+                      {/* Team 1 */}
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className={`text-sm font-bold truncate ${p1Win ? "text-white" : done ? "text-slate-400" : "text-slate-200"}`}>
+                          {p1Name}
+                        </p>
+                      </div>
+
+                      {/* Score / vs */}
+                      <div className="shrink-0 flex items-center gap-1.5">
+                        {p1Score !== null && p2Score !== null ? (
+                          <>
+                            <span className={`text-xl font-black tabular-nums w-7 text-center ${p1Win ? "text-white" : "text-slate-400"}`}>
+                              {p1Score}
+                            </span>
+                            <span className="text-xs text-slate-600 font-bold">—</span>
+                            <span className={`text-xl font-black tabular-nums w-7 text-center ${p2Win ? "text-white" : "text-slate-400"}`}>
+                              {p2Score}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="px-3 py-1 rounded-lg bg-slate-700/60 border border-slate-700 text-xs font-bold text-slate-400">
+                            vs
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Team 2 */}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-bold truncate ${p2Win ? "text-white" : done ? "text-slate-400" : "text-slate-200"}`}>
+                          {p2Name}
+                        </p>
+                      </div>
+                    </div>
                   </button>
                 );
               })}
