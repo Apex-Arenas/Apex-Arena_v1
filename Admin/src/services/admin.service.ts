@@ -1005,6 +1005,15 @@ export const adminService = {
     }
   },
 
+  async forceCompleteTournament(tournamentId: string): Promise<void> {
+    const url = `${TOURNAMENT_ENDPOINTS.ADMIN_TOURNAMENTS}/${tournamentId}/force-complete`;
+    const response = await apiPost(url, {}, adminHeaders());
+    if (!response.success) {
+      const msg = (response as any).error?.message ?? 'Failed to complete tournament';
+      throw new Error(msg);
+    }
+  },
+
   async adminSetMatchScore(matchId: string, score1: number, score2: number, reason: string): Promise<void> {
     const url = `${API_BASE_URLS.TOURNAMENT}/admin/matches/${matchId}/set-score`;
     const response = await apiPost(url, { score1, score2, reason }, adminHeaders());

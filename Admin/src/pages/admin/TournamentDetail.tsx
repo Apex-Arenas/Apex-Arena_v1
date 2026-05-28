@@ -1582,6 +1582,7 @@ const TournamentDetail = () => {
   const [statsOpen, setStatsOpen] = useState(false);
   const [isGeneratingBracket, setIsGeneratingBracket] = useState(false);
   const [isGeneratingFixtures, setIsGeneratingFixtures] = useState(false);
+  const [isForceCompleting, setIsForceCompleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!tournamentId) return;
@@ -1634,6 +1635,21 @@ const TournamentDetail = () => {
       toast.error(error.message || "Failed to generate bracket");
     } finally {
       setIsGeneratingBracket(false);
+    }
+  };
+
+  const handleForceComplete = async () => {
+    if (!tournamentId) return;
+    if (!window.confirm("Force-complete this tournament? This will mark it as completed immediately, bypassing normal status flow.")) return;
+    setIsForceCompleting(true);
+    try {
+      await adminService.forceCompleteTournament(tournamentId);
+      toast.success("Tournament marked as completed");
+      void load();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to complete tournament");
+    } finally {
+      setIsForceCompleting(false);
     }
   };
 
@@ -1746,6 +1762,17 @@ const TournamentDetail = () => {
                 >
                   <RefreshCw className={`w-4 h-4 ${isGeneratingBracket ? "animate-spin" : ""}`} />
                   <span className="hidden sm:inline">{isGeneratingBracket ? "Generating…" : "Regenerate Bracket"}</span>
+                </button>
+              )}
+              {!["completed", "cancelled"].includes(status) && (
+                <button
+                  onClick={() => void handleForceComplete()}
+                  disabled={isForceCompleting}
+                  title="Force-complete this tournament"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border text-emerald-400 bg-emerald-500/10 border-emerald-500/25 hover:bg-emerald-500/20 hover:border-emerald-500/40 disabled:opacity-50 transition-all"
+                >
+                  <CheckCircle2 className={`w-4 h-4 ${isForceCompleting ? "animate-spin" : ""}`} />
+                  <span className="hidden sm:inline">{isForceCompleting ? "Completing…" : "Force Complete"}</span>
                 </button>
               )}
               <button
