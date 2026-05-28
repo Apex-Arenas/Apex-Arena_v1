@@ -353,7 +353,7 @@ const JoinTournament = () => {
         <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
+        <div className="relative max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 pt-10 pb-7">
           <div>
             <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Find Your Arena</h1>
             <p className="text-base text-slate-400 mt-3">Browse open tournaments, track your registrations, and compete.</p>
@@ -412,7 +412,7 @@ const JoinTournament = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-5 sm:py-7 space-y-5">
 
         {/* Notifications */}
         {successMsg && (

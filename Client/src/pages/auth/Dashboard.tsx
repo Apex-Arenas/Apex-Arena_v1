@@ -279,7 +279,7 @@ const Dashboard = () => {
           {/* Fine grid */}
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[48px_48px]" />
 
-          <div className="relative max-w-7xl mx-auto px-4 py-5 sm:px-8 sm:py-6">
+          <div className="relative max-w-7xl mx-auto px-8 py-5 sm:px-14 lg:px-20 sm:py-6">
             <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:justify-between">
               {/* Identity */}
               <div className="flex flex-col items-center text-center gap-3 sm:flex-row sm:items-center sm:text-left">
@@ -411,7 +411,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-4 sm:py-6 space-y-6">
         {/* ── Main grid ─────────────────────────────────────────────────── */}
         <div className="grid lg:grid-cols-[1fr_272px] gap-6">
           <div className="space-y-8 min-w-0">
