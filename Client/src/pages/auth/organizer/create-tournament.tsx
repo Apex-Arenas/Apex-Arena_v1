@@ -1175,8 +1175,9 @@ const CreateTournament = () => {
                   </Field>
                   <Field label="Format" required>
                     <select value={format} onChange={(e) => setFormat(e.target.value)} className={selectCls}>
-                      {["1v1", "2v2", "3v3", "4v4", "5v5", "solo", "squad"].map((f) => (
-                        <option key={f} value={f}>{f}</option>
+                      <option value="1v1">1v1</option>
+                      {["2v2", "3v3", "4v4", "5v5", "solo", "squad"].map((f) => (
+                        <option key={f} value={f} disabled>{f} (coming soon)</option>
                       ))}
                     </select>
                   </Field>
