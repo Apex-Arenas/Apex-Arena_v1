@@ -16,6 +16,7 @@ import {
   CheckCheck,
   AlertTriangle,
   ArrowDownCircle,
+  Send,
 } from 'lucide-react';
 import { adminService, type AdminPayoutRequest } from '../../services/admin.service';
 
@@ -91,14 +92,15 @@ export default function PayoutsManagement() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState('');
 
-  const [expandedId,   setExpandedId]   = useState<string | null>(null);
-  const [approvingId,  setApprovingId]  = useState<string | null>(null);
-  const [rejectingId,  setRejectingId]  = useState<string | null>(null);
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [approveNotes, setApproveNotes] = useState('');
-  const [rejectReason, setRejectReason] = useState('');
-  const [momoRef,      setMomoRef]      = useState('');
-  const [actionError,  setActionError]  = useState('');
+  const [expandedId,     setExpandedId]     = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<'approve' | 'processing' | 'reject' | null>(null);
+  const [approvingId,    setApprovingId]    = useState<string | null>(null);
+  const [rejectingId,    setRejectingId]    = useState<string | null>(null);
+  const [confirmingId,   setConfirmingId]   = useState<string | null>(null);
+  const [approveNotes,   setApproveNotes]   = useState('');
+  const [rejectReason,   setRejectReason]   = useState('');
+  const [momoRef,        setMomoRef]        = useState('');
+  const [actionError,    setActionError]    = useState('');
 
   const loadPayouts = useCallback(async (tabKey: StatusKey, p: number) => {
     setLoading(true);
@@ -138,6 +140,7 @@ export default function PayoutsManagement() {
     setApprovingId(null);
     if (ok) {
       setExpandedId(null);
+      setSelectedAction(null);
       setApproveNotes('');
       loadPayouts(activeTab, page);
     } else {
@@ -153,6 +156,7 @@ export default function PayoutsManagement() {
     setRejectingId(null);
     if (ok) {
       setExpandedId(null);
+      setSelectedAction(null);
       setRejectReason('');
       loadPayouts(activeTab, page);
     } else {
@@ -167,6 +171,7 @@ export default function PayoutsManagement() {
     setConfirmingId(null);
     if (ok) {
       setExpandedId(null);
+      setSelectedAction(null);
       setMomoRef('');
       loadPayouts(activeTab, page);
     } else {
@@ -291,6 +296,7 @@ export default function PayoutsManagement() {
                     className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-800/30 transition-colors"
                     onClick={() => {
                       setExpandedId(expanded ? null : p.id);
+                      setSelectedAction(null);
                       setActionError('');
                       setApproveNotes('');
                       setRejectReason('');
@@ -376,99 +382,124 @@ export default function PayoutsManagement() {
                         </div>
                       )}
 
-                      {/* Actions for pending */}
-                      {p.status === 'pending' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-xs text-slate-400">
-                              Admin Notes <span className="text-slate-600">(optional)</span>
-                            </label>
-                            <input
-                              value={approveNotes}
-                              onChange={(e) => setApproveNotes(e.target.value)}
-                              className={inputCls}
-                              placeholder="Notes for approval..."
-                            />
-                            <button
-                              onClick={() => handleApprove(p.id)}
-                              disabled={approvingId === p.id}
-                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-sm font-medium hover:bg-emerald-500/25 transition-colors disabled:opacity-50"
-                            >
-                              {approvingId === p.id
-                                ? <Loader2 className="w-4 h-4 animate-spin" />
-                                : <CheckCircle2 className="w-4 h-4" />}
-                              Approve
-                            </button>
-                          </div>
+                      {/* ── Action buttons ── */}
+                      {(p.status === 'pending' || p.status === 'approved' || p.status === 'processing') && (
+                        <div className="space-y-3">
 
-                          <div className="space-y-2">
-                            <label className="text-xs text-slate-400">
-                              Rejection Reason <span className="text-red-400">*</span>
-                            </label>
-                            <input
-                              value={rejectReason}
-                              onChange={(e) => setRejectReason(e.target.value)}
-                              className={inputCls}
-                              placeholder="Reason for rejection..."
-                            />
-                            <button
-                              onClick={() => handleReject(p.id)}
-                              disabled={rejectingId === p.id}
-                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-sm font-medium hover:bg-red-500/25 transition-colors disabled:opacity-50"
-                            >
-                              {rejectingId === p.id
-                                ? <Loader2 className="w-4 h-4 animate-spin" />
-                                : <XCircle className="w-4 h-4" />}
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Action for approved / processing — mark as completed */}
-                      {(p.status === 'approved' || p.status === 'processing') && (
-                        <div className="space-y-2 max-w-sm">
-                          <p className="text-xs text-slate-400">
-                            Once you have manually sent the MoMo transfer, enter the reference and mark as completed.
-                          </p>
-                          <input
-                            value={momoRef}
-                            onChange={(e) => setMomoRef(e.target.value)}
-                            className={inputCls}
-                            placeholder="MoMo reference (optional)..."
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleConfirm(p.id)}
-                              disabled={confirmingId === p.id}
-                              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-300 text-sm font-medium hover:bg-blue-500/25 transition-colors disabled:opacity-50"
-                            >
-                              {confirmingId === p.id
-                                ? <Loader2 className="w-4 h-4 animate-spin" />
-                                : <CheckCheck className="w-4 h-4" />}
-                              Mark as Completed
-                            </button>
-                            {p.status === 'approved' && (
+                          {/* Button row */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* Approve — pending only */}
+                            {p.status === 'pending' && (
                               <button
-                                onClick={() => handleReject(p.id)}
-                                disabled={rejectingId === p.id}
-                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                onClick={() => setSelectedAction(selectedAction === 'approve' ? null : 'approve')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                                  selectedAction === 'approve'
+                                    ? 'bg-emerald-500/25 border-emerald-500/50 text-emerald-300'
+                                    : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/40'
+                                }`}
                               >
-                                {rejectingId === p.id
-                                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                                  : <XCircle className="w-4 h-4" />}
+                                <CheckCircle2 className="w-4 h-4" />
+                                Approve
+                              </button>
+                            )}
+
+                            {/* Processing — approved or processing */}
+                            {(p.status === 'approved' || p.status === 'processing') && (
+                              <button
+                                onClick={() => setSelectedAction(selectedAction === 'processing' ? null : 'processing')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                                  selectedAction === 'processing'
+                                    ? 'bg-blue-500/25 border-blue-500/50 text-blue-300'
+                                    : 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/40'
+                                }`}
+                              >
+                                <Zap className="w-4 h-4" />
+                                Processing
+                              </button>
+                            )}
+
+                            {/* Reject — pending or approved */}
+                            {(p.status === 'pending' || p.status === 'approved') && (
+                              <button
+                                onClick={() => setSelectedAction(selectedAction === 'reject' ? null : 'reject')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                                  selectedAction === 'reject'
+                                    ? 'bg-red-500/25 border-red-500/50 text-red-300'
+                                    : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40'
+                                }`}
+                              >
+                                <XCircle className="w-4 h-4" />
                                 Reject
                               </button>
                             )}
                           </div>
-                          {p.status === 'approved' && rejectingId !== p.id && (
-                            <input
-                              value={rejectReason}
-                              onChange={(e) => setRejectReason(e.target.value)}
-                              className={inputCls}
-                              placeholder="Rejection reason (if rejecting)..."
-                            />
+
+                          {/* Approve panel */}
+                          {selectedAction === 'approve' && p.status === 'pending' && (
+                            <div className="flex gap-2 items-center">
+                              <input
+                                value={approveNotes}
+                                onChange={(e) => setApproveNotes(e.target.value)}
+                                className="flex-1 bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                                placeholder="Admin notes (optional)..."
+                              />
+                              <button
+                                onClick={() => handleApprove(p.id)}
+                                disabled={approvingId === p.id}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-400 transition-colors disabled:opacity-50 shrink-0"
+                              >
+                                {approvingId === p.id
+                                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                                  : <Send className="w-4 h-4" />}
+                                Confirm
+                              </button>
+                            </div>
                           )}
+
+                          {/* Processing panel */}
+                          {selectedAction === 'processing' && (p.status === 'approved' || p.status === 'processing') && (
+                            <div className="flex gap-2 items-center">
+                              <input
+                                value={momoRef}
+                                onChange={(e) => setMomoRef(e.target.value)}
+                                className="flex-1 bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                                placeholder="MoMo reference (optional)..."
+                              />
+                              <button
+                                onClick={() => handleConfirm(p.id)}
+                                disabled={confirmingId === p.id}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-400 transition-colors disabled:opacity-50 shrink-0"
+                              >
+                                {confirmingId === p.id
+                                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                                  : <CheckCheck className="w-4 h-4" />}
+                                Mark Complete
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Reject panel */}
+                          {selectedAction === 'reject' && (
+                            <div className="flex gap-2 items-center">
+                              <input
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                className="flex-1 bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500 transition-colors"
+                                placeholder="Rejection reason (min 5 chars)..."
+                              />
+                              <button
+                                onClick={() => handleReject(p.id)}
+                                disabled={rejectingId === p.id}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-400 transition-colors disabled:opacity-50 shrink-0"
+                              >
+                                {rejectingId === p.id
+                                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                                  : <XCircle className="w-4 h-4" />}
+                                Confirm
+                              </button>
+                            </div>
+                          )}
+
                         </div>
                       )}
                     </div>

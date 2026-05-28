@@ -846,7 +846,7 @@ export const adminService = {
   async rejectPayout(id: string, reason: string): Promise<boolean> {
     const response = await apiPatch(
       `${FINANCE_ENDPOINTS.ADMIN_PAYOUT_REJECT}/${id}/reject`,
-      { reason },
+      { rejection_reason: reason },
       adminHeaders(),
     );
     return response.success;
