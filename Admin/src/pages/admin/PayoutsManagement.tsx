@@ -20,11 +20,6 @@ import {
 } from 'lucide-react';
 import { adminService, type AdminPayoutRequest } from '../../services/admin.service';
 
-// ─── Styles ────────────────────────────────────────────────────────────────────
-
-const inputCls =
-  'w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors';
-
 const STATUS_TABS = [
   { key: 'all',        label: 'All',        Icon: ArrowDownCircle },
   { key: 'pending',    label: 'Pending',     Icon: Clock          },
