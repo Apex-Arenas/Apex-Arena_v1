@@ -609,6 +609,7 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
           matchId={matchId}
           currentUserId={currentUserId}
           currentMatchweek={currentMatchweek}
+          isLeague={isLeague}
           onClose={() => setShowPlayerModal(false)}
           onActionComplete={() => {
             setShowPlayerModal(false);

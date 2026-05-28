@@ -1459,6 +1459,226 @@ function BcBoard({ rounds, onMatchClick }) {
   );
 }
 
+// ── Admin League Section ──────────────────────────────────
+function AdminLeagueSection({ tournamentId }: { tournamentId: string }) {
+  const [activeTab, setActiveTab] = useState<"table" | "fixtures">("table");
+  const [table, setTable]         = useState<any[]>([]);
+  const [matchweeks, setMatchweeks] = useState<any[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError]         = useState<string | null>(null);
+  const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  const [selectedMatch, setSelectedMatch] = useState<any>(null);
+
+  async function loadData(showRefresh = false) {
+    if (showRefresh) setRefreshing(true);
+    else setLoading(true);
+    setError(null);
+    try {
+      const [tableData, mwData] = await Promise.all([
+        adminService.getLeagueTable(tournamentId),
+        adminService.getLeagueMatchweeks(tournamentId),
+      ]);
+      setTable(tableData);
+      setMatchweeks(mwData);
+      if (mwData.length > 0 && selectedWeek === 1) {
+        setSelectedWeek(Number(mwData[0]?.matchweek ?? mwData[0]?.week ?? 1));
+      }
+    } catch {
+      setError("Failed to load league data.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => { loadData(); }, [tournamentId]);
+
+  const currentWeekMatches: any[] = (() => {
+    const mw = matchweeks.find(
+      (w) => Number(w.matchweek ?? w.week) === selectedWeek
+    );
+    return Array.isArray(mw?.matches) ? mw.matches : [];
+  })();
+
+  if (loading) {
+    return (
+      <Section title="League" icon={Trophy}>
+        <div className="space-y-3 animate-pulse">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-10 rounded-xl bg-slate-800/70" />
+          ))}
+        </div>
+      </Section>
+    );
+  }
+
+  if (error) {
+    return (
+      <Section title="League" icon={Trophy}>
+        <div className="flex flex-col items-center gap-3 py-10 text-center">
+          <AlertCircle className="w-7 h-7 text-slate-600" />
+          <p className="text-sm text-red-400">{error}</p>
+          <button onClick={() => loadData()} className="text-sm text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2">Retry</button>
+        </div>
+      </Section>
+    );
+  }
+
+  return (
+    <Section title="League" icon={Trophy}>
+      {/* Tab bar */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-1.5 bg-slate-950/60 border border-slate-800 rounded-2xl p-1.5">
+          {(["table", "fixtures"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === tab
+                  ? "bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/20"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+              }`}
+            >
+              {tab === "table" ? <Trophy className="w-3.5 h-3.5" /> : <Calendar className="w-3.5 h-3.5" />}
+              {tab === "table" ? "Standings" : "Fixtures"}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => loadData(true)}
+          disabled={refreshing}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-50 transition-colors"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          {refreshing ? "Refreshing…" : "Refresh"}
+        </button>
+      </div>
+
+      {/* Standings Table */}
+      {activeTab === "table" && (
+        table.length === 0 ? (
+          <p className="text-sm text-slate-500 text-center py-8">No standings yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-slate-500 border-b border-slate-800">
+                  <th className="text-left pb-2 pr-2 font-semibold">#</th>
+                  <th className="text-left pb-2 pr-2 font-semibold">Player</th>
+                  <th className="text-center pb-2 px-1 font-semibold">P</th>
+                  <th className="text-center pb-2 px-1 font-semibold">W</th>
+                  <th className="text-center pb-2 px-1 font-semibold">D</th>
+                  <th className="text-center pb-2 px-1 font-semibold">L</th>
+                  <th className="text-center pb-2 px-1 font-semibold">GF</th>
+                  <th className="text-center pb-2 px-1 font-semibold">GA</th>
+                  <th className="text-center pb-2 px-1 font-semibold">GD</th>
+                  <th className="text-center pb-2 font-semibold text-orange-400">Pts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {table.map((row: any, i: number) => {
+                  const pos = Number(row.position ?? row.rank ?? i + 1);
+                  const name = String(row.displayName ?? row.display_name ?? row.in_game_id ?? row.username ?? "—");
+                  return (
+                    <tr key={row.userId ?? row.user_id ?? row.teamId ?? row.team_id ?? i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                      <td className="py-2 pr-2 text-slate-400 tabular-nums">{pos}</td>
+                      <td className="py-2 pr-2 font-medium text-white truncate max-w-[120px]">{name}</td>
+                      <td className="py-2 px-1 text-center tabular-nums text-slate-300">{row.played ?? 0}</td>
+                      <td className="py-2 px-1 text-center tabular-nums text-emerald-400">{row.won ?? 0}</td>
+                      <td className="py-2 px-1 text-center tabular-nums text-amber-400">{row.drawn ?? 0}</td>
+                      <td className="py-2 px-1 text-center tabular-nums text-red-400">{row.lost ?? 0}</td>
+                      <td className="py-2 px-1 text-center tabular-nums text-slate-300">{row.goalsFor ?? row.goals_for ?? 0}</td>
+                      <td className="py-2 px-1 text-center tabular-nums text-slate-300">{row.goalsAgainst ?? row.goals_against ?? 0}</td>
+                      <td className="py-2 px-1 text-center tabular-nums text-slate-300">{row.goalDifference ?? row.goal_difference ?? 0}</td>
+                      <td className="py-2 text-center tabular-nums font-bold text-orange-400">{row.points ?? 0}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
+
+      {/* Fixtures */}
+      {activeTab === "fixtures" && (
+        <div className="space-y-4">
+          {/* Week selector */}
+          {matchweeks.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {matchweeks.map((mw: any) => {
+                const wk = Number(mw.matchweek ?? mw.week ?? 0);
+                return (
+                  <button
+                    key={wk}
+                    onClick={() => setSelectedWeek(wk)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      selectedWeek === wk
+                        ? "bg-orange-500/20 text-orange-300 border border-orange-500/40"
+                        : "text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500"
+                    }`}
+                  >
+                    Wk {wk}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Matches for selected week */}
+          {currentWeekMatches.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-8">No fixtures for this week.</p>
+          ) : (
+            <div className="space-y-2">
+              {currentWeekMatches.map((m: any) => {
+                const matchId = String(m._id ?? m.id ?? m.matchId ?? "");
+                const parts = Array.isArray(m.participants) ? m.participants : [];
+                const p1 = parts[0] ?? {};
+                const p2 = parts[1] ?? {};
+                const p1Name = String(p1.in_game_id ?? p1.display_name ?? p1.username ?? "TBD");
+                const p2Name = String(p2.in_game_id ?? p2.display_name ?? p2.username ?? "TBD");
+                const p1Score = m.status === "completed" ? (p1.score ?? "—") : "—";
+                const p2Score = m.status === "completed" ? (p2.score ?? "—") : "—";
+                const status = String(m.status ?? "pending");
+                const statusColor = status === "completed" ? "text-slate-400" : status === "ongoing" ? "text-orange-400" : "text-slate-500";
+                return (
+                  <button
+                    key={matchId}
+                    onClick={() => setSelectedMatch(m)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-slate-800/40 border border-slate-700/40 hover:bg-slate-800/70 hover:border-slate-600 transition-all text-left"
+                  >
+                    <span className="text-sm text-white font-medium truncate flex-1">{p1Name}</span>
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-sm font-bold tabular-nums text-slate-200">{p1Score}</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${statusColor}`}>vs</span>
+                      <span className="text-sm font-bold tabular-nums text-slate-200">{p2Score}</span>
+                    </span>
+                    <span className="text-sm text-white font-medium truncate flex-1 text-right">{p2Name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Match detail modal */}
+      {selectedMatch && (
+        <BcMatchModal
+          match={selectedMatch}
+          isLeague={true}
+          onClose={() => setSelectedMatch(null)}
+          onOverrideComplete={() => {
+            setSelectedMatch(null);
+            loadData(true);
+          }}
+        />
+      )}
+    </Section>
+  );
+}
+
 // ── Admin Bracket Section ─────────────────────────────────
 function AdminBracketSection({ tournamentId, isLeague = false }: { tournamentId: string; isLeague?: boolean }) {
   const [rounds, setRounds]         = useState<any[]>([]);
@@ -1959,8 +2179,11 @@ const TournamentDetail = () => {
             {/* Participants */}
             <ParticipantsSection tournamentId={id} />
 
-            {/* Bracket */}
-            <AdminBracketSection tournamentId={id} isLeague={tournamentType === "league"} />
+            {/* League or Bracket */}
+            {tournamentType === "league"
+              ? <AdminLeagueSection tournamentId={id} />
+              : <AdminBracketSection tournamentId={id} />
+            }
 
             {/* Description */}
             {tournament.description && (

@@ -1005,6 +1005,20 @@ export const adminService = {
     }
   },
 
+  async getLeagueTable(tournamentId: string): Promise<any[]> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.LEAGUE}/${tournamentId}/table`, adminHeaders());
+    if (!response.success) return [];
+    const raw = response.data as any;
+    return Array.isArray(raw) ? raw : (raw?.table ?? []);
+  },
+
+  async getLeagueMatchweeks(tournamentId: string): Promise<any[]> {
+    const response = await apiGet(`${TOURNAMENT_ENDPOINTS.LEAGUE}/${tournamentId}/matchweeks`, adminHeaders());
+    if (!response.success) return [];
+    const raw = response.data as any;
+    return Array.isArray(raw) ? raw : (raw?.matchweeks ?? []);
+  },
+
   async forceCompleteTournament(tournamentId: string): Promise<void> {
     const url = `${TOURNAMENT_ENDPOINTS.ADMIN_TOURNAMENTS}/${tournamentId}/force-complete`;
     const response = await apiPost(url, {}, adminHeaders());
