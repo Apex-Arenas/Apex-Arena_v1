@@ -1,4 +1,4 @@
-import { CalendarDays, ExternalLink, Gamepad2, LogOut } from "lucide-react";
+import { CalendarDays, ExternalLink, Gamepad2, LogOut, Users } from "lucide-react";
 import { type MyTournamentRegistration } from "../../services/tournament.service";
 import { FadeImage } from "../ui/FadeImage";
 import { formatDate } from "./utils";
@@ -53,6 +53,10 @@ export function RegistrationCard({
     registration.tournamentBannerUrl ??
     null;
 
+  const isLive =
+    registration.tournamentStatus === "started" ||
+    registration.tournamentStatus === "ongoing";
+
   return (
     <div
       className="group flex flex-col overflow-hidden rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-600 hover:shadow-xl hover:shadow-black/40 transition-all cursor-pointer"
@@ -101,8 +105,19 @@ export function RegistrationCard({
           </span>
         </div>
 
-        {/* Registration status — bottom left */}
-        <div className="absolute bottom-2.5 left-3">
+        {/* Game logo — bottom left (only when cover image exists so it's distinct) */}
+        {registration.tournamentGameLogoUrl && imageUrl && (
+          <div className="absolute bottom-2.5 left-2.5">
+            <img
+              src={registration.tournamentGameLogoUrl}
+              alt={registration.tournamentGameName ?? ""}
+              className="w-7 h-7 rounded-md object-cover border border-white/15 shadow-md"
+            />
+          </div>
+        )}
+
+        {/* Registration status — bottom left when no game logo, else bottom overlapping */}
+        <div className={`absolute bottom-2.5 ${registration.tournamentGameLogoUrl && imageUrl ? "left-11" : "left-3"}`}>
           <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border backdrop-blur-sm ${regMeta.cls}`}>
             {regMeta.label}
           </span>
@@ -111,6 +126,7 @@ export function RegistrationCard({
 
       {/* ── Content ─────────────────────────────────────────── */}
       <div className="px-4 pt-3 pb-4 flex flex-col flex-1 gap-3">
+        {/* Title + subtitle */}
         <div>
           <h4 className="font-display text-sm font-bold text-white leading-tight truncate group-hover:text-orange-300 transition-colors">
             {registration.tournamentTitle}
@@ -120,43 +136,52 @@ export function RegistrationCard({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+        {/* Stats grid — matches Browse card layout exactly */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
           <div>
-            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Starts</p>
-            <p className="text-[11px] font-medium text-slate-300 flex items-center gap-1">
-              <CalendarDays className="w-3 h-3 text-slate-500 shrink-0" />
+            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5 flex items-center gap-1">
+              <CalendarDays className="w-2.5 h-2.5" /> Starts
+            </p>
+            <p className="text-[11px] font-medium text-slate-300">
               {formatDate(registration.tournamentStart)}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Joined</p>
-            <p className="text-[11px] font-medium text-slate-300 flex items-center gap-1">
-              <CalendarDays className="w-3 h-3 text-slate-500 shrink-0" />
+            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5 flex items-center gap-1">
+              <Users className="w-2.5 h-2.5" /> Joined
+            </p>
+            <p className="text-[11px] font-medium text-slate-300">
               {formatDate(registration.registeredAt)}
             </p>
           </div>
           {registration.inGameId && (
             <div className="col-span-2">
-              <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">In-Game ID</p>
+              <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5 flex items-center gap-1">
+                <Gamepad2 className="w-2.5 h-2.5" /> In-Game ID
+              </p>
               <p className="text-[11px] font-medium text-orange-300 truncate">{registration.inGameId}</p>
             </div>
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-2 mt-auto">
+        {/* CTA — full-width, pinned to bottom */}
+        <div className="mt-auto space-y-2">
           <button
             onClick={(e) => { e.stopPropagation(); onOpenDetails(registration.tournamentId); }}
-            className="flex-1 py-2 rounded-lg text-xs font-semibold transition-colors border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 hover:text-white flex items-center justify-center gap-1.5"
+            className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+              isLive
+                ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 hover:shadow-lg hover:shadow-orange-500/25"
+                : "border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 hover:text-white"
+            }`}
           >
             <ExternalLink className="w-3.5 h-3.5" />
-            View Details
+            {isLive ? "View Live" : "View Details"}
           </button>
           {canWithdraw && (
             <button
               onClick={(e) => { e.stopPropagation(); onRequestWithdraw(registration); }}
               disabled={isWithdrawing}
-              className="flex-1 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 flex items-center justify-center gap-1.5"
+              className="w-full py-2 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-red-500/25 bg-transparent text-red-400 hover:bg-red-500/10 flex items-center justify-center gap-1.5"
             >
               <LogOut className="w-3.5 h-3.5" />
               {isWithdrawing ? "Withdrawing…" : "Withdraw"}
