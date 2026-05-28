@@ -20,6 +20,7 @@ interface LeagueViewProps {
   isFixturesGenerated?: boolean;
   onGenerateFixtures?: () => void;
   isGeneratingFixtures?: boolean;
+  onActionComplete?: () => void;
 }
 
 type ActiveTab = "table" | "fixtures";
@@ -34,6 +35,7 @@ export function LeagueView({
   isFixturesGenerated,
   onGenerateFixtures,
   isGeneratingFixtures,
+  onActionComplete,
 }: LeagueViewProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("table");
   const [table, setTable] = useState<LeagueTableRow[]>([]);
@@ -196,6 +198,7 @@ export function LeagueView({
           onActionComplete={() => {
             setActiveMatchId(null);
             loadData(true);
+            onActionComplete?.();
           }}
         />
       )}
@@ -209,6 +212,7 @@ export function LeagueView({
           onActionComplete={() => {
             setActiveMatchId(null);
             loadData(true);
+            onActionComplete?.();
           }}
         />
       )}

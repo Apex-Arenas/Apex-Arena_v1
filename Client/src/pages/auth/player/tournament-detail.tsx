@@ -1188,6 +1188,7 @@ const TournamentDetail = () => {
               totalMatchweeks={tournament.leagueSettings?.totalMatchweeks ?? 0}
               legs={tournament.leagueSettings?.legs ?? 1}
               highlightUserId={currentUserId}
+              onActionComplete={() => void handleRefresh()}
             />
           </section>
         )}

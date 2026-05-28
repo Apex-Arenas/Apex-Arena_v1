@@ -1766,6 +1766,7 @@ const TournamentManage = () => {
                     isFixturesGenerated={leagueSettings.fixturesGenerated}
                     onGenerateFixtures={canGenerateLeagueFixtures ? () => void handleGenerateLeagueFixtures() : undefined}
                     isGeneratingFixtures={isGeneratingFixtures}
+                    onActionComplete={() => void loadData()}
                   />
                 </div>
               )}
