@@ -71,8 +71,6 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
   const [setScoreVal1, setSetScoreVal1] = useState('');
   const [setScoreVal2, setSetScoreVal2] = useState('');
   const [setScoreReason, setSetScoreReason] = useState('');
-  const [setScorePenalty1, setSetScorePenalty1] = useState('');
-  const [setScorePenalty2, setSetScorePenalty2] = useState('');
 
   useEffect(() => {
     tournamentService.getMatch(matchId).then(data => {
@@ -110,11 +108,13 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
   }
 
   async function handleForfeit() {
-    if (!forfeitPlayerId) return;
+    if (!forfeitPlayerId || !match) return;
+    // forfeitPlayerId is the WINNER — send the loser's ID to the backend
+    const loserId = forfeitPlayerId === match.player1Id ? match.player2Id : match.player1Id;
     setSubmitting(true);
     setError(null);
     try {
-      await organizerService.forfeitMatch(matchId, forfeitPlayerId);
+      await organizerService.forfeitMatch(matchId, loserId);
       onActionComplete();
       onClose();
     } catch (e: any) {
@@ -147,22 +147,10 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
     const s1 = parseInt(setScoreVal1, 10);
     const s2 = parseInt(setScoreVal2, 10);
     if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) return;
-    const isDraw = s1 === s2;
     setSubmitting(true);
     setError(null);
     try {
-      let finalS1 = s1;
-      let finalS2 = s2;
-      let reason = setScoreReason;
-      if (!isLeague && isDraw) {
-        const p1 = parseInt(setScorePenalty1, 10);
-        const p2 = parseInt(setScorePenalty2, 10);
-        if (isNaN(p1) || isNaN(p2) || p1 < 0 || p2 < 0 || p1 === p2) { setSubmitting(false); return; }
-        finalS1 = p1 > p2 ? 1 : 0;
-        finalS2 = p2 > p1 ? 1 : 0;
-        reason = `Regular time: ${s1}\u2013${s2} \u00B7 Penalties: ${p1}\u2013${p2}${setScoreReason ? ` \u00B7 ${setScoreReason}` : ''}`;
-      }
-      await organizerService.setMatchScore(matchId, finalS1, finalS2, reason || undefined);
+      await organizerService.setMatchScore(matchId, s1, s2, setScoreReason || undefined);
       onActionComplete();
       onClose();
     } catch (e: any) {
@@ -342,7 +330,7 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
                       type="number"
                       min={0}
                       value={setScoreVal1}
-                      onChange={e => { setSetScoreVal1(e.target.value); setSetScorePenalty1(''); setSetScorePenalty2(''); }}
+                      onChange={e => setSetScoreVal1(e.target.value)}
                       placeholder={String(match.player1Score)}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                     />
@@ -354,45 +342,12 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
                       type="number"
                       min={0}
                       value={setScoreVal2}
-                      onChange={e => { setSetScoreVal2(e.target.value); setSetScorePenalty1(''); setSetScorePenalty2(''); }}
+                      onChange={e => setSetScoreVal2(e.target.value)}
                       placeholder={String(match.player2Score)}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                 </div>
-                {!isLeague && setScoreVal1 !== '' && setScoreVal2 !== '' && !isNaN(Number(setScoreVal1)) && !isNaN(Number(setScoreVal2)) && Number(setScoreVal1) === Number(setScoreVal2) && (
-                  <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 space-y-2">
-                    <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Penalty Shootout</p>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 space-y-1">
-                        <p className="text-[10px] text-slate-500 font-medium truncate">{match.player1Name}</p>
-                        <input
-                          type="number"
-                          min={0}
-                          value={setScorePenalty1}
-                          onChange={e => setSetScorePenalty1(e.target.value)}
-                          placeholder="0"
-                          className="w-full bg-slate-900 border border-amber-700/40 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-amber-500"
-                        />
-                      </div>
-                      <span className="text-slate-600 font-bold text-sm mt-4">–</span>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-[10px] text-slate-500 font-medium truncate">{match.player2Name}</p>
-                        <input
-                          type="number"
-                          min={0}
-                          value={setScorePenalty2}
-                          onChange={e => setSetScorePenalty2(e.target.value)}
-                          placeholder="0"
-                          className="w-full bg-slate-900 border border-amber-700/40 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-amber-500"
-                        />
-                      </div>
-                    </div>
-                    {setScorePenalty1 !== '' && setScorePenalty2 !== '' && Number(setScorePenalty1) === Number(setScorePenalty2) && (
-                      <p className="text-[10px] text-amber-400">Penalty scores must not be equal.</p>
-                    )}
-                  </div>
-                )}
                 <input
                   type="text"
                   value={setScoreReason}
@@ -403,11 +358,7 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
                 {error && <p className="text-xs text-red-400">{error}</p>}
                 <button
                   onClick={handleSetScore}
-                  disabled={submitting || setScoreVal1 === '' || setScoreVal2 === '' || (
-                    !isLeague && !isNaN(Number(setScoreVal1)) && !isNaN(Number(setScoreVal2)) && Number(setScoreVal1) === Number(setScoreVal2) && (
-                      setScorePenalty1 === '' || setScorePenalty2 === '' || Number(setScorePenalty1) === Number(setScorePenalty2)
-                    )
-                  )}
+                  disabled={submitting || setScoreVal1 === '' || setScoreVal2 === ''}
                   className="w-full py-2 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
                 >
                   {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Edit3 className="w-3.5 h-3.5" />}
@@ -498,7 +449,7 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
                       type="number"
                       min={0}
                       value={setScoreVal1}
-                      onChange={e => { setSetScoreVal1(e.target.value); setSetScorePenalty1(''); setSetScorePenalty2(''); }}
+                      onChange={e => setSetScoreVal1(e.target.value)}
                       placeholder="0"
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                     />
@@ -510,45 +461,12 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
                       type="number"
                       min={0}
                       value={setScoreVal2}
-                      onChange={e => { setSetScoreVal2(e.target.value); setSetScorePenalty1(''); setSetScorePenalty2(''); }}
+                      onChange={e => setSetScoreVal2(e.target.value)}
                       placeholder="0"
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                 </div>
-                {setScoreVal1 !== '' && setScoreVal2 !== '' && !isNaN(Number(setScoreVal1)) && !isNaN(Number(setScoreVal2)) && Number(setScoreVal1) === Number(setScoreVal2) && (
-                  <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 space-y-2">
-                    <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Penalty Shootout</p>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 space-y-1">
-                        <p className="text-[10px] text-slate-500 font-medium truncate">{match?.player1Name}</p>
-                        <input
-                          type="number"
-                          min={0}
-                          value={setScorePenalty1}
-                          onChange={e => setSetScorePenalty1(e.target.value)}
-                          placeholder="0"
-                          className="w-full bg-slate-900 border border-amber-700/40 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-amber-500"
-                        />
-                      </div>
-                      <span className="text-slate-600 font-bold text-sm mt-4">–</span>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-[10px] text-slate-500 font-medium truncate">{match?.player2Name}</p>
-                        <input
-                          type="number"
-                          min={0}
-                          value={setScorePenalty2}
-                          onChange={e => setSetScorePenalty2(e.target.value)}
-                          placeholder="0"
-                          className="w-full bg-slate-900 border border-amber-700/40 rounded-lg px-3 py-2 text-sm text-white text-center placeholder-slate-600 focus:outline-none focus:border-amber-500"
-                        />
-                      </div>
-                    </div>
-                    {setScorePenalty1 !== '' && setScorePenalty2 !== '' && Number(setScorePenalty1) === Number(setScorePenalty2) && (
-                      <p className="text-[10px] text-amber-400">Penalty scores must not be equal.</p>
-                    )}
-                  </div>
-                )}
                 <input
                   type="text"
                   value={setScoreReason}
@@ -558,11 +476,7 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
                 />
                 <button
                   onClick={handleSetScore}
-                  disabled={submitting || setScoreVal1 === '' || setScoreVal2 === '' || (
-                    !isLeague && !isNaN(Number(setScoreVal1)) && !isNaN(Number(setScoreVal2)) && Number(setScoreVal1) === Number(setScoreVal2) && (
-                      setScorePenalty1 === '' || setScorePenalty2 === '' || Number(setScorePenalty1) === Number(setScorePenalty2)
-                    )
-                  )}
+                  disabled={submitting || setScoreVal1 === '' || setScoreVal2 === ''}
                   className="w-full py-2 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
                 >
                   {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Edit3 className="w-3.5 h-3.5" />}
@@ -586,7 +500,7 @@ export function OrganizerMatchModal({ matchId, currentUserId, currentMatchweek, 
             </button>
             {showForfeit && (
               <div className="mt-2 p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 space-y-2">
-                <p className="text-xs text-slate-400">Which player failed to show up?</p>
+                <p className="text-xs text-slate-400">Select the winner — opponent will receive a 3–0 forfeit win.</p>
                 <div className="flex gap-2">
                   {[
                     { id: match.player1Id, name: match.player1Name },
