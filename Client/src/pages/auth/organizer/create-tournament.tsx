@@ -1165,7 +1165,8 @@ const CreateTournament = () => {
                     className={`${inputCls} resize-none`} />
                 </Field>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Row 1 — Game | Format */}
                   <Field label="Game" required>
                     <select value={gameId} onChange={(e) => setGameId(e.target.value)} className={selectCls}>
                       <option value="">Select a game</option>
@@ -1179,6 +1180,8 @@ const CreateTournament = () => {
                       ))}
                     </select>
                   </Field>
+
+                  {/* Row 2 — Tournament Type (full width) */}
                   <div className="col-span-2">
                     <Field label="Tournament Type" required>
                       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -1216,37 +1219,35 @@ const CreateTournament = () => {
                       </div>
                     </Field>
                   </div>
-                  {tournamentType === "league" ? (
-                    <Field label="League Legs" required>
-                      <select value={leagueLegs} onChange={(e) => setLeagueLegs(e.target.value as "1" | "2")} className={selectCls}>
-                        <option value="1">Single Leg (home only)</option>
-                        <option value="2">Double Leg (home &amp; away)</option>
-                      </select>
-                    </Field>
-                  ) : (
-                    <Field label="Visibility">
-                      <select value={visibility} onChange={(e) => setVisibility(e.target.value)} className={selectCls}>
-                        <option value="public">Public</option>
-                        <option value="private">Private</option>
-                        <option value="invite_only">Invite Only</option>
-                      </select>
-                    </Field>
-                  )}
+
+                  {/* League Legs — full width when league (sits above visibility|region row) */}
                   {tournamentType === "league" && (
-                    <Field label="Visibility">
-                      <select value={visibility} onChange={(e) => setVisibility(e.target.value)} className={selectCls}>
-                        <option value="public">Public</option>
-                        <option value="private">Private</option>
-                        <option value="invite_only">Invite Only</option>
-                      </select>
-                    </Field>
+                    <div className="col-span-2">
+                      <Field label="League Legs" required>
+                        <select value={leagueLegs} onChange={(e) => setLeagueLegs(e.target.value as "1" | "2")} className={selectCls}>
+                          <option value="1">Single Leg (home only)</option>
+                          <option value="2">Double Leg (home &amp; away)</option>
+                        </select>
+                      </Field>
+                    </div>
                   )}
+
+                  {/* Double Elim info banner — full width */}
                   {tournamentType === 'double_elimination' && (
-                    <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-2.5">
+                    <div className="col-span-2 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-2.5">
                       <p className="text-xs font-semibold text-indigo-300">Two Legs — UCL Style</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">Each tie is played over two legs. Aggregate score decides the winner. Penalties if level.</p>
                     </div>
                   )}
+
+                  {/* Row — Visibility | Region */}
+                  <Field label="Visibility">
+                    <select value={visibility} onChange={(e) => setVisibility(e.target.value)} className={selectCls}>
+                      <option value="public">Public</option>
+                      <option value="private">Private</option>
+                      <option value="invite_only">Invite Only</option>
+                    </select>
+                  </Field>
                   <Field label="Region">
                     <select
                       value={region}
@@ -1260,6 +1261,8 @@ const CreateTournament = () => {
                       ))}
                     </select>
                   </Field>
+
+                  {/* Row — Timezone | Contact Email */}
                   <Field label="Timezone">
                     <input type="text" value={timezone} onChange={(e) => setTimezone(e.target.value)}
                       placeholder="Africa/Accra" className={inputCls} />
