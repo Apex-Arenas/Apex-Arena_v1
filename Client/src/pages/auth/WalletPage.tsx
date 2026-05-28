@@ -3,6 +3,7 @@ import {
   Wallet, ArrowDownLeft, ArrowUpRight, Loader2,
   CheckCircle2, XCircle, Clock, AlertCircle, X,
   CreditCard, Phone, Trophy, RefreshCw, Coins,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { apiGet, apiPost } from "../../utils/api.utils";
 import { FINANCE_ENDPOINTS } from "../../config/api.config";
@@ -11,16 +12,16 @@ import { generateUniqueIdempotencyKey } from "../../utils/idempotency.utils";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface WalletBalance {
-  balance: number;           // minor units (pesewas)
+  balance: number;
   currency: string;
   lastUpdated?: string;
 }
 
 interface TxRecord {
   id: string;
-  type: string;              // 'deposit' | 'withdrawal' | 'entry_fee' | 'prize_win' | ...
+  type: string;
   direction: "credit" | "debit";
-  amount: number;            // pesewas
+  amount: number;
   status: "pending" | "completed" | "failed" | "cancelled";
   description?: string;
   createdAt: string;
@@ -78,6 +79,8 @@ const PAYOUT_STATUS_CLS: Record<PayoutRequest["status"], { cls: string; label: s
 };
 
 const MOMO_NETWORKS = ["MTN", "Vodafone", "AirtelTigo"];
+const TX_PAGE_SIZE    = 8;
+const PAYOUT_PAGE_SIZE = 6;
 
 function TxIcon({ type, direction }: { type: string; direction: string }) {
   const cfg = TX_CONFIG[type] ?? (direction === "credit"
@@ -93,8 +96,41 @@ function TxIcon({ type, direction }: { type: string; direction: string }) {
     direction === "credit" ? ArrowDownLeft : ArrowUpRight;
 
   return (
-    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${cfg.iconCls}`}>
-      <Icon className="w-4 h-4" />
+    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${cfg.iconCls}`}>
+      <Icon className="w-3.5 h-3.5" />
+    </div>
+  );
+}
+
+// ─── Pagination Bar ───────────────────────────────────────────────────────────
+
+function PaginationBar({
+  page, total, pageSize, onChange,
+}: { page: number; total: number; pageSize: number; onChange: (p: number) => void }) {
+  const totalPages = Math.ceil(total / pageSize);
+  if (totalPages <= 1) return null;
+  const start = page * pageSize + 1;
+  const end   = Math.min((page + 1) * pageSize, total);
+  return (
+    <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-800">
+      <p className="text-xs text-slate-500 tabular-nums">{start}–{end} of {total}</p>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onChange(page - 1)}
+          disabled={page === 0}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+        <span className="text-xs text-slate-500 px-1 tabular-nums">{page + 1}/{totalPages}</span>
+        <button
+          onClick={() => onChange(page + 1)}
+          disabled={page >= totalPages - 1}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -174,10 +210,7 @@ function DepositModal({ onClose }: { onClose: () => void }) {
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">GHS</span>
               <input
-                type="number"
-                min="5"
-                step="0.01"
-                value={amount}
+                type="number" min="5" step="0.01" value={amount}
                 onChange={(e) => { setAmount(e.target.value); setError(""); }}
                 placeholder="0.00"
                 className="w-full pl-12 pr-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors text-lg font-semibold"
@@ -189,10 +222,7 @@ function DepositModal({ onClose }: { onClose: () => void }) {
             <p className="text-xs text-slate-500 mb-2">Quick add</p>
             <div className="flex flex-wrap gap-2">
               {QUICK_AMOUNTS.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => { setAmount(String(q)); setError(""); }}
+                <button key={q} type="button" onClick={() => { setAmount(String(q)); setError(""); }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
                     amount === String(q)
                       ? "border-cyan-500 bg-cyan-500/15 text-cyan-300"
@@ -207,8 +237,7 @@ function DepositModal({ onClose }: { onClose: () => void }) {
 
           {error && (
             <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
+              <AlertCircle className="w-4 h-4 shrink-0" />{error}
             </div>
           )}
 
@@ -217,9 +246,7 @@ function DepositModal({ onClose }: { onClose: () => void }) {
             You'll be redirected to complete payment securely via our payment provider.
           </div>
 
-          <button
-            onClick={handleDeposit}
-            disabled={!isValid || submitting}
+          <button onClick={handleDeposit} disabled={!isValid || submitting}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowDownLeft className="w-4 h-4" />}
@@ -234,14 +261,14 @@ function DepositModal({ onClose }: { onClose: () => void }) {
 // ─── Withdraw Modal ───────────────────────────────────────────────────────────
 
 function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClose: () => void; onSuccess: () => void }) {
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount]         = useState("");
   const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState(MOMO_NETWORKS[0]);
   const [accountName, setAccountName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError]           = useState("");
 
-  const amountNum = parseFloat(amount);
+  const amountNum   = parseFloat(amount);
   const amountMinor = Math.round(amountNum * 100);
   const isValid =
     !isNaN(amountNum) &&
@@ -300,11 +327,7 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">GHS</span>
               <input
-                type="number"
-                min="1"
-                max={balance / 100}
-                step="0.01"
-                value={amount}
+                type="number" min="1" max={balance / 100} step="0.01" value={amount}
                 onChange={(e) => { setAmount(e.target.value); setError(""); }}
                 placeholder="0.00"
                 className="w-full pl-12 pr-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors text-lg font-semibold"
@@ -319,10 +342,7 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
             <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Mobile Money Network</label>
             <div className="grid grid-cols-3 gap-2">
               {MOMO_NETWORKS.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setMomoNetwork(n)}
+                <button key={n} type="button" onClick={() => setMomoNetwork(n)}
                   className={`py-2 rounded-lg text-sm font-semibold border transition-colors ${
                     momoNetwork === n
                       ? "border-orange-500 bg-orange-500/15 text-orange-300"
@@ -340,8 +360,7 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
-                type="tel"
-                value={momoNumber}
+                type="tel" value={momoNumber}
                 onChange={(e) => { setMomoNumber(e.target.value.replace(/\D/g, "").slice(0, 10)); setError(""); }}
                 placeholder="0241234567"
                 className="w-full pl-10 pr-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
@@ -355,8 +374,7 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
           <div>
             <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Account Name</label>
             <input
-              type="text"
-              value={accountName}
+              type="text" value={accountName}
               onChange={(e) => { setAccountName(e.target.value); setError(""); }}
               placeholder="Name registered on the MoMo account"
               className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
@@ -365,8 +383,7 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
 
           {error && (
             <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
+              <AlertCircle className="w-4 h-4 shrink-0" />{error}
             </div>
           )}
 
@@ -375,9 +392,7 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
             Withdrawals are reviewed and processed within 1–2 business days.
           </div>
 
-          <button
-            onClick={handleWithdraw}
-            disabled={!isValid || submitting}
+          <button onClick={handleWithdraw} disabled={!isValid || submitting}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpRight className="w-4 h-4" />}
@@ -391,24 +406,23 @@ function WithdrawModal({ balance, onClose, onSuccess }: { balance: number; onClo
 
 // ─── WalletPage ───────────────────────────────────────────────────────────────
 
-const TX_PAGE_SIZE = 10;
-
 export default function WalletPage() {
-  const [wallet, setWallet]       = useState<WalletBalance | null>(null);
+  const [wallet, setWallet]             = useState<WalletBalance | null>(null);
   const [transactions, setTransactions] = useState<TxRecord[]>([]);
-  const [payouts, setPayouts]     = useState<PayoutRequest[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [modal, setModal]         = useState<ModalView>(null);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [txPage, setTxPage]       = useState(0);
+  const [payouts, setPayouts]           = useState<PayoutRequest[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [modal, setModal]               = useState<ModalView>(null);
+  const [successMsg, setSuccessMsg]     = useState("");
+  const [txPage, setTxPage]             = useState(0);
+  const [payoutPage, setPayoutPage]     = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [walletRes, txRes, payoutsRes] = await Promise.all([
         apiGet(FINANCE_ENDPOINTS.WALLET),
-        apiGet(`${FINANCE_ENDPOINTS.TRANSACTIONS}?limit=50`),
-        apiGet(FINANCE_ENDPOINTS.PAYOUT_MY_REQUESTS),
+        apiGet(`${FINANCE_ENDPOINTS.TRANSACTIONS}?limit=100`),
+        apiGet(`${FINANCE_ENDPOINTS.PAYOUT_MY_REQUESTS}?limit=50`),
       ]);
 
       if (walletRes.success) {
@@ -424,30 +438,36 @@ export default function WalletPage() {
         const d = txRes.data as Record<string, unknown>;
         const raw = Array.isArray(d) ? d : ((d.transactions ?? d.data ?? []) as Record<string, unknown>[]);
         setTxPage(0);
-        setTransactions(raw.map((t) => ({
-          id: String(t._id ?? t.id ?? ""),
-          type: String(t.type ?? ""),
-          direction: (t.direction as "credit" | "debit") ?? "credit",
-          amount: Number(t.amount ?? 0),
-          status: (t.status as TxRecord["status"]) ?? "pending",
-          description: (t.metadata as Record<string, unknown> | undefined)?.description as string | undefined,
-          createdAt: String(t.created_at ?? t.createdAt ?? ""),
-          gateway: (t.payment_details as Record<string, unknown> | undefined)?.payment_gateway as string | undefined,
-        })));
+        setTransactions(
+          raw
+            .map((t) => ({
+              id:          String(t._id ?? t.id ?? ""),
+              type:        String(t.type ?? ""),
+              direction:   (t.direction as "credit" | "debit") ?? "credit",
+              amount:      Number(t.amount ?? 0),
+              status:      (t.status as TxRecord["status"]) ?? "pending",
+              description: (t.metadata as Record<string, unknown> | undefined)?.description as string | undefined,
+              createdAt:   String(t.created_at ?? t.createdAt ?? ""),
+              gateway:     (t.payment_details as Record<string, unknown> | undefined)?.payment_gateway as string | undefined,
+            }))
+            // Exclude internal webhook failure audit records — these are admin-only
+            .filter((t) => !t.description?.startsWith("WEBHOOK FAILURE"))
+        );
       }
 
       if (payoutsRes.success) {
         const d = payoutsRes.data as Record<string, unknown>;
         const list = (Array.isArray(payoutsRes.data) ? payoutsRes.data : (d.requests ?? d.payouts ?? [])) as Record<string, unknown>[];
+        setPayoutPage(0);
         setPayouts(list.map((p) => {
           const pd = (p.payout_details ?? {}) as Record<string, unknown>;
           return {
-            id: String(p._id ?? p.id ?? ""),
-            amount: Number(p.amount ?? 0),
-            status: (p.status as PayoutRequest["status"]) ?? "pending",
-            momoNumber: (pd.momo_number ?? p.momo_number) as string | undefined,
-            momoNetwork: (pd.network ?? p.momo_network) as string | undefined,
-            createdAt: String(p.created_at ?? p.createdAt ?? ""),
+            id:              String(p._id ?? p.id ?? ""),
+            amount:          Number(p.amount ?? 0),
+            status:          (p.status as PayoutRequest["status"]) ?? "pending",
+            momoNumber:      (pd.momo_number ?? p.momo_number) as string | undefined,
+            momoNetwork:     (pd.network ?? p.momo_network) as string | undefined,
+            createdAt:       String(p.created_at ?? p.createdAt ?? ""),
             rejectionReason: (p.rejection_reason ?? p.rejectionReason) as string | undefined,
           };
         }));
@@ -461,9 +481,9 @@ export default function WalletPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const balance = wallet?.balance ?? 0;
-  const txTotalPages = Math.ceil(transactions.length / TX_PAGE_SIZE);
-  const pagedTransactions = transactions.slice(txPage * TX_PAGE_SIZE, (txPage + 1) * TX_PAGE_SIZE);
+  const balance          = wallet?.balance ?? 0;
+  const pagedTx          = transactions.slice(txPage * TX_PAGE_SIZE, (txPage + 1) * TX_PAGE_SIZE);
+  const pagedPayouts     = payouts.slice(payoutPage * PAYOUT_PAGE_SIZE, (payoutPage + 1) * PAYOUT_PAGE_SIZE);
 
   if (loading) {
     return (
@@ -476,7 +496,7 @@ export default function WalletPage() {
   return (
     <div className="min-h-screen">
 
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 90% at 90% -10%, rgba(251,191,36,0.18), transparent)" }} />
@@ -519,49 +539,59 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* ── Content ───────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
-        <div className="space-y-6">
+      {/* ── Content ──────────────────────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
 
-          {successMsg && (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-sm">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span className="flex-1">{successMsg}</span>
-              <button onClick={() => setSuccessMsg("")}><X className="w-4 h-4 opacity-60 hover:opacity-100" /></button>
-            </div>
-          )}
-
-          {/* Info strip */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {[
-              { icon: CreditCard,   text: "MTN MoMo · Vodafone · AirtelTigo", sub: "Payment methods"           },
-              { icon: CheckCircle2, text: "Escrow-secured",                    sub: "Entry fees held safely"     },
-              { icon: Clock,        text: "1–2 business days",                 sub: "Withdrawal processing time" },
-            ].map(({ icon: Icon, text, sub }) => (
-              <div key={sub} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-800/80 bg-slate-900/60">
-                <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                  <Icon className="w-3.5 h-3.5 text-orange-400" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-white truncate">{text}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
-                </div>
-              </div>
-            ))}
+        {/* Success banner */}
+        {successMsg && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-sm">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="flex-1">{successMsg}</span>
+            <button onClick={() => setSuccessMsg("")}><X className="w-4 h-4 opacity-60 hover:opacity-100" /></button>
           </div>
+        )}
 
-          {/* ── Transaction History ─────────────────────────────────────── */}
+        {/* Info strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {[
+            { icon: CreditCard,   text: "MTN MoMo · Vodafone · AirtelTigo", sub: "Payment methods"           },
+            { icon: CheckCircle2, text: "Escrow-secured",                    sub: "Entry fees held safely"     },
+            { icon: Clock,        text: "1–2 business days",                 sub: "Withdrawal processing time" },
+          ].map(({ icon: Icon, text, sub }) => (
+            <div key={sub} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-800/80 bg-slate-900/60">
+              <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                <Icon className="w-3.5 h-3.5 text-orange-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-white truncate">{text}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Two-column layout ───────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-start">
+
+          {/* LEFT — Transaction History */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-              <h2 className="font-display text-xl font-semibold text-white">Transaction History</h2>
-              <button onClick={() => void load()} className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1">
-                <RefreshCw className="w-3 h-3" />
-                Refresh
+              <div>
+                <h2 className="font-display text-base font-semibold text-white">Transaction History</h2>
+                {transactions.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-0.5">{transactions.length} transactions total</p>
+                )}
+              </div>
+              <button
+                onClick={() => void load()}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {transactions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-14 px-4 text-center gap-3">
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
                   <Wallet className="w-5 h-5 text-slate-600" />
                 </div>
@@ -573,26 +603,25 @@ export default function WalletPage() {
             ) : (
               <>
                 <ul className="divide-y divide-slate-800/70">
-                  {pagedTransactions.map((tx) => {
+                  {pagedTx.map((tx) => {
                     const cfg = TX_CONFIG[tx.type] ?? {
-                      label: tx.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+                      label: tx.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
                       amountCls: tx.direction === "credit" ? "text-emerald-400" : "text-red-400",
                       sign: tx.direction === "credit" ? "+" : "−",
                     };
-                    const statusCls = TX_STATUS_CLS[tx.status];
                     return (
-                      <li key={tx.id} className="flex items-center gap-3 px-5 py-4 hover:bg-slate-800/30 transition-colors">
+                      <li key={tx.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-800/30 transition-colors">
                         <TxIcon type={tx.type} direction={tx.direction} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-semibold text-white">{cfg.label}</span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold capitalize ${statusCls}`}>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold capitalize ${TX_STATUS_CLS[tx.status]}`}>
                               {tx.status}
                             </span>
                           </div>
                           <p className="text-xs text-slate-500 mt-0.5 truncate">
-                            {tx.description ?? (tx.gateway ? `via ${tx.gateway}` : "")}
-                            {tx.createdAt ? ` · ${fmtDate(tx.createdAt)}` : ""}
+                            {tx.createdAt ? fmtDate(tx.createdAt) : ""}
+                            {tx.gateway ? ` · via ${tx.gateway}` : ""}
                           </p>
                         </div>
                         <span className={`text-sm font-bold tabular-nums shrink-0 ${cfg.amountCls}`}>
@@ -602,70 +631,101 @@ export default function WalletPage() {
                     );
                   })}
                 </ul>
-                {txTotalPages > 1 && (
-                  <div className="flex items-center justify-between px-5 py-3 border-t border-slate-800">
-                    <p className="text-xs text-slate-500 tabular-nums">
-                      {txPage * TX_PAGE_SIZE + 1}–{Math.min((txPage + 1) * TX_PAGE_SIZE, transactions.length)} of {transactions.length}
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setTxPage((p) => p - 1)}
-                        disabled={txPage === 0}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-slate-600 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Prev
-                      </button>
-                      <span className="text-xs text-slate-500 tabular-nums px-1">
-                        {txPage + 1} / {txTotalPages}
-                      </span>
-                      <button
-                        onClick={() => setTxPage((p) => p + 1)}
-                        disabled={txPage >= txTotalPages - 1}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 bg-slate-800/60 text-slate-300 hover:border-slate-600 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <PaginationBar
+                  page={txPage}
+                  total={transactions.length}
+                  pageSize={TX_PAGE_SIZE}
+                  onChange={setTxPage}
+                />
               </>
             )}
           </div>
 
-          {/* ── Withdrawal Requests ─────────────────────────────────────── */}
-          {payouts.length > 0 && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-800">
-                <h2 className="font-display text-xl font-semibold text-white">Withdrawal Requests</h2>
+          {/* RIGHT — Withdrawal Requests */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+              <div>
+                <h2 className="font-display text-base font-semibold text-white">Withdrawal Requests</h2>
+                {payouts.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-0.5">{payouts.length} total</p>
+                )}
               </div>
-              <ul className="divide-y divide-slate-800/70">
-                {payouts.map((p) => {
-                  const chip = PAYOUT_STATUS_CLS[p.status];
-                  const StatusIcon = p.status === "completed" ? CheckCircle2 : p.status === "failed" || p.status === "rejected" ? XCircle : Clock;
-                  const iconCls = p.status === "completed" ? "text-emerald-400" : p.status === "failed" || p.status === "rejected" ? "text-red-400" : "text-amber-400";
-                  return (
-                    <li key={p.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-800/30 transition-colors">
-                      <StatusIcon className={`w-4 h-4 shrink-0 ${iconCls}`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-white">{fmtGhs(p.amount)}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${chip.cls}`}>
-                            {chip.label}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5 truncate">
-                          {p.momoNetwork && `${p.momoNetwork} · `}{p.momoNumber}{p.createdAt ? ` · ${fmtDate(p.createdAt)}` : ""}
-                        </p>
-                        {p.rejectionReason && (
-                          <p className="text-xs text-red-400 mt-0.5">{p.rejectionReason}</p>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+              <button
+                onClick={() => setModal("withdraw")}
+                disabled={balance === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-600 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ArrowUpRight className="w-3 h-3" />
+                Withdraw
+              </button>
             </div>
-          )}
+
+            {payouts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+                  <ArrowUpRight className="w-5 h-5 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-slate-400 text-sm font-medium">No withdrawal requests</p>
+                  <p className="text-slate-600 text-xs mt-0.5">Your withdrawal history will appear here.</p>
+                </div>
+                <button
+                  onClick={() => setModal("withdraw")}
+                  disabled={balance === 0}
+                  className="mt-1 px-4 py-2 rounded-xl text-xs font-semibold border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Request Withdrawal
+                </button>
+              </div>
+            ) : (
+              <>
+                <ul className="divide-y divide-slate-800/70">
+                  {pagedPayouts.map((p) => {
+                    const chip = PAYOUT_STATUS_CLS[p.status];
+                    const StatusIcon =
+                      p.status === "completed" ? CheckCircle2 :
+                      p.status === "failed" || p.status === "rejected" ? XCircle : Clock;
+                    const iconCls =
+                      p.status === "completed" ? "text-emerald-400" :
+                      p.status === "failed" || p.status === "rejected" ? "text-red-400" :
+                      p.status === "processing" ? "text-blue-400" : "text-amber-400";
+                    return (
+                      <li key={p.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-slate-800/30 transition-colors">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                          p.status === "completed" ? "bg-emerald-500/15" :
+                          p.status === "failed" || p.status === "rejected" ? "bg-red-500/15" :
+                          p.status === "processing" ? "bg-blue-500/15" : "bg-amber-500/15"
+                        }`}>
+                          <StatusIcon className={`w-3.5 h-3.5 ${iconCls}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-bold text-white">{fmtGhs(p.amount)}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold shrink-0 ${chip.cls}`}>
+                              {chip.label}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 truncate">
+                            {p.momoNetwork && `${p.momoNetwork} · `}{p.momoNumber}
+                            {p.createdAt ? ` · ${fmtDate(p.createdAt)}` : ""}
+                          </p>
+                          {p.rejectionReason && (
+                            <p className="text-xs text-red-400 mt-0.5 truncate">{p.rejectionReason}</p>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <PaginationBar
+                  page={payoutPage}
+                  total={payouts.length}
+                  pageSize={PAYOUT_PAGE_SIZE}
+                  onChange={setPayoutPage}
+                />
+              </>
+            )}
+          </div>
 
         </div>
       </div>
