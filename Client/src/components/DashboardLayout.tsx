@@ -1,8 +1,8 @@
 import { useAuth } from "../lib/auth-context";
-import { Link, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { FadeImage } from "./ui/FadeImage";
 import Sidebar from "./Sidebar";
-import { Bell, Menu, LayoutDashboard } from "lucide-react";
+import { Bell, Menu, LayoutDashboard, Home, Swords, Trophy, Wallet, UserCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { notificationService } from "../services/notification.service";
 
@@ -123,9 +123,36 @@ const DashboardLayout = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 min-h-0 overflow-y-auto pt-3 pb-6">
+        <main className="flex-1 min-h-0 overflow-y-auto pt-3 pb-20 md:pb-6">
           <Outlet />
         </main>
+
+        {/* ── Mobile bottom nav ── md:hidden ─────────────────────── */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800/80">
+          <div className="flex items-center justify-around px-2 py-2">
+            {[
+              { icon: Home,        label: "Home",         to: "/auth",                          end: true  },
+              { icon: Swords,      label: "Tournaments",  to: "/auth/player/join-tournament",   end: false },
+              { icon: Trophy,      label: "Leaderboard",  to: "/auth/leaderboard",              end: false },
+              { icon: Wallet,      label: "Wallet",       to: "/auth/wallet",                   end: false },
+              { icon: UserCircle,  label: "Profile",      to: profilePath,                      end: false },
+            ].map(({ icon: Icon, label, to, end }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
+                    isActive ? "text-orange-400" : "text-slate-500 hover:text-slate-300"
+                  }`
+                }
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-[10px] font-semibold">{label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </nav>
       </div>
     </div>
   );

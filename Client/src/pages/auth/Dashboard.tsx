@@ -9,6 +9,10 @@ import {
   ArrowRight,
   Swords,
   Users,
+  ChevronDown,
+  Home,
+  Bell,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import {
@@ -47,6 +51,7 @@ const Dashboard = () => {
   const [tournamentTab, setTournamentTab] = useState<"active" | "history">(
     "active",
   );
+  const [statsOpen, setStatsOpen] = useState(false);
   const hasFetched = useRef(false);
   const isOrganizer = user?.role === "organizer";
 
@@ -606,57 +611,93 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Stats strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
-            {[
+          {/* Stats strip — grid on sm+, dropdown on mobile */}
+          {(() => {
+            const statItems = [
               { icon: Trophy,   iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Tournaments", value: String(stats.joinedTournaments) },
               { icon: Swords,   iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15",  label: "Total Wins",  value: String(stats.totalWins) },
               { icon: Wallet,   iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15",  label: "Prize Won",   value: stats.totalPrizeWon > 0 ? `GHS ${(stats.totalPrizeWon / 100).toFixed(2)}` : "GHS 0" },
               { icon: Gamepad2, iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",   label: "Checked In",  value: String(stats.checkedInCount) },
-            ].map((s) => (
-              <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
-                <div className={`w-9 h-9 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
-                  <s.icon className={`w-4 h-4 ${s.iconColor}`} />
+            ];
+            return (
+              <>
+                {/* Mobile: dropdown */}
+                <div className="sm:hidden mt-4">
+                  <button
+                    onClick={() => setStatsOpen((o) => !o)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-sm font-semibold text-slate-300"
+                  >
+                    <span className="text-slate-400 text-xs uppercase tracking-widest font-semibold">My Stats</span>
+                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {statsOpen && (
+                    <div className="mt-1 grid grid-cols-2 gap-2">
+                      {statItems.map((s) => (
+                        <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                          <div className={`w-8 h-8 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                            <s.icon className={`w-3.5 h-3.5 ${s.iconColor}`} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-display text-base font-bold tabular-nums text-white leading-none truncate">{s.value}</p>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <p className="font-display text-base sm:text-xl font-bold tabular-nums text-white leading-none truncate">{s.value}</p>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+
+                {/* sm+: full grid */}
+                <div className="hidden sm:grid sm:grid-cols-4 gap-3 mt-6">
+                  {statItems.map((s) => (
+                    <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                      <div className={`w-9 h-9 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                        <s.icon className={`w-4 h-4 ${s.iconColor}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-display text-xl font-bold tabular-nums text-white leading-none truncate">{s.value}</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ))}
-          </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 py-4 sm:py-6 space-y-6">
         {/* ── Main Grid ─────────────────────────────────────────────────── */}
         <div className="grid lg:grid-cols-[1fr_272px] gap-6">
 
           {/* LEFT: My Tournaments */}
-          <section className="min-w-0 space-y-5">
-            {/* Section header with tabs */}
-            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3 mt-10">
-                <h2 className="font-display text-2xl font-bold text-white">My Tournaments</h2>
+          <section className="min-w-0 space-y-6 mt-8">
+            {/* Section header */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-1 h-6 rounded-full bg-linear-to-b from-orange-400 to-amber-500 shrink-0" />
+                <h2 className="font-display text-xl font-bold text-white">My Tournaments</h2>
                 {registrations.length > 0 && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/20">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/20">
                     {registrations.length}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-2xl p-1.5">
+
+              <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 w-full sm:w-auto">
                 <button
                   onClick={() => setTournamentTab("active")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     tournamentTab === "active"
-                      ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/20"
+                      ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 shadow shadow-orange-500/20"
                       : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                   }`}
                 >
                   Active
                   {activeRegistrations.length > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
-                      tournamentTab === "active" ? "bg-slate-950/30 text-slate-950" : "bg-orange-500/20 text-orange-400"
+                      tournamentTab === "active" ? "bg-slate-950/30 text-slate-950" : "bg-slate-800 text-slate-400"
                     }`}>
                       {activeRegistrations.length}
                     </span>
@@ -664,16 +705,16 @@ const Dashboard = () => {
                 </button>
                 <button
                   onClick={() => setTournamentTab("history")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     tournamentTab === "history"
-                      ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/20"
+                      ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 shadow shadow-orange-500/20"
                       : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                   }`}
                 >
                   History
                   {completedRegistrations.length > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
-                      tournamentTab === "history" ? "bg-slate-950/30 text-slate-950" : "bg-orange-500/20 text-orange-400"
+                      tournamentTab === "history" ? "bg-slate-950/30 text-slate-950" : "bg-slate-800 text-slate-400"
                     }`}>
                       {completedRegistrations.length}
                     </span>

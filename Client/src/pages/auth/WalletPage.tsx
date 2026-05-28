@@ -3,7 +3,7 @@ import {
   Wallet, ArrowDownLeft, ArrowUpRight, Loader2,
   CheckCircle2, XCircle, Clock, AlertCircle, X,
   CreditCard, Phone, Trophy, RefreshCw, Coins,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, ChevronDown,
 } from "lucide-react";
 import { apiGet, apiPost } from "../../utils/api.utils";
 import { FINANCE_ENDPOINTS } from "../../config/api.config";
@@ -413,6 +413,7 @@ export default function WalletPage() {
   const [loading, setLoading]           = useState(true);
   const [modal, setModal]               = useState<ModalView>(null);
   const [successMsg, setSuccessMsg]     = useState("");
+  const [infoOpen, setInfoOpen]         = useState(false);
   const [txPage, setTxPage]             = useState(0);
   const [payoutPage, setPayoutPage]     = useState(0);
 
@@ -551,24 +552,58 @@ export default function WalletPage() {
           </div>
         )}
 
-        {/* Info strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {[
+        {/* Info strip — dropdown on mobile, grid on sm+ */}
+        {(() => {
+          const infoItems = [
             { icon: CreditCard,   text: "MTN MoMo · Vodafone · AirtelTigo", sub: "Payment methods"           },
             { icon: CheckCircle2, text: "Escrow-secured",                    sub: "Entry fees held safely"     },
             { icon: Clock,        text: "1–2 business days",                 sub: "Withdrawal processing time" },
-          ].map(({ icon: Icon, text, sub }) => (
-            <div key={sub} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-800/80 bg-slate-900/60">
-              <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                <Icon className="w-3.5 h-3.5 text-orange-400" />
+          ];
+          return (
+            <>
+              {/* Mobile dropdown */}
+              <div className="sm:hidden">
+                <button
+                  onClick={() => setInfoOpen((o) => !o)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-900/60 border border-slate-800/80 text-xs font-semibold text-slate-400 uppercase tracking-widest"
+                >
+                  <span>Payment Info</span>
+                  <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${infoOpen ? "rotate-180" : ""}`} />
+                </button>
+                {infoOpen && (
+                  <div className="mt-1 space-y-1">
+                    {infoItems.map(({ icon: Icon, text, sub }) => (
+                      <div key={sub} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-800/80 bg-slate-900/60">
+                        <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                          <Icon className="w-3.5 h-3.5 text-orange-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-white truncate">{text}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-white truncate">{text}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
+
+              {/* sm+: grid */}
+              <div className="hidden sm:grid sm:grid-cols-3 gap-2">
+                {infoItems.map(({ icon: Icon, text, sub }) => (
+                  <div key={sub} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-800/80 bg-slate-900/60">
+                    <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                      <Icon className="w-3.5 h-3.5 text-orange-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-white truncate">{text}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
-        </div>
+            </>
+          );
+        })()}
 
         {/* ── Two-column layout ───────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-start">
