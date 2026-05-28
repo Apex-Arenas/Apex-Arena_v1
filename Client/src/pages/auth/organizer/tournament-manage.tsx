@@ -1553,7 +1553,7 @@ const TournamentManage = () => {
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[11px] font-semibold">
                       <CheckCircle2 className="w-3 h-3" />
                       Fixtures
-                      {leagueSettings?.currentMatchweek != null && leagueSettings?.totalMatchweeks != null && (
+                      {leagueSettings?.currentMatchweek != null && leagueSettings?.totalMatchweeks != null && leagueSettings.currentMatchweek > 0 && (
                         <span className="text-emerald-400/60 font-normal">Wk {leagueSettings.currentMatchweek}/{leagueSettings.totalMatchweeks}</span>
                       )}
                     </span>
@@ -1689,7 +1689,7 @@ const TournamentManage = () => {
                     </p>
                   </div>
                 </div>
-                {leagueSettings?.fixturesGenerated && (
+                {leagueSettings?.fixturesGenerated && leagueSettings.currentMatchweek > 0 && (
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
                     <span className="text-[11px] text-slate-500">Week</span>
                     <span className="text-sm font-bold text-cyan-300 tabular-nums">
@@ -1727,7 +1727,7 @@ const TournamentManage = () => {
                     {[
                       {
                         label: "Current Week",
-                        value: String(leagueSettings.currentMatchweek),
+                        value: leagueSettings.currentMatchweek > 0 ? String(leagueSettings.currentMatchweek) : "—",
                         accent: "text-cyan-400",
                       },
                       {
@@ -1772,7 +1772,7 @@ const TournamentManage = () => {
             </div>
           )}
 
-        {(hasBracketGenerated || canGenerateBracket) && (
+        {!isLeague && (hasBracketGenerated || canGenerateBracket) && (
           <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4 border-b border-slate-800/60">

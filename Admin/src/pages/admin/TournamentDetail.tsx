@@ -889,7 +889,7 @@ function bcParsePenalty(match) {
 }
 
 // ── Match Detail Modal ────────────────────────────────────
-function BcMatchModal({ match, onClose, onOverrideComplete }: { match: any; onClose: () => void; onOverrideComplete: () => void }) {
+function BcMatchModal({ match, onClose, onOverrideComplete, isLeague = false }: { match: any; onClose: () => void; onOverrideComplete: () => void; isLeague?: boolean }) {
   const [showOverride, setShowOverride]   = useState(false);
   const [ovS1, setOvS1]                   = useState("");
   const [ovS2, setOvS2]                   = useState("");
@@ -1173,8 +1173,8 @@ function BcMatchModal({ match, onClose, onOverrideComplete }: { match: any; onCl
                   </div>
                 </div>
 
-                {/* Penalty inputs — only when scores are equal and both filled */}
-                {ovS1 !== "" && ovS2 !== "" && Number(ovS1) === Number(ovS2) && (
+                {/* Penalty inputs — only when scores are equal, both filled, and not a league match */}
+                {!isLeague && ovS1 !== "" && ovS2 !== "" && Number(ovS1) === Number(ovS2) && (
                   <div>
                     <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-widest mb-2">Tie — set penalty shootout scores</p>
                     <div className="grid grid-cols-2 gap-3">
@@ -1460,7 +1460,7 @@ function BcBoard({ rounds, onMatchClick }) {
 }
 
 // ── Admin Bracket Section ─────────────────────────────────
-function AdminBracketSection({ tournamentId }: { tournamentId: string }) {
+function AdminBracketSection({ tournamentId, isLeague = false }: { tournamentId: string; isLeague?: boolean }) {
   const [rounds, setRounds]         = useState<any[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
@@ -1544,6 +1544,7 @@ function AdminBracketSection({ tournamentId }: { tournamentId: string }) {
       {selectedMatch && (
         <BcMatchModal
           match={selectedMatch}
+          isLeague={isLeague}
           onClose={() => setSelectedMatch(null)}
           onOverrideComplete={() => {
             // Re-fetch bracket so scores update, then refresh the open modal with updated match data
@@ -1932,7 +1933,7 @@ const TournamentDetail = () => {
             <ParticipantsSection tournamentId={id} />
 
             {/* Bracket */}
-            <AdminBracketSection tournamentId={id} />
+            <AdminBracketSection tournamentId={id} isLeague={tournamentType === "league"} />
 
             {/* Description */}
             {tournament.description && (
