@@ -739,6 +739,50 @@ export const adminService = {
 
   // ─── Finance: Payouts ─────────────────────────────────────────────────────
 
+  async fetchAllPayouts(params: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  } = {}): Promise<{ payouts: AdminPayoutRequest[]; total: number; page: number; pages: number }> {
+    const query = new URLSearchParams();
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.status && params.status !== 'all') query.set('status', params.status);
+    const url = `${FINANCE_ENDPOINTS.ADMIN_PAYOUTS_ALL}?${query.toString()}`;
+    const response = await apiGet(url, adminHeaders());
+    if (!response.success) return { payouts: [], total: 0, page: 1, pages: 0 };
+    const data = response.data as Record<string, unknown>;
+    const list = (Array.isArray(data) ? data : (data.requests ?? data.data ?? [])) as Record<string, unknown>[];
+    const pagination = (data.pagination ?? {}) as Record<string, unknown>;
+    const mapPayout = (p: Record<string, unknown>): AdminPayoutRequest => {
+      const user = (p.user_id ?? p.user ?? {}) as Record<string, unknown>;
+      const pd = (p.payout_details ?? {}) as Record<string, unknown>;
+      return {
+        id: String(p._id ?? p.id ?? ''),
+        userId: String(user._id ?? user.id ?? p.user_id ?? ''),
+        username: String(user.username ?? p.username ?? ''),
+        email: String(user.email ?? p.email ?? ''),
+        amount: Number(p.amount ?? 0),
+        type: String(p.request_type ?? p.type ?? 'wallet_withdrawal') as AdminPayoutRequest['type'],
+        status: String(p.status ?? 'pending') as AdminPayoutRequest['status'],
+        momoNumber: (pd.momo_number ?? p.momo_number) as string | undefined,
+        network: (pd.network ?? p.network) as string | undefined,
+        accountName: (pd.account_name ?? p.account_name) as string | undefined,
+        tournamentId: p.tournament_id as string | undefined,
+        tournamentName: (p.tournament as Record<string, unknown>)?.name as string | undefined,
+        requestedAt: String(p.requested_at ?? p.created_at ?? p.createdAt ?? ''),
+        processedAt: p.processed_at as string | undefined,
+        adminNotes: p.admin_notes as string | undefined,
+      };
+    };
+    return {
+      payouts: list.map(mapPayout),
+      total: Number(pagination.total ?? list.length),
+      page: Number(pagination.page ?? 1),
+      pages: Number(pagination.pages ?? 1),
+    };
+  },
+
   async fetchPendingPayouts(): Promise<AdminPayoutRequest[]> {
     const response = await apiGet(FINANCE_ENDPOINTS.ADMIN_PAYOUTS_PENDING, adminHeaders());
     if (!response.success) return [];
@@ -803,6 +847,17 @@ export const adminService = {
     const response = await apiPatch(
       `${FINANCE_ENDPOINTS.ADMIN_PAYOUT_REJECT}/${id}/reject`,
       { reason },
+      adminHeaders(),
+    );
+    return response.success;
+  },
+
+  async confirmPayout(id: string, momoReference?: string): Promise<boolean> {
+    const body: Record<string, unknown> = {};
+    if (momoReference) body.momo_reference = momoReference;
+    const response = await apiPatch(
+      `${FINANCE_ENDPOINTS.ADMIN_PAYOUT_CONFIRM}/${id}/confirm`,
+      body,
       adminHeaders(),
     );
     return response.success;

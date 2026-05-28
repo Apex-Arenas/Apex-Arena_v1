@@ -228,10 +228,12 @@ export const FINANCE_ENDPOINTS = {
   PAYOUT_MY_REQUESTS: `${API_BASE_URLS.FINANCE}/payouts/my-requests`, // GET — own requests
   PAYOUT_DETAIL: `${API_BASE_URLS.FINANCE}/payouts`,                // + /:id (GET, DELETE)
 
-  // Payouts (Admin) 
+  // Payouts (Admin)
+  ADMIN_PAYOUTS_ALL: `${API_BASE_URLS.FINANCE}/admin/payouts`,             // GET — all requests (status filter)
   ADMIN_PAYOUTS_PENDING: `${API_BASE_URLS.FINANCE}/admin/payouts/pending`, // GET — all pending requests
   ADMIN_PAYOUT_DETAIL: `${API_BASE_URLS.FINANCE}/admin/payouts`,    // + /:id (GET)
   ADMIN_PAYOUT_APPROVE: `${API_BASE_URLS.FINANCE}/admin/payouts`,   // + /:id/approve (PATCH)
+  ADMIN_PAYOUT_CONFIRM: `${API_BASE_URLS.FINANCE}/admin/payouts`,   // + /:id/confirm (PATCH)
   ADMIN_PAYOUT_REJECT: `${API_BASE_URLS.FINANCE}/admin/payouts`,    // + /:id/reject (PATCH)
 
 } as const;
