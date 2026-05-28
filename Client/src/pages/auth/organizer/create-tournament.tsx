@@ -1396,6 +1396,21 @@ const CreateTournament = () => {
                         <input type="number" value={prizePool} onChange={(e) => setPrizePool(e.target.value)}
                           placeholder="0.00" min={0} step={0.01} className={`${inputCls} pl-8`} />
                       </div>
+                      {(() => {
+                        const val = Number.parseFloat(prizePool);
+                        if (!Number.isFinite(val) || val <= 0) return null;
+                        const fee = Math.round(val * 5) / 100;
+                        const net = val - fee;
+                        return (
+                          <div className="mt-2 flex items-center justify-between text-[11px] bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2">
+                            <span className="text-slate-400">Platform fee (5%)</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-slate-400">₵{fee.toFixed(2)} deducted</span>
+                              <span className="font-semibold text-emerald-400">Net pool: ₵{net.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </Field>
                     <div className="grid grid-cols-3 gap-3">
                       <Field label="1st %" required>

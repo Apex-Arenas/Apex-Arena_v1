@@ -268,8 +268,10 @@
     const qs = s  => document.querySelector(s);
 
     function returnPath() {
-      return flowType === 'wallet'
-        ? SITE + '/auth/wallet'
+      if (flowType === 'wallet') return SITE + '/auth/wallet';
+      const tid = sp.get('tournamentId');
+      return tid
+        ? SITE + '/auth/organizer/tournaments/' + tid
         : SITE + '/auth/organizer/tournaments';
     }
 
