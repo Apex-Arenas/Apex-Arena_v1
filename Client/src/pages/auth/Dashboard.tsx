@@ -10,9 +10,6 @@ import {
   Swords,
   Users,
   ChevronDown,
-  Home,
-  Bell,
-  Mail,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import {
@@ -358,25 +355,59 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Stats strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-              {[
+            {/* Stats strip — dropdown on mobile, grid on sm+ */}
+            {(() => {
+              const statItems = [
                 { icon: Trophy,   iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Tournaments",    value: String(organizerTournaments.length) },
-                { icon: Gamepad2, iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15", label: "Live / Active",  value: String(organizerLiveCount) },
-                { icon: Users,    iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",  label: "Total Entrants", value: String(organizerTotalParticipants) },
-                { icon: Wallet,   iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15", label: "Wallet",         value: organizerWalletBalance === null ? "GHS —" : `GHS ${(organizerWalletBalance / 100).toFixed(2)}` },
-              ].map((s) => (
-                <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
-                  <div className={`w-9 h-9 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
-                    <s.icon className={`w-4 h-4 ${s.iconColor}`} />
+                { icon: Gamepad2, iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15",  label: "Live / Active",  value: String(organizerLiveCount) },
+                { icon: Users,    iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",   label: "Total Entrants", value: String(organizerTotalParticipants) },
+                { icon: Wallet,   iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15",  label: "Wallet",         value: organizerWalletBalance === null ? "GHS —" : `GHS ${(organizerWalletBalance / 100).toFixed(2)}` },
+              ];
+              return (
+                <>
+                  {/* Mobile dropdown */}
+                  <div className="sm:hidden mt-4">
+                    <button
+                      onClick={() => setStatsOpen((o) => !o)}
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs font-semibold text-slate-400 uppercase tracking-widest"
+                    >
+                      <span>My Stats</span>
+                      <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    {statsOpen && (
+                      <div className="mt-1 grid grid-cols-2 gap-2">
+                        {statItems.map((s) => (
+                          <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                            <div className={`w-8 h-8 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                              <s.icon className={`w-3.5 h-3.5 ${s.iconColor}`} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-display text-base font-bold tabular-nums text-white leading-none truncate">{s.value}</p>
+                              <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-display text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+
+                  {/* sm+: full grid */}
+                  <div className="hidden sm:grid sm:grid-cols-4 gap-3 mt-5">
+                    {statItems.map((s) => (
+                      <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                        <div className={`w-9 h-9 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                          <s.icon className={`w-4 h-4 ${s.iconColor}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-display text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
+                          <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))}
-            </div>
+                </>
+              );
+            })()}
           </div>
         </div>
 

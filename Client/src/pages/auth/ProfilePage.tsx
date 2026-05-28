@@ -10,6 +10,7 @@ import {
   X,
   Plus,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import { authService } from "../../services/auth.service";
@@ -254,6 +255,7 @@ const ProfilePage = () => {
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [isSavingGameProfile, setIsSavingGameProfile] = useState(false);
   const [deletingGameId, setDeletingGameId] = useState<string | null>(null);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
@@ -634,20 +636,48 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Quick stats strip */}
-          <div className="pb-6 grid grid-cols-4 gap-px bg-slate-800/50 rounded-xl overflow-hidden">
-            {[
+          {/* Quick stats strip — dropdown on mobile, grid on sm+ */}
+          {(() => {
+            const statItems = [
               { label: "Joined",     value: statJoined,    color: "text-cyan-300"    },
               { label: "Done",       value: statCompleted, color: "text-emerald-300" },
               { label: "Active",     value: statOngoing,   color: "text-amber-300"   },
               { label: "Checked In", value: statCheckedIn, color: "text-violet-300"  },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="bg-slate-900/80 px-2 py-3 text-center">
-                <p className={`font-display text-xl font-bold ${color}`}>{value}</p>
-                <p className="text-[10px] text-slate-500 mt-0.5 uppercase tracking-wide leading-tight">{label}</p>
+            ];
+            return (
+              <div className="pb-6">
+                {/* Mobile dropdown */}
+                <div className="sm:hidden">
+                  <button
+                    onClick={() => setStatsOpen((o) => !o)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs font-semibold text-slate-400 uppercase tracking-widest"
+                  >
+                    <span>My Stats</span>
+                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {statsOpen && (
+                    <div className="mt-1 grid grid-cols-2 gap-2">
+                      {statItems.map(({ label, value, color }) => (
+                        <div key={label} className="bg-slate-900/80 border border-slate-800 rounded-xl px-4 py-3 text-center">
+                          <p className={`font-display text-xl font-bold ${color}`}>{value}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5 uppercase tracking-wide leading-tight">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* sm+: original gap-px divider style */}
+                <div className="hidden sm:grid grid-cols-4 gap-px bg-slate-800/50 rounded-xl overflow-hidden">
+                  {statItems.map(({ label, value, color }) => (
+                    <div key={label} className="bg-slate-900/80 px-2 py-3 text-center">
+                      <p className={`font-display text-xl font-bold ${color}`}>{value}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5 uppercase tracking-wide leading-tight">{label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
       </div>
 

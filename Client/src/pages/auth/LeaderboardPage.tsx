@@ -153,6 +153,7 @@ export default function LeaderboardPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [selectedGameId, setSelectedGameId] = useState<string>("all");
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
   const [table, setTable] = useState<LeagueTableRow[]>([]);
@@ -274,25 +275,56 @@ export default function LeaderboardPage() {
             <p className="text-base text-slate-400 mt-3">Standings by tournament — select a game and tournament to view rankings.</p>
           </div>
 
-          {/* Stats strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
-            {[
+          {/* Stats strip — dropdown on mobile, grid on sm+ */}
+          {(() => {
+            const statItems = [
               { icon: Trophy,   iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15",  label: "Tournaments", value: loading ? "—" : String(tournaments.length) },
               { icon: Gamepad2, iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",   label: "Games",       value: loading ? "—" : String(gamesWithTournaments.length) },
               { icon: Crown,    iconColor: "text-violet-400",  bg: "from-violet-500/15 to-indigo-500/15", label: "League",      value: loading ? "—" : String(leagueCount) },
               { icon: Medal,    iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Bracket",     value: loading ? "—" : String(bracketCount) },
-            ].map((s) => (
-              <div key={s.label} className="flex items-center gap-2 sm:gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-3">
-                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
-                  <s.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${s.iconColor}`} />
+            ];
+            return (
+              <>
+                <div className="sm:hidden mt-4">
+                  <button
+                    onClick={() => setStatsOpen((o) => !o)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs font-semibold text-slate-400 uppercase tracking-widest"
+                  >
+                    <span>Stats</span>
+                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {statsOpen && (
+                    <div className="mt-1 grid grid-cols-2 gap-2">
+                      {statItems.map((s) => (
+                        <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                          <div className={`w-8 h-8 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                            <s.icon className={`w-3.5 h-3.5 ${s.iconColor}`} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-display text-base font-bold tabular-nums text-white leading-none">{s.value}</p>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <p className="font-display text-lg sm:text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
-                  <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                <div className="hidden sm:grid sm:grid-cols-4 gap-3 mt-6">
+                  {statItems.map((s) => (
+                    <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                      <div className={`w-8 h-8 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                        <s.icon className={`w-4 h-4 ${s.iconColor}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-display text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ))}
-          </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 

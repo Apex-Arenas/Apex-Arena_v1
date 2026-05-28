@@ -10,6 +10,7 @@ import {
   Users,
   Ticket,
   CalendarDays,
+  ChevronDown,
 } from "lucide-react";
 import { organizerService } from "../../../services/organizer.service";
 import type { Tournament } from "../../../services/tournament.service";
@@ -280,6 +281,7 @@ function Section({
 const MyTournaments = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [statsOpen, setStatsOpen] = useState(false);
   const hasFetched = useRef(false);
 
   const load = useCallback(async () => {
@@ -336,27 +338,56 @@ const MyTournaments = () => {
             </Link>
           </div>
 
-          {/* Stats strip */}
-          {!isLoading && tournaments.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              {[
-                { icon: Trophy,      label: "Total",   value: String(tournaments.length), accent: "text-white",       iconColor: "text-slate-400",   iconBg: "bg-slate-800 border-slate-700/50"        },
-                { icon: Users,       label: "Active",  value: String(active.length),      accent: "text-emerald-400", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10 border-emerald-500/20" },
-                { icon: Gamepad2,    label: "Drafts",  value: String(drafts.length),      accent: "text-amber-400",  iconColor: "text-amber-400",   iconBg: "bg-amber-500/10 border-amber-500/20"     },
-                { icon: CalendarDays,label: "Past",    value: String(past.length),        accent: "text-slate-400",  iconColor: "text-slate-500",   iconBg: "bg-slate-800/60 border-slate-700/50"     },
-              ].map(({ icon: Icon, label, value, accent, iconColor, iconBg }) => (
-                <div key={label} className="flex items-center gap-2.5 sm:gap-3 bg-slate-800/40 border border-slate-700/40 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3.5 hover:border-slate-600/60 transition-colors">
-                  <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
-                    <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${iconColor}`} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
-                    <p className={`font-display text-lg sm:text-xl font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
-                  </div>
+          {/* Stats strip — dropdown on mobile, grid on sm+ */}
+          {!isLoading && tournaments.length > 0 && (() => {
+            const statItems = [
+              { icon: Trophy,       label: "Total",   value: String(tournaments.length), accent: "text-white",       iconColor: "text-slate-400",   iconBg: "bg-slate-800 border-slate-700/50"        },
+              { icon: Users,        label: "Active",  value: String(active.length),      accent: "text-emerald-400", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10 border-emerald-500/20" },
+              { icon: Gamepad2,     label: "Drafts",  value: String(drafts.length),      accent: "text-amber-400",  iconColor: "text-amber-400",   iconBg: "bg-amber-500/10 border-amber-500/20"     },
+              { icon: CalendarDays, label: "Past",    value: String(past.length),        accent: "text-slate-400",  iconColor: "text-slate-500",   iconBg: "bg-slate-800/60 border-slate-700/50"     },
+            ];
+            return (
+              <>
+                <div className="sm:hidden">
+                  <button
+                    onClick={() => setStatsOpen((o) => !o)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/40 border border-slate-700/40 text-xs font-semibold text-slate-400 uppercase tracking-widest"
+                  >
+                    <span>Stats</span>
+                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {statsOpen && (
+                    <div className="mt-1 grid grid-cols-2 gap-2">
+                      {statItems.map(({ icon: Icon, label, value, accent, iconColor, iconBg }) => (
+                        <div key={label} className="flex items-center gap-2.5 bg-slate-800/40 border border-slate-700/40 rounded-xl px-3 py-3">
+                          <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}`}>
+                            <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
+                            <p className={`font-display text-base font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="hidden sm:grid sm:grid-cols-4 gap-3">
+                  {statItems.map(({ icon: Icon, label, value, accent, iconColor, iconBg }) => (
+                    <div key={label} className="flex items-center gap-3 bg-slate-800/40 border border-slate-700/40 rounded-2xl px-4 py-3.5 hover:border-slate-600/60 transition-colors">
+                      <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
+                        <Icon className={`w-4 h-4 ${iconColor}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
+                        <p className={`font-display text-xl font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 
