@@ -1,270 +1,184 @@
-# Apex Arenas — Esports Tournament Platform
+# Apex Arenas
 
-A web-based esports tournament hosting and management platform designed to professionalize competitive gaming in Ghana and scale across West Africa. The platform provides secure tournament infrastructure, mandatory prize escrow, automated prize distribution, and player career-building tools.
-
----
-
-## Overview
-
-Apex Arenas is a **technology and infrastructure provider**, not a gaming or betting operator.  
-Independent organizers use the platform to create and manage esports tournaments, while players compete in a trusted environment with **guaranteed prizes secured via escrow**.
-
-The platform addresses major challenges in the local esports ecosystem, including unreliable prize payments, manual tournament administration, lack of player visibility, and limited trust.
+> Esports tournament infrastructure for Ghana and West Africa — prize escrow, automated payouts, and competitive career tools built for the local ecosystem.
 
 ---
 
-## Core Value Proposition
+## What It Is
 
-- **Mandatory Prize Escrow** – All prizes are locked before tournaments go live
-- **Automated Prize Distribution** – Winners are paid instantly after tournament completion
-- **Organizer–Platform Separation** – Legal and regulatory protection
-- **Local Payment Support** – Mobile Money and Ghana Cedis (GHS)
-- **Player Career Growth** – Profiles, statistics, rankings, and highlights
-- **Scalable Tournament Infrastructure** – Online, offline, and hybrid tournaments
+Apex Arenas is a platform that lets independent organizers run professional esports tournaments while players compete in a trusted environment with **guaranteed prize money secured via escrow**. The platform handles registration, payments, bracket/league management, dispute resolution, and automated prize distribution — organizers just run the events.
 
 ---
 
-## Platform Roles
+## Monorepo Structure
 
-### Players
-
-- Discover verified tournaments
-- Register for free or paid competitions
-- Compete and track performance
-- Receive and withdraw prizes securely
-
-### Organizers (Verified)
-
-- Create and manage tournaments
-- Deposit prize funds into escrow
-- Collect entry fees automatically
-- Declare winners and run events professionally
-
-### Platform (Apex Arenas)
-
-- Provides tournament software
-- Processes payments and escrow
-- Distributes prizes automatically
-- Enforces platform rules and dispute resolution
-- Does **not** operate tournaments or fund prizes
-
----
-
-## System Workflow
-
-### Player Journey
-
-1. Create account
-2. Browse tournaments
-3. Register (free or paid)
-4. Compete
-5. Receive prize (if winner)
-6. Withdraw funds
-
-### Organizer Journey
-
-1. Register and apply for organizer status
-2. Admin verification
-3. Create tournament
-4. Deposit prize escrow
-5. Open registration
-6. Run tournament
-7. Declare winners
-8. System distributes prizes automatically
-
----
-
-## Tournament Lifecycle
-
-- **Draft** – Tournament being created
-- **Pending Escrow** – Awaiting prize deposit
-- **Active** – Accepting registrations
-- **Registration Closed**
-- **In Progress**
-- **Completed** – Prizes distributed automatically
-- **Cancelled** – Refunds processed
-
----
-
-## Money Flow
-
-### Entry Fees (Paid Tournaments)
-
-- 10% — Platform service fee
-- 90% — Organizer earnings
-
-### Prize Escrow
-
-- Organizer deposits full prize amount
-- 1% — Escrow service fee
-- 99% — Locked escrow account
-
-### Prize Distribution
-
-- Triggered automatically when tournament is marked completed
-- Funds sent directly to winners' Mobile Money or bank accounts
-
----
-
-## Key Features
-
-### Player Features
-
-- Player profiles with stats and history
-- Tournament discovery and filtering
-- Secure payments and withdrawals
-- Notifications (registration, matches, prizes)
-
-### Organizer Features
-
-- Tournament creation dashboard
-- Automated registration management
-- Match and bracket management
-- Prize distribution automation
-- Credibility scoring
-
-### Admin Features
-
-- Organizer verification
-- Withdrawal approval
-- Dispute resolution
-- Financial reconciliation and audits
-
----
-
-## Security and Compliance
-
-- Mandatory prize escrow
-- Role separation (platform vs organizer)
-- Audit trails for all transactions
-- Age verification (18+)
-- Compliance with Ghana Gaming Act 721
-- Data protection and secure storage
-
----
-
-## Intelligent Features
-
-- AI-assisted winner verification
-- Fraud and anomaly detection
-- Organizer credibility scoring
-- Performance analytics and insights
+```
+Apex-Arena_v1/
+├── Client/                 # Player + Organizer web app (React 19 + Vite)
+├── Admin/                  # Admin dashboard (React 19 + Vite, separate app)
+└── Apex-Arenas-Server/
+    └── server/             # REST API + WebSocket server (Node.js + TypeScript)
+```
 
 ---
 
 ## Tech Stack
 
-- **Frontend:** React + Tailwind CSS
-- **Backend:** Node.js + Express
-- **Database:** MongoDB
-- **Payments:** Mobile Money (MTN, Vodafone, AirtelTigo)
-- **Real-Time:** WebSockets / Socket.io
-- **Automation:** Event-driven workflows for payouts and notifications
+| Layer      | Technology                                                   |
+|------------|--------------------------------------------------------------|
+| Frontend   | React 19, React Router 7, Tailwind CSS v4, Framer Motion    |
+| Admin UI   | React 19, Tailwind CSS v4, Lucide Icons                     |
+| Backend    | Node.js, Express, TypeScript                                 |
+| Database   | MongoDB                                                      |
+| Payments   | Mobile Money — MTN, Vodafone, AirtelTigo (GHS)              |
+| Real-Time  | WebSockets / Socket.io                                       |
+| Hosting    | Render (frontend + backend)                                  |
 
 ---
 
-## Launch Strategy
+## Platform Roles
 
-- Closed beta with free tournaments
-- Gradual introduction of paid tournaments
-- Partnerships with gaming cafes and universities
-- Influencer and community-driven growth
-- Expansion across Ghana, then West Africa
+**Players** — Browse and join tournaments, track career stats, receive and withdraw prize money.
 
----
+**Organizers** — Create and manage tournaments, deposit prize escrow, handle registrations and brackets, declare winners.
 
-## Legal Positioning
-
-Apex Arenas operates strictly as a **technology service provider**:
-
-- Does not run tournaments
-- Does not act as a betting or gaming operator
-- Does not guarantee prizes from its own funds
-
-This structure ensures regulatory compliance and long-term scalability.
+**Admins** — Verify organizers, approve withdrawals, resolve disputes, run financial audits.
 
 ---
 
-## License
+## Key Features
 
-MIT License
-
----
-
-## Status
-
-**In Active Development (MVP Phase)**  
-Confidential — Internal and Partner Use Only
-
----
-
-## Current Implementation
-
-### Frontend Apps
-
-- `Client/` — Main user app (players + organizers)
-- `Admin/` — Admin interface (separate Vite app)
-
-### Auth Flows Implemented
-
-- Registration with role selection (`player` / `organizer`)
-- Login with backend integration
-- OTP verification and OTP resend
-- Forgot password request flow
-- Session persistence using local storage
-- Token validation on app bootstrap
-- Token refresh fallback handling
-- Protected `/auth/*` routes
-- Auth-aware navbar (guest vs authenticated actions)
-- Dashboard fetches authenticated profile data
-
-### API Configuration
-
-- Auth API base URL configured via `VITE_AUTH_BASE_URL`
-- Default fallback: `https://api-apexarenas.onrender.com/api/v1/auth`
+- **Prize Escrow** — Prize pool locked before a tournament goes live; players are guaranteed payment
+- **Automated Payouts** — Winners paid automatically on tournament completion
+- **Bracket & League Management** — Elimination brackets and full league fixtures with standings
+- **Mobile Money Payments** — Native GHS support via MTN MoMo, Vodafone Cash, AirtelTigo
+- **Dispute Resolution** — Built-in evidence submission and moderator resolution flow
+- **Player Profiles** — Stats, tournament history, rankings, and check-in system
+- **Organizer Analytics** — Fill rates, completion rates, revenue estimates per tournament
 
 ---
 
-## Deployment (Render)
+## Money Flow
 
-### Frontend (Static Site)
+```
+Entry Fees (paid tournaments)
+  └── 10%  Platform fee
+  └── 90%  Organizer earnings
 
-- Service type: Static Site
-- Root directory: `Client`
-- Build command: `npm install && npm run build`
-- Publish directory: `dist`
-- Required env var: `VITE_AUTH_BASE_URL=https://api-apexarenas.onrender.com/api/v1/auth`
+Prize Pool (escrow)
+  └── 1%   Escrow service fee
+  └── 99%  Locked until winner declaration → distributed automatically
+```
 
-### SPA Rewrite Rule
+---
 
-Add a rewrite rule in Render:
+## Tournament Lifecycle
 
-- Source: `/*`
-- Destination: `/index.html`
-- Action: Rewrite
+`Draft` → `Awaiting Deposit` → `Open` → `In Progress` → `Completed` → *(prizes sent)*
 
-### Backend CORS
-
-Allow frontend origins in backend CORS config:
-
-- `http://localhost:5173`
-- `https://<your-render-frontend-domain>.onrender.com`
-
-Ensure preflight responses include `Access-Control-Allow-Origin` and related CORS headers.
+Cancellations trigger automatic refunds.
 
 ---
 
 ## Local Development
 
-From `Client/`:
+### Prerequisites
+
+- Node.js ≥ 18
+- pnpm (server), npm (client + admin)
+
+### Client (Player + Organizer UI)
 
 ```bash
+cd Client
 npm install
-npm run dev
+npm run dev       # http://localhost:5173
 ```
 
-Optional `.env` for local frontend testing:
+### Admin Dashboard
 
-```env
-VITE_AUTH_BASE_URL=http://localhost:4000/api/v1/auth
+```bash
+cd Admin
+npm install
+npm run dev       # http://localhost:5174
 ```
+
+### Server
+
+```bash
+cd Apex-Arenas-Server/server
+pnpm install
+pnpm dev          # http://localhost:4000
+```
+
+### Available Scripts
+
+| Location | Command           | Description                          |
+|----------|-------------------|--------------------------------------|
+| Client   | `npm run dev`     | Vite dev server with HMR             |
+| Client   | `npm run build`   | TypeScript check + production build  |
+| Client   | `npm run lint`    | ESLint                               |
+| Admin    | `npm run dev`     | Vite dev server                      |
+| Admin    | `npm run build`   | Production build                     |
+| Server   | `pnpm dev`        | Nodemon + ts-node                    |
+| Server   | `pnpm build`      | Compile TypeScript to `dist/`        |
+| Server   | `pnpm start`      | Run compiled server                  |
+
+---
+
+## Deployment (Render)
+
+### Client / Admin — Static Site
+
+| Setting           | Value                                  |
+|-------------------|----------------------------------------|
+| Root directory    | `Client` or `Admin`                    |
+| Build command     | `npm install && npm run build`         |
+| Publish directory | `dist`                                 |
+
+Add a rewrite rule: `/*` → `/index.html` (Rewrite) for SPA routing.
+
+### Server — Web Service
+
+| Setting     | Value                          |
+|-------------|--------------------------------|
+| Start       | `node dist/server.js`          |
+| Build       | `pnpm install && pnpm build`   |
+| Node        | ≥ 18                           |
+
+### CORS Origins to Allow
+
+```
+http://localhost:5173
+http://localhost:5174
+https://<your-client-domain>.onrender.com
+https://<your-admin-domain>.onrender.com
+```
+
+---
+
+## Auth Flow
+
+1. Register with role (`player` / `organizer`)
+2. Email OTP verification
+3. Login → JWT access + refresh token pair
+4. Token validated on app bootstrap via `/api/v1/auth/me`
+5. Background refresh every 60 seconds when token has < 2 min remaining
+6. Protected `/auth/*` routes redirect unauthenticated users to `/login?next=<path>`
+
+---
+
+## Legal
+
+Apex Arenas operates as a **technology service provider only** — it does not run tournaments, act as a gaming operator, or fund prizes from its own capital. This structure aligns with Ghana Gaming Act 721.
+
+---
+
+## Status
+
+**Active Development — MVP Phase**
+Internal and partner use only.
+
+---
+
+*Built for Ghana. Scaling West Africa.*
