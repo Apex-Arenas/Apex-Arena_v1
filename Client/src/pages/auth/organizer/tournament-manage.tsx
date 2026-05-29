@@ -568,6 +568,7 @@ const TournamentManage = () => {
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [showRegistrationAlert, setShowRegistrationAlert] = useState(true);
   const [showExtendModal, setShowExtendModal] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [extendDate, setExtendDate] = useState("");
   const [isExtending, setIsExtending] = useState(false);
 
@@ -1373,25 +1374,85 @@ const TournamentManage = () => {
   return (
     <div className="min-h-screen">
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute -top-40 right-0 w-175 h-100 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
+      <div className="border-b border-slate-800/60 bg-slate-950">
+        <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20">
 
-        <div className="relative max-w-7xl mx-auto">
-          {/* ── Top nav bar ── */}
-          <div className="border-b border-slate-800/50">
-            {/* Row 1: back + utility icons */}
-            <div className="flex items-center justify-between gap-3 px-4 sm:px-8 py-3">
+          {/* ── Top bar: back + actions + utility ── */}
+          <div className="flex items-center justify-between gap-3 py-3 border-b border-slate-800/50">
+            {/* Back */}
             <button
               onClick={() => navigate("/auth/organizer/tournaments")}
               className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors group shrink-0"
             >
               <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-              <span className="hidden xs:inline">My Tournaments</span>
+              <span>My Tournaments</span>
             </button>
-            <div className="flex items-center gap-1.5">
+
+            {/* Right: action buttons + utility icons */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              {canPublish && (
+                <button onClick={handlePublish} disabled={isPublishing}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-to-r from-orange-500 to-amber-500 text-slate-950 text-xs font-bold hover:opacity-90 disabled:opacity-60 transition-all shadow-md shadow-orange-500/20">
+                  {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  Publish
+                </button>
+              )}
+              {canGenerateLeagueFixtures && (
+                <button onClick={() => void handleGenerateLeagueFixtures()} disabled={isGeneratingFixtures}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 disabled:opacity-60 transition-colors">
+                  {isGeneratingFixtures ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <List className="w-3.5 h-3.5" />}
+                  {isGeneratingFixtures ? "Generating…" : "Gen Fixtures"}
+                </button>
+              )}
+              {leagueSettings?.fixturesGenerated && (
+                <button onClick={() => void handleRecalculateStandings()} disabled={isRecalculating}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 text-xs font-medium hover:border-slate-500 hover:text-white disabled:opacity-60 transition-colors">
+                  {isRecalculating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  <span className="hidden sm:inline">{isRecalculating ? "Recalculating…" : "Recalculate Table"}</span>
+                  <span className="sm:hidden">{isRecalculating ? "…" : "Recalc"}</span>
+                </button>
+              )}
+              {canAdvanceMatchweek && (
+                <button onClick={() => void handleAdvanceLeagueMatchweek()} disabled={isAdvancingMatchweek}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 disabled:opacity-60 transition-colors">
+                  {isAdvancingMatchweek ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                  {isAdvancingMatchweek ? "…" : leagueSettings?.legs === 2
+                    ? `Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}–${(leagueSettings?.currentMatchweek ?? 0) + 2}`
+                    : `Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}`}
+                </button>
+              )}
+              {(canGenerateBracket || hasBracketGenerated) && (
+                <button
+                  onClick={() => { if (!hasBracketGenerated) void handleGenerateBracket(); }}
+                  disabled={isGeneratingBracket || hasBracketGenerated}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-60 ${
+                    hasBracketGenerated
+                      ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
+                      : "bg-indigo-500 text-white hover:bg-indigo-400"
+                  }`}>
+                  {isGeneratingBracket ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : hasBracketGenerated ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Trophy className="w-3.5 h-3.5" />}
+                  {isGeneratingBracket ? "…" : hasBracketGenerated ? "Bracket Ready" : "Gen Bracket"}
+                </button>
+              )}
+              {canDepositPrizePool && (
+                <button onClick={() => void handlePayPrizePool()} disabled={isInitiatingPayment}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-400 disabled:opacity-60 transition-colors">
+                  {isInitiatingPayment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wallet className="w-3.5 h-3.5" />}
+                  Prize Pool
+                </button>
+              )}
+              {canOpenWinnersModal && (
+                <button onClick={handleOpenWinnersModal}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 transition-colors">
+                  <Trophy className="w-3.5 h-3.5" />
+                  {canSubmitWinners ? "Submit Winners" : "Review Winners"}
+                </button>
+              )}
+
+              {/* Divider */}
+              <span className="w-px h-5 bg-slate-800 shrink-0 mx-0.5" />
+
+              {/* Utility icons */}
               <button
                 onClick={() => {
                   const url = `${window.location.origin}/tournaments/${tournament.id}`;
@@ -1399,123 +1460,34 @@ const TournamentManage = () => {
                   else { void navigator.clipboard.writeText(url); showSuccess("Link copied!"); }
                 }}
                 title="Share"
-                className="p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 transition-colors"
-              >
+                className="shrink-0 p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 transition-colors">
                 <Share2 className="w-4 h-4" />
               </button>
               {canCancel && (
-                <button
-                  onClick={() => setShowCancelConfirm(true)}
-                  disabled={isCancelling}
-                  title="Cancel tournament"
-                  className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 disabled:opacity-60 transition-colors"
-                >
+                <button onClick={() => setShowCancelConfirm(true)} disabled={isCancelling} title="Cancel tournament"
+                  className="shrink-0 p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 disabled:opacity-60 transition-colors">
                   <XCircle className="w-4 h-4" />
                 </button>
               )}
               {tournament.status === "draft" && (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  title="Delete draft"
-                  className="p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors"
-                >
+                <button onClick={() => setShowDeleteConfirm(true)} title="Delete draft"
+                  className="shrink-0 p-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>
-            </div>
-
-            {/* Row 2: action buttons — wrapping on mobile */}
-            <div className="flex items-center gap-2 flex-wrap px-4 sm:px-8 pb-3">
-              {canPublish && (
-                <button
-                  onClick={handlePublish}
-                  disabled={isPublishing}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-to-r from-orange-500 to-amber-500 text-slate-950 text-xs font-bold hover:opacity-90 disabled:opacity-60 transition-all shadow-md shadow-orange-500/20"
-                >
-                  {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                  Publish
-                </button>
-              )}
-              {canGenerateLeagueFixtures && (
-                <button
-                  onClick={() => void handleGenerateLeagueFixtures()}
-                  disabled={isGeneratingFixtures}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 disabled:opacity-60 transition-colors"
-                >
-                  {isGeneratingFixtures ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <List className="w-3.5 h-3.5" />}
-                  {isGeneratingFixtures ? "Generating…" : "Generate Fixtures"}
-                </button>
-              )}
-              {leagueSettings?.fixturesGenerated && (
-                <button
-                  onClick={() => void handleRecalculateStandings()}
-                  disabled={isRecalculating}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 text-xs font-medium hover:border-slate-500 hover:text-white disabled:opacity-60 transition-colors"
-                >
-                  {isRecalculating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  {isRecalculating ? "Recalculating…" : "Recalculate Table"}
-                </button>
-              )}
-              {canAdvanceMatchweek && (
-                <button
-                  onClick={() => void handleAdvanceLeagueMatchweek()}
-                  disabled={isAdvancingMatchweek}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
-                >
-                  {isAdvancingMatchweek ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                  {isAdvancingMatchweek ? "Advancing…" : leagueSettings?.legs === 2
-                    ? `Advance Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}–${(leagueSettings?.currentMatchweek ?? 0) + 2}`
-                    : `Advance Wk ${(leagueSettings?.currentMatchweek ?? 0) + 1}`}
-                </button>
-              )}
-              {(canGenerateBracket || hasBracketGenerated) && (
-                <button
-                  onClick={() => { if (!hasBracketGenerated) void handleGenerateBracket(); }}
-                  disabled={isGeneratingBracket || hasBracketGenerated}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-60 ${
-                    hasBracketGenerated
-                      ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
-                      : "bg-indigo-500 text-white hover:bg-indigo-400"
-                  }`}
-                >
-                  {isGeneratingBracket ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : hasBracketGenerated ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Trophy className="w-3.5 h-3.5" />}
-                  {isGeneratingBracket ? "Generating…" : hasBracketGenerated ? "Bracket Ready" : "Generate Bracket"}
-                </button>
-              )}
-              {canDepositPrizePool && (
-                <button
-                  onClick={() => void handlePayPrizePool()}
-                  disabled={isInitiatingPayment}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-400 disabled:opacity-60 transition-colors"
-                >
-                  {isInitiatingPayment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wallet className="w-3.5 h-3.5" />}
-                  Pay Prize Pool
-                </button>
-              )}
-              {canOpenWinnersModal && (
-                <button
-                  onClick={handleOpenWinnersModal}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-400 transition-colors"
-                >
-                  <Trophy className="w-3.5 h-3.5" />
-                  {canSubmitWinners ? "Submit Winners" : "Review Winners"}
-                </button>
-              )}
-            </div>{/* end row 2 */}
-          </div>{/* end nav bar */}
+          </div>
 
           {/* ── Hero body ── */}
-          <div className="px-4 sm:px-8 pt-5 pb-5 space-y-4">
-            {/* Title + status */}
-            <div className="flex items-start gap-3 sm:gap-4">
-              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-linear-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0">
-                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
+          <div className="py-5 space-y-4">
+            {/* Title + status + meta */}
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-linear-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0 mt-0.5">
+                <Trophy className="w-5 h-5 text-cyan-400" />
               </div>
               <div className="flex-1 min-w-0 space-y-2">
-                {/* Title row */}
                 <div className="flex items-start gap-2 flex-wrap">
-                  <h1 className="font-display text-xl sm:text-2xl font-bold text-white leading-tight wrap-break-word">
+                  <h1 className="font-display text-lg sm:text-2xl font-bold text-white leading-tight break-words">
                     {tournament.title}
                   </h1>
                   <span className={`shrink-0 self-center text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border ${
@@ -1534,8 +1506,6 @@ const TournamentManage = () => {
                     {tournament.status.replace(/_/g, " ")}
                   </span>
                 </div>
-
-                {/* Meta chips */}
                 <div className="flex flex-wrap gap-1.5">
                   <span className="px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50 text-[11px] font-semibold text-slate-300">
                     {tournament.game?.name ?? "Unknown Game"}
@@ -1560,60 +1530,56 @@ const TournamentManage = () => {
                   )}
                 </div>
               </div>
+
+              {/* Mobile stats toggle */}
+              <button
+                onClick={() => setStatsOpen(v => !v)}
+                className="sm:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors shrink-0 mt-0.5"
+              >
+                Stats
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+              </button>
             </div>
 
-            {/* Stats strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            {/* Stats — mobile dropdown */}
+            {statsOpen && (
+              <div className="sm:hidden grid grid-cols-2 gap-2">
+                {[
+                  { icon: Users,       label: "Registrants", value: String(activeRegistrants.length), sub: `of ${tournament.maxParticipants} max`,        accent: "text-white",       iconColor: "text-slate-400",   iconBg: "bg-slate-800 border-slate-700/50"        },
+                  { icon: UserCheck,   label: "Checked In",  value: String(checkedInCount),           sub: `${activeRegistrants.length > 0 ? Math.round((checkedInCount / activeRegistrants.length) * 100) : 0}% ready`, accent: "text-emerald-400", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10 border-emerald-500/20" },
+                  { icon: Trophy,      label: "Capacity",    value: `${tournament.currentCount}/${tournament.maxParticipants}`, sub: `${tournament.minParticipants} min`, accent: "text-cyan-400", iconColor: "text-cyan-400", iconBg: "bg-cyan-500/10 border-cyan-500/20" },
+                  { icon: CalendarDays,label: "Starts",      value: tournament.schedule.tournamentStart ? new Date(tournament.schedule.tournamentStart).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD", sub: tournament.schedule.tournamentStart ? new Date(tournament.schedule.tournamentStart).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "Date not set", accent: "text-orange-400", iconColor: "text-orange-400", iconBg: "bg-orange-500/10 border-orange-500/20" },
+                ].map(({ icon: Icon, label, value, sub, accent, iconColor, iconBg }) => (
+                  <div key={label} className="flex items-center gap-2.5 bg-slate-800/40 border border-slate-700/40 rounded-xl px-3 py-3">
+                    <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}`}>
+                      <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
+                      <p className={`font-display text-lg font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
+                      <p className="text-[9px] text-slate-600 mt-0.5 truncate">{sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Stats — desktop always visible */}
+            <div className="hidden sm:grid grid-cols-4 gap-3">
               {[
-                {
-                  icon: Users,
-                  label: "Registrants",
-                  value: String(activeRegistrants.length),
-                  sub: `of ${tournament.maxParticipants} max`,
-                  accent: "text-white",
-                  iconColor: "text-slate-400",
-                  iconBg: "bg-slate-800 border-slate-700/50",
-                },
-                {
-                  icon: UserCheck,
-                  label: "Checked In",
-                  value: String(checkedInCount),
-                  sub: `${activeRegistrants.length > 0 ? Math.round((checkedInCount / activeRegistrants.length) * 100) : 0}% ready`,
-                  accent: "text-emerald-400",
-                  iconColor: "text-emerald-400",
-                  iconBg: "bg-emerald-500/10 border-emerald-500/20",
-                },
-                {
-                  icon: Trophy,
-                  label: "Capacity",
-                  value: `${tournament.currentCount}/${tournament.maxParticipants}`,
-                  sub: `${tournament.minParticipants} min required`,
-                  accent: "text-cyan-400",
-                  iconColor: "text-cyan-400",
-                  iconBg: "bg-cyan-500/10 border-cyan-500/20",
-                },
-                {
-                  icon: CalendarDays,
-                  label: "Starts",
-                  value: tournament.schedule.tournamentStart
-                    ? new Date(tournament.schedule.tournamentStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                    : "TBD",
-                  sub: tournament.schedule.tournamentStart
-                    ? new Date(tournament.schedule.tournamentStart).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-                    : "Date not set",
-                  accent: "text-orange-400",
-                  iconColor: "text-orange-400",
-                  iconBg: "bg-orange-500/10 border-orange-500/20",
-                },
+                { icon: Users,       label: "Registrants", value: String(activeRegistrants.length), sub: `of ${tournament.maxParticipants} max`,        accent: "text-white",       iconColor: "text-slate-400",   iconBg: "bg-slate-800 border-slate-700/50"        },
+                { icon: UserCheck,   label: "Checked In",  value: String(checkedInCount),           sub: `${activeRegistrants.length > 0 ? Math.round((checkedInCount / activeRegistrants.length) * 100) : 0}% ready`, accent: "text-emerald-400", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10 border-emerald-500/20" },
+                { icon: Trophy,      label: "Capacity",    value: `${tournament.currentCount}/${tournament.maxParticipants}`, sub: `${tournament.minParticipants} min required`, accent: "text-cyan-400", iconColor: "text-cyan-400", iconBg: "bg-cyan-500/10 border-cyan-500/20" },
+                { icon: CalendarDays,label: "Starts",      value: tournament.schedule.tournamentStart ? new Date(tournament.schedule.tournamentStart).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "TBD", sub: tournament.schedule.tournamentStart ? new Date(tournament.schedule.tournamentStart).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "Date not set", accent: "text-orange-400", iconColor: "text-orange-400", iconBg: "bg-orange-500/10 border-orange-500/20" },
               ].map(({ icon: Icon, label, value, sub, accent, iconColor, iconBg }) => (
-                <div key={label} className="flex items-center gap-2.5 sm:gap-3 bg-slate-800/40 border border-slate-700/40 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3.5 hover:border-slate-600/60 transition-colors">
-                  <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
-                    <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${iconColor}`} />
+                <div key={label} className="flex items-center gap-3 bg-slate-800/40 border border-slate-700/40 rounded-2xl px-4 py-3.5 hover:border-slate-600/60 transition-colors">
+                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
+                    <Icon className={`w-4 h-4 ${iconColor}`} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
-                    <p className={`font-display text-lg sm:text-xl font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
-                    <p className="text-[9px] sm:text-[10px] text-slate-600 mt-0.5 truncate">{sub}</p>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
+                    <p className={`font-display text-xl font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
+                    <p className="text-[10px] text-slate-600 mt-0.5 truncate">{sub}</p>
                   </div>
                 </div>
               ))}
@@ -1623,7 +1589,7 @@ const TournamentManage = () => {
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 py-4 sm:py-6">
         {/* Registration Shortfall Alert */}
         {registrationShortfall && showRegistrationAlert && (
           <div className="rounded-2xl border border-amber-500/30 bg-linear-to-r from-amber-500/10 to-amber-500/5 p-4 flex gap-3">

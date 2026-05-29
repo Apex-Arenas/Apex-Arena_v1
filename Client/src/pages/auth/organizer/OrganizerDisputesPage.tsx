@@ -12,6 +12,7 @@ import {
   Trophy,
   FileText,
   Image as ImageIcon,
+  ChevronDown,
 } from "lucide-react";
 import { organizerService } from "../../../services/organizer.service";
 
@@ -372,6 +373,7 @@ export default function OrganizerDisputesPage() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"pending" | "resolved">("pending");
   const [resolving, setResolving] = useState<Dispute | null>(null);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const fetchDisputes = useCallback(async () => {
     setLoading(true);
@@ -397,9 +399,10 @@ export default function OrganizerDisputesPage() {
     <div className="min-h-screen">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="border-b border-slate-800/60 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-4">
+          {/* Title row */}
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
                   <Gavel className="w-4 h-4 text-amber-400" />
@@ -411,36 +414,69 @@ export default function OrganizerDisputesPage() {
                   {pending.length} pending
                 </span>
               )}
-              <div className="hidden sm:flex items-center gap-1 text-slate-600">
-                <span className="w-1 h-1 rounded-full bg-slate-700" />
-              </div>
-              <div className="hidden sm:flex items-center gap-3 text-sm text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5 text-slate-500" />
-                  <span className="tabular-nums text-white font-semibold">{disputes.length}</span> total
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="tabular-nums text-emerald-400 font-semibold">{resolved.length}</span> resolved
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="tabular-nums text-cyan-400 font-semibold">
-                    {disputes.length > 0 ? `${Math.round((resolved.length / disputes.length) * 100)}%` : "—"}
-                  </span> rate
-                </span>
-              </div>
             </div>
-            <button
-              onClick={() => void fetchDisputes()}
-              disabled={loading}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Mobile stats toggle */}
+              <button
+                onClick={() => setStatsOpen(v => !v)}
+                className="sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors"
+              >
+                Stats
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+              </button>
+              <button
+                onClick={() => void fetchDisputes()}
+                disabled={loading}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
+            </div>
           </div>
-          <p className="mt-1.5 text-sm text-slate-500">Review and resolve disputed matches across your tournaments.</p>
+          <p className="text-sm text-slate-500 -mt-2">Review and resolve disputed matches across your tournaments.</p>
+
+          {/* Stats — mobile dropdown */}
+          {statsOpen && (
+            <div className="sm:hidden grid grid-cols-2 gap-2">
+              {[
+                { icon: ShieldAlert,   label: "Total",           value: String(disputes.length),  accent: "text-white",       iconColor: "text-slate-400",   iconBg: "bg-slate-800 border-slate-700/50"        },
+                { icon: AlertTriangle, label: "Pending",         value: String(pending.length),   accent: "text-amber-400",   iconColor: "text-amber-400",   iconBg: "bg-amber-500/10 border-amber-500/20"     },
+                { icon: CheckCircle2,  label: "Resolved",        value: String(resolved.length),  accent: "text-emerald-400", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10 border-emerald-500/20" },
+                { icon: Gavel,         label: "Rate",            value: disputes.length > 0 ? `${Math.round((resolved.length / disputes.length) * 100)}%` : "—", accent: "text-cyan-400", iconColor: "text-cyan-400", iconBg: "bg-cyan-500/10 border-cyan-500/20" },
+              ].map(({ icon: Icon, label, value, accent, iconColor, iconBg }) => (
+                <div key={label} className="flex items-center gap-2.5 bg-slate-800/40 border border-slate-700/40 rounded-xl px-3 py-3">
+                  <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}`}>
+                    <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
+                    <p className={`font-display text-lg font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Stats — desktop always visible */}
+          <div className="hidden sm:grid grid-cols-4 gap-3">
+            {[
+              { icon: ShieldAlert,   label: "Total",           value: String(disputes.length),  accent: "text-white",       iconColor: "text-slate-400",   iconBg: "bg-slate-800 border-slate-700/50"        },
+              { icon: AlertTriangle, label: "Pending",         value: String(pending.length),   accent: "text-amber-400",   iconColor: "text-amber-400",   iconBg: "bg-amber-500/10 border-amber-500/20"     },
+              { icon: CheckCircle2,  label: "Resolved",        value: String(resolved.length),  accent: "text-emerald-400", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10 border-emerald-500/20" },
+              { icon: Gavel,         label: "Resolution Rate", value: disputes.length > 0 ? `${Math.round((resolved.length / disputes.length) * 100)}%` : "—", accent: "text-cyan-400", iconColor: "text-cyan-400", iconBg: "bg-cyan-500/10 border-cyan-500/20" },
+            ].map(({ icon: Icon, label, value, accent, iconColor, iconBg }) => (
+              <div key={label} className="flex items-center gap-3 bg-slate-800/40 border border-slate-700/40 rounded-2xl px-4 py-3.5 hover:border-slate-600/60 transition-colors">
+                <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconBg}`}>
+                  <Icon className={`w-4 h-4 ${iconColor}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
+                  <p className={`font-display text-xl font-bold tabular-nums leading-tight ${accent}`}>{value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

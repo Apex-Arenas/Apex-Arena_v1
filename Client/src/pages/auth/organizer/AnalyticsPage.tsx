@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BarChart2,
-  Loader2, ArrowRight, Gamepad2, Users, Trophy, CheckCircle2,
+  Loader2, ArrowRight, Gamepad2, Users, Trophy, CheckCircle2, ChevronDown,
 } from "lucide-react";
 import { organizerService, type Tournament } from "../../../services/organizer.service";
 
@@ -105,6 +105,7 @@ export default function AnalyticsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [animated, setAnimated] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   useEffect(() => {
     organizerService.getMyTournaments()
@@ -159,32 +160,64 @@ export default function AnalyticsPage() {
     <div className="min-h-screen">
 
       {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
-        <div className="absolute -top-40 right-0 w-175 h-100 rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
-          <div>
-            <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Analytics</h1>
-            <p className="text-base text-slate-400 mt-3">Performance overview across all your tournaments.</p>
+      <div className="border-b border-slate-800/60 bg-slate-950">
+        <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 py-6 sm:py-8 space-y-4">
+          {/* Title row */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+                <BarChart2 className="w-4 h-4 text-orange-400" />
+              </div>
+              <h1 className="font-display text-xl sm:text-2xl font-bold text-white">Analytics</h1>
+            </div>
+            {/* Mobile stats toggle */}
+            <button
+              onClick={() => setStatsOpen(v => !v)}
+              className="sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors"
+            >
+              Stats
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+            </button>
           </div>
+          <p className="text-sm text-slate-500 -mt-2">Performance overview across all your tournaments.</p>
 
-          {/* Stats strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+          {/* Stats — mobile dropdown */}
+          {statsOpen && (
+            <div className="sm:hidden grid grid-cols-2 gap-2">
+              {[
+                { icon: BarChart2,    iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Tournaments",     value: loading ? "—" : String(total) },
+                { icon: Users,        iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",   label: "Total Players",   value: loading ? "—" : String(totalPlayers) },
+                { icon: CheckCircle2, iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15", label: "Completion Rate", value: loading ? "—" : `${completionRate}%` },
+                { icon: Trophy,       iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15", label: "Prize Pool",      value: loading ? "—" : (totalPrize > 0 ? fmtGhs(totalPrize) : "—") },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center gap-2.5 bg-slate-800/50 border border-slate-700/60 rounded-xl px-3 py-3">
+                  <div className={`w-7 h-7 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                    <s.icon className={`w-3.5 h-3.5 ${s.iconColor}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-display text-base font-bold tabular-nums text-white leading-none">{s.value}</p>
+                    <p className="text-[9px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Stats — desktop always visible */}
+          <div className="hidden sm:grid grid-cols-4 gap-3">
             {[
-              { icon: BarChart2,    iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",   label: "Tournaments",     value: loading ? "—" : String(total) },
-              { icon: Users,        iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",    label: "Total Players",   value: loading ? "—" : String(totalPlayers) },
-              { icon: CheckCircle2, iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15",  label: "Completion Rate", value: loading ? "—" : `${completionRate}%` },
-              { icon: Trophy,       iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15",  label: "Prize Pool",      value: loading ? "—" : (totalPrize > 0 ? fmtGhs(totalPrize) : "—") },
+              { icon: BarChart2,    iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Tournaments",     value: loading ? "—" : String(total) },
+              { icon: Users,        iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",   label: "Total Players",   value: loading ? "—" : String(totalPlayers) },
+              { icon: CheckCircle2, iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15", label: "Completion Rate", value: loading ? "—" : `${completionRate}%` },
+              { icon: Trophy,       iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15", label: "Prize Pool",      value: loading ? "—" : (totalPrize > 0 ? fmtGhs(totalPrize) : "—") },
             ].map((s) => (
-              <div key={s.label} className="flex items-center gap-2 sm:gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-3">
-                <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
-                  <s.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${s.iconColor}`} />
+              <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                <div className={`w-8 h-8 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                  <s.icon className={`w-4 h-4 ${s.iconColor}`} />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-display text-base sm:text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
-                  <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                  <p className="font-display text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
                 </div>
               </div>
             ))}
@@ -192,7 +225,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 py-4 sm:py-6 space-y-6">
       {loading ? (
         <div className="flex justify-center py-24">
           <div className="flex flex-col items-center gap-3 text-slate-500">
