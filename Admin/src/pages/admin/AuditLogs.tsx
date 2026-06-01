@@ -1,282 +1,389 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  FileText,
-  Search,
-  Loader2,
-  AlertCircle,
-  RefreshCw,
-  AlertTriangle,
-  ShieldAlert,
-  Shield,
+  Activity, ShieldAlert, AlertTriangle, Info, AlertCircle,
+  CheckCircle, XCircle, RefreshCw, ChevronDown, User,
+  Zap, Wallet, Trophy, UserCheck, Shield, Globe,
 } from 'lucide-react';
-import { adminService, type AuditLog, type AuditSearchParams } from '../../services/admin.service';
+import {
+  activityFeedService,
+  type ActivityFeedItem,
+  type FeedCategory,
+  type FeedSeverity,
+} from '../../services/activity-feed.service';
 
-const inputCls =
-  'bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors';
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-const severityColors: Record<string, string> = {
-  info:     'bg-blue-500/15 text-blue-300 border-blue-500/30',
-  warning:  'bg-amber-500/15 text-amber-300 border-amber-500/30',
-  critical: 'bg-red-500/15 text-red-300 border-red-500/30',
-};
-
-const SeverityIcon = ({ s }: { s?: string }) => {
-  if (s === 'critical') return <ShieldAlert className="w-3.5 h-3.5" />;
-  if (s === 'warning') return <AlertTriangle className="w-3.5 h-3.5" />;
-  return null;
-};
-
-function formatDate(iso: string) {
+function relativeTime(iso: string): string {
   if (!iso) return '—';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
   return new Date(iso).toLocaleString();
 }
 
+const PLATFORM_EVENT_ICONS: Record<string, React.ElementType> = {
+  organizer_request_submitted:   UserCheck,
+  organizer_request_resubmitted: UserCheck,
+  dispute_flagged:               ShieldAlert,
+  payout_pending_review:         Wallet,
+  payout_anomaly:                AlertCircle,
+  game_request_submitted:        Zap,
+  winner_verification_failed:    Trophy,
+  tournament_escrow_flagged:     AlertCircle,
+  tournament_completed:          Trophy,
+  system_alert:                  AlertTriangle,
+};
+
+const AUTH_EVENT_ICONS: Record<string, React.ElementType> = {
+  login_success:      CheckCircle,
+  login_failed:       XCircle,
+  logout:             Shield,
+  password_change:    ShieldAlert,
+  suspicious_activity: AlertCircle,
+  new_device_login:   Globe,
+  brute_force_detected: AlertCircle,
+  account_locked:     AlertCircle,
+  '2fa_enabled':      Shield,
+  '2fa_disabled':     ShieldAlert,
+};
+
+function getItemIcon(item: ActivityFeedItem): React.ElementType {
+  if (item.feedType === 'platform_event') {
+    return PLATFORM_EVENT_ICONS[item.eventType ?? ''] ?? Activity;
+  }
+  return AUTH_EVENT_ICONS[item.authEventType ?? ''] ?? User;
+}
+
+// ── Row ───────────────────────────────────────────────────────────────────────
+
+function FeedRow({ item }: { item: ActivityFeedItem }) {
+  const [expanded, setExpanded] = useState(false);
+  const Icon = getItemIcon(item);
+  const isPlatform = item.feedType === 'platform_event';
+
+  const sevColor = isPlatform
+    ? item.severity === 'critical'     ? 'text-red-400 bg-red-500/10'
+    : item.severity === 'action_required' ? 'text-amber-400 bg-amber-500/10'
+    : 'text-blue-400 bg-blue-500/10'
+    : item.isSuspicious
+    ? 'text-red-400 bg-red-500/10'
+    : item.success === false
+    ? 'text-amber-400 bg-amber-500/10'
+    : 'text-green-400 bg-green-500/10';
+
+  const sevBadge = isPlatform
+    ? item.severity === 'critical'     ? 'bg-red-500/15 text-red-400 border-red-500/30'
+    : item.severity === 'action_required' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+    : 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+    : item.isSuspicious
+    ? 'bg-red-500/15 text-red-400 border-red-500/30'
+    : item.success === false
+    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+    : 'bg-green-500/15 text-green-400 border-green-500/30';
+
+  const badgeLabel = isPlatform
+    ? (item.severity ?? 'info').replace('_', ' ')
+    : item.isSuspicious ? 'suspicious'
+    : item.success === false ? 'failed'
+    : 'success';
+
+  const hasDetails = !!(item.actor || item.ipAddress || item.username || item.failureReason || item.riskScore);
+
+  return (
+    <div className="border-b border-slate-800/50">
+      <div className="flex items-start gap-3 px-4 py-3.5">
+        {/* Type indicator */}
+        <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5 ${sevColor}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <p className="text-sm font-medium text-white leading-snug">{item.title}</p>
+              <span className={`flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${sevBadge}`}>
+                {badgeLabel}
+              </span>
+              {!isPlatform && item.authEventType && (
+                <span className="text-[10px] text-slate-600 font-mono">
+                  {item.authEventType.replace(/_/g, ' ')}
+                </span>
+              )}
+            </div>
+            <span className="flex-shrink-0 text-[11px] text-slate-500 whitespace-nowrap">
+              {relativeTime(item.createdAt)}
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{item.message}</p>
+
+          {/* Quick context */}
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1.5">
+            {item.actor && (
+              <span className="text-[11px] text-slate-500">
+                Actor: <span className="text-slate-300">@{item.actor.username}</span>
+              </span>
+            )}
+            {item.username && !item.actor && (
+              <span className="text-[11px] text-slate-500">
+                User: <span className="text-slate-300">@{item.username}</span>
+              </span>
+            )}
+            {item.ipAddress && (
+              <span className="text-[11px] text-slate-500">
+                IP: <span className="text-slate-300 font-mono">{item.ipAddress}</span>
+              </span>
+            )}
+            {item.riskScore != null && item.riskScore > 0 && (
+              <span className="text-[11px] text-slate-500">
+                Risk: <span className="text-red-400 font-semibold">{item.riskScore}/100</span>
+              </span>
+            )}
+          </div>
+
+          {/* Expand for more details */}
+          {hasDetails && item.failureReason && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+              {expanded ? 'Hide' : 'Details'}
+            </button>
+          )}
+
+          {expanded && item.failureReason && (
+            <div className="mt-2 px-3 py-2 rounded-lg bg-slate-950/60 border border-slate-800/60 text-xs text-slate-400">
+              <span className="text-slate-500 mr-2">Reason:</span>{item.failureReason}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+
+const LIMIT = 30;
+
+const categoryTabs: { key: FeedCategory; label: string }[] = [
+  { key: 'all',      label: 'All Activity' },
+  { key: 'platform', label: 'Platform Events' },
+  { key: 'security', label: 'Security Events' },
+];
+
+const severityOptions: { value: '' | FeedSeverity; label: string }[] = [
+  { value: '',                label: 'All severities' },
+  { value: 'critical',        label: 'Critical' },
+  { value: 'action_required', label: 'Action Required' },
+  { value: 'info',            label: 'Info' },
+];
+
 export default function AuditLogs() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [total, setTotal] = useState(0);
+  const [items, setItems] = useState<ActivityFeedItem[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [suspicious, setSuspicious] = useState<AuditLog[]>([]);
-  const [loadingSuspicious, setLoadingSuspicious] = useState(false);
-  const [tab, setTab] = useState<'search' | 'suspicious'>('search');
+  const [category, setCategory] = useState<FeedCategory>('all');
+  const [severity, setSeverity] = useState<'' | FeedSeverity>('');
+  const [suspiciousOnly, setSuspiciousOnly] = useState(false);
 
-  // Filter state
-  const [userId, setUserId] = useState('');
-  const [action, setAction] = useState('');
-  const [category, setCategory] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [page, setPage] = useState(1);
-  const LIMIT = 25;
+  const loadingRef = useRef(false);
 
-  const searchLogs = useCallback(async (p = 1) => {
+  const load = useCallback(async (reset: boolean) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     setError('');
-    const params: AuditSearchParams = { page: p, limit: LIMIT };
-    if (userId.trim()) params.userId = userId.trim();
-    if (action.trim()) params.action = action.trim();
-    if (category.trim()) params.category = category.trim();
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
+
     try {
-      const result = await adminService.searchAuditLogs(params);
-      setLogs(result.logs);
-      setTotal(result.total);
-      setPage(p);
-    } catch {
-      setError('Failed to load audit logs.');
+      const result = await activityFeedService.getFeed({
+        limit: LIMIT,
+        before: reset ? undefined : cursor ?? undefined,
+        category,
+        severity: severity || undefined,
+        suspiciousOnly: suspiciousOnly || undefined,
+      });
+
+      setItems((prev) => reset ? result.items : [...prev, ...result.items]);
+      setCursor(result.nextCursor);
+      setHasMore(result.nextCursor !== null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load activity feed');
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
-  }, [userId, action, category, startDate, endDate]);
+  }, [cursor, category, severity, suspiciousOnly]);
 
-  const loadSuspicious = useCallback(async () => {
-    setLoadingSuspicious(true);
-    try {
-      const data = await adminService.getSuspiciousActivity();
-      setSuspicious(data);
-    } catch {
-      setSuspicious([]);
-    } finally {
-      setLoadingSuspicious(false);
-    }
-  }, []);
-
-  useEffect(() => { searchLogs(1); }, []);
-
+  // Reset and reload when filters change
   useEffect(() => {
-    if (tab === 'suspicious' && suspicious.length === 0) loadSuspicious();
-  }, [tab]);
+    setCursor(null);
+    setItems([]);
+    setHasMore(false);
+    void activityFeedService.getFeed({
+      limit: LIMIT,
+      category,
+      severity: severity || undefined,
+      suspiciousOnly: suspiciousOnly || undefined,
+    }).then((result) => {
+      setItems(result.items);
+      setCursor(result.nextCursor);
+      setHasMore(result.nextCursor !== null);
+    }).catch((err) => {
+      setError(err instanceof Error ? err.message : 'Failed to load activity feed');
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, severity, suspiciousOnly]);
 
-  const totalPages = Math.ceil(total / LIMIT);
+  const refresh = () => {
+    setCursor(null);
+    setItems([]);
+    void load(true);
+  };
 
-  const LogTable = ({ items }: { items: AuditLog[] }) => (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-slate-900/40">
-            <th className="text-left py-3 px-4 text-slate-500 font-medium text-xs">Time</th>
-            <th className="text-left py-3 px-4 text-slate-500 font-medium text-xs">User</th>
-            <th className="text-left py-3 px-4 text-slate-500 font-medium text-xs">Action</th>
-            <th className="text-left py-3 px-4 text-slate-500 font-medium text-xs">Category</th>
-            <th className="text-left py-3 px-4 text-slate-500 font-medium text-xs">IP</th>
-            <th className="text-left py-3 px-4 text-slate-500 font-medium text-xs">Severity</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((log) => (
-            <tr key={log.id} className="border-t border-slate-800/50 hover:bg-slate-800/30 transition-colors">
-              <td className="py-3 px-4 text-slate-400 whitespace-nowrap text-xs">{formatDate(log.createdAt)}</td>
-              <td className="py-3 px-4">
-                <span className="text-white text-sm">{log.username ?? log.userId}</span>
-              </td>
-              <td className="py-3 px-4 text-slate-300 font-mono text-xs">{log.action}</td>
-              <td className="py-3 px-4 text-slate-400 capitalize text-sm">{log.category}</td>
-              <td className="py-3 px-4 text-slate-500 font-mono text-xs">{log.ipAddress ?? '—'}</td>
-              <td className="py-3 px-4">
-                {log.severity ? (
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${severityColors[log.severity] ?? 'bg-slate-700/60 text-slate-300 border-slate-600/30'}`}>
-                    <SeverityIcon s={log.severity} />
-                    {log.severity}
-                  </span>
-                ) : '—'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  const loadMore = () => void load(false);
+
+  const platformCount = items.filter((i) => i.feedType === 'platform_event').length;
+  const securityCount = items.filter((i) => i.feedType === 'security_event').length;
+  const suspiciousCount = items.filter((i) => i.isSuspicious).length;
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Full-bleed Hero */}
-      <div className="border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <FileText className="w-5 h-5 text-slate-400 shrink-0" />
-              <div>
-                <h1 className="text-2xl font-display font-bold text-white">Audit Logs</h1>
-                <p className="text-sm text-slate-400 mt-0.5">Search system activity and review security events.</p>
-              </div>
-            </div>
-
-            {/* Tab switcher pills */}
-            <div className="flex items-center gap-1 p-1 bg-slate-800/60 border border-slate-700/60 rounded-xl self-start sm:self-auto">
-              {(['search', 'suspicious'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    tab === t
-                      ? 'bg-amber-500 text-slate-950 font-semibold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {t === 'suspicious' ? 'Suspicious Activity' : 'Search Logs'}
-                </button>
-              ))}
-            </div>
-          </div>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-bold text-white flex items-center gap-2">
+            <Activity className="w-7 h-7 text-amber-400" />
+            Activity Feed
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Real-time platform events and security activity across Apex Arenas.
+          </p>
         </div>
+        <button
+          onClick={refresh}
+          disabled={loading}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-colors text-sm disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      {/* Stats strip */}
+      {items.length > 0 && (
+        <div className="flex gap-4 text-sm">
+          <span className="text-slate-400">
+            <span className="text-white font-semibold">{platformCount}</span> platform
+          </span>
+          <span className="text-slate-400">
+            <span className="text-white font-semibold">{securityCount}</span> security
+          </span>
+          {suspiciousCount > 0 && (
+            <span className="text-red-400 font-semibold">
+              ⚠ {suspiciousCount} suspicious
+            </span>
+          )}
+        </div>
+      )}
 
-        {/* Search tab */}
-        {tab === 'search' && (
-          <>
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <input value={userId} onChange={(e) => setUserId(e.target.value)} className={inputCls} placeholder="User ID..." />
-                <input value={action} onChange={(e) => setAction(e.target.value)} className={inputCls} placeholder="Action..." />
-                <input value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls} placeholder="Category..." />
-                <input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputCls} />
-                <input type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={inputCls} />
-              </div>
-              <button
-                onClick={() => searchLogs(1)}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-sm font-semibold hover:bg-amber-400 disabled:opacity-50 transition-colors"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                Search
-              </button>
-            </div>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Category tabs */}
+        <div className="flex gap-1 p-1 rounded-xl bg-slate-900/60 border border-slate-800">
+          {categoryTabs.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setCategory(key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                category === key
+                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-            {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
-                <AlertCircle className="w-4 h-4 shrink-0" /> {error}
-              </div>
-            )}
-
-            {loading && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
-              </div>
-            )}
-
-            {!loading && logs.length === 0 && !error && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-slate-600" />
-                </div>
-                <p className="text-sm text-slate-500">No logs found for the given filters.</p>
-              </div>
-            )}
-
-            {!loading && logs.length > 0 && (
-              <div className="rounded-2xl border border-slate-800 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/60">
-                  <span className="text-sm text-slate-400">{total} total results</span>
-                </div>
-                <LogTable items={logs} />
-
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-3 p-4 border-t border-slate-800 bg-slate-900/40">
-                    <button
-                      onClick={() => searchLogs(page - 1)}
-                      disabled={page === 1 || loading}
-                      className="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-sm disabled:opacity-40 transition-colors"
-                    >
-                      Prev
-                    </button>
-                    <span className="text-sm text-slate-400 px-2">
-                      {page} / {totalPages}
-                    </span>
-                    <button
-                      onClick={() => searchLogs(page + 1)}
-                      disabled={page === totalPages || loading}
-                      className="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-sm disabled:opacity-40 transition-colors"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
+        {/* Severity filter (platform only) */}
+        {(category === 'all' || category === 'platform') && (
+          <select
+            value={severity}
+            onChange={(e) => setSeverity(e.target.value as '' | FeedSeverity)}
+            className="bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-amber-500 transition-colors"
+          >
+            {severityOptions.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
         )}
 
-        {/* Suspicious tab */}
-        {tab === 'suspicious' && (
-          <>
-            <div className="flex justify-end">
-              <button
-                onClick={loadSuspicious}
-                disabled={loadingSuspicious}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900/60 text-sm text-slate-300 hover:text-white hover:border-slate-600 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 ${loadingSuspicious ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
+        {/* Suspicious only (security only) */}
+        {(category === 'all' || category === 'security') && (
+          <button
+            onClick={() => setSuspiciousOnly((v) => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-colors ${
+              suspiciousOnly
+                ? 'bg-red-500/15 border-red-500/30 text-red-400'
+                : 'border-slate-700 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <AlertCircle className="w-3.5 h-3.5" />
+            Suspicious only
+          </button>
+        )}
+      </div>
+
+      {/* Feed */}
+      <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 overflow-hidden">
+        {error && (
+          <div className="py-8 px-6 text-center">
+            <p className="text-sm text-red-400">{error}</p>
+            <button onClick={refresh} className="mt-3 text-xs text-amber-400 hover:underline">Retry</button>
+          </div>
+        )}
+
+        {!error && items.length === 0 && !loading && (
+          <div className="py-16 px-6 text-center">
+            <Activity className="w-10 h-10 text-slate-700 mx-auto mb-3" />
+            <p className="text-sm font-medium text-slate-400">No activity yet</p>
+            <p className="text-xs text-slate-600 mt-1">Events will appear here as they happen.</p>
+          </div>
+        )}
+
+        {items.map((item) => (
+          <FeedRow key={item.id} item={item} />
+        ))}
+
+        {loading && (
+          <div className="py-6 text-center">
+            <div className="inline-flex items-center gap-2 text-slate-500 text-sm">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Loading…
             </div>
+          </div>
+        )}
 
-            {loadingSuspicious && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
-              </div>
-            )}
-
-            {!loadingSuspicious && suspicious.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-emerald-500/60" />
-                </div>
-                <p className="text-sm text-slate-400 font-medium">No suspicious activity detected.</p>
-                <p className="text-xs text-slate-500 mt-1">Everything looks normal.</p>
-              </div>
-            )}
-
-            {!loadingSuspicious && suspicious.length > 0 && (
-              <div className="rounded-2xl border border-slate-800 overflow-hidden">
-                <LogTable items={suspicious} />
-              </div>
-            )}
-          </>
+        {!loading && hasMore && (
+          <div className="px-4 py-4 text-center">
+            <button
+              onClick={loadMore}
+              className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-amber-400 transition-colors"
+            >
+              <ChevronDown className="w-4 h-4" />
+              Load more
+            </button>
+          </div>
         )}
       </div>
     </div>

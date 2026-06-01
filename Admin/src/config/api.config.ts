@@ -9,6 +9,8 @@ export const API_BASE_URLS = {
   COMMUNITY: "https://api-apexarenas.onrender.com/api/v1/community",
 } as const;
 
+export const ACTIVITY_FEED_ENDPOINT = `${API_BASE_URLS.COMMUNITY}/admin/activity-feed`;
+
 export const ADMIN_NOTIFICATION_ENDPOINTS = {
   LIST:         `${API_BASE_URLS.COMMUNITY}/admin/notifications`,
   UNREAD_COUNT: `${API_BASE_URLS.COMMUNITY}/admin/notifications/unread-count`,
