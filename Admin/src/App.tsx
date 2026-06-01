@@ -18,6 +18,8 @@ import GameRequests from "./pages/admin/GameRequests";
 import DisputeManagement from "./pages/admin/DisputeManagement";
 import TournamentManagement from "./pages/admin/TournamentManagement";
 import TournamentDetail from "./pages/admin/TournamentDetail";
+import AdminNotifications from "./pages/admin/AdminNotifications";
+import { AdminNotificationProvider } from "./lib/admin-notification-context";
 
 const App = () => {
   return (
@@ -51,7 +53,7 @@ const App = () => {
 
         {/* Authenticated admin area */}
         <Route path="/admin" element={<AdminProtectedRoute />}>
-          <Route element={<AdminLayout />}>
+          <Route element={<AdminNotificationProvider><AdminLayout /></AdminNotificationProvider>}>
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="games" element={<GamesManagement />} />
@@ -66,6 +68,7 @@ const App = () => {
             <Route path="admins" element={<AdminManagement />} />
             <Route path="game-requests" element={<GameRequests />} />
             <Route path="disputes" element={<DisputeManagement />} />
+            <Route path="notifications" element={<AdminNotifications />} />
           </Route>
         </Route>
 

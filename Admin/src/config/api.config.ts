@@ -6,6 +6,15 @@ export const API_BASE_URLS = {
   TOURNAMENT: "https://api-apexarenas.onrender.com/api/v1/tournament",
   FINANCE: "https://api-apexarenas.onrender.com/api/v1/finance",
   WEBHOOKS: "https://api-apexarenas.onrender.com/api/v1/webhooks",
+  COMMUNITY: "https://api-apexarenas.onrender.com/api/v1/community",
+} as const;
+
+export const ADMIN_NOTIFICATION_ENDPOINTS = {
+  LIST:         `${API_BASE_URLS.COMMUNITY}/admin/notifications`,
+  UNREAD_COUNT: `${API_BASE_URLS.COMMUNITY}/admin/notifications/unread-count`,
+  MARK_ALL_READ:`${API_BASE_URLS.COMMUNITY}/admin/notifications/read-all`,
+  DETAIL:       `${API_BASE_URLS.COMMUNITY}/admin/notifications`, // + /:id
+  MARK_READ:    `${API_BASE_URLS.COMMUNITY}/admin/notifications`, // + /:id/read
 } as const;
 
 export const AUTH_ENDPOINTS = {

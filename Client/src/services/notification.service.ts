@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost } from '../utils/api.utils';
+import { apiGet, apiPatch, apiDelete } from '../utils/api.utils';
 import { NOTIFICATION_ENDPOINTS } from '../config/api.config';
 
 export interface NotificationItem {
@@ -107,9 +107,18 @@ export const notificationService = {
   },
 
   async markAllRead(): Promise<void> {
-    const response = await apiPost(NOTIFICATION_ENDPOINTS.MARK_ALL_READ, {});
+    const response = await apiPatch(NOTIFICATION_ENDPOINTS.MARK_ALL_READ, {});
     if (!response.success) {
       throw new Error(response.error?.message ?? 'Failed to mark all notifications as read');
+    }
+  },
+
+  async deleteNotification(notificationId: string): Promise<void> {
+    const response = await apiDelete(
+      `${NOTIFICATION_ENDPOINTS.DELETE}/${notificationId}`,
+    );
+    if (!response.success) {
+      throw new Error(response.error?.message ?? 'Failed to delete notification');
     }
   },
 };

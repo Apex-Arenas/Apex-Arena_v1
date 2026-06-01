@@ -251,11 +251,15 @@ export const WEBHOOK_ENDPOINTS = {
   FLUTTERWAVE: `${API_BASE_URLS.WEBHOOKS}/flutterwave`,             // POST — called by Flutterwave gateway
 } as const;
 
+const COMMUNITY_BASE = 'https://api-apexarenas.onrender.com/api/v1/community';
+
 export const NOTIFICATION_ENDPOINTS = {
-  LIST: `${API_BASE_URLS.CORE}/notifications`,
-  UNREAD_COUNT: `${API_BASE_URLS.CORE}/notifications/unread-count`,
-  MARK_ALL_READ: `${API_BASE_URLS.CORE}/notifications/read-all`,
-  MARK_READ: `${API_BASE_URLS.CORE}/notifications`, // + /:notificationId/read
+  LIST: `${COMMUNITY_BASE}/notification`,
+  UNREAD_COUNT: `${COMMUNITY_BASE}/notification/unread-count`,
+  MARK_ALL_READ: `${COMMUNITY_BASE}/notification/read-all`,
+  MARK_READ: `${COMMUNITY_BASE}/notification`, // + /:notificationId/read
+  DELETE: `${COMMUNITY_BASE}/notification`,     // + /:notificationId
+  BULK_DELETE: `${COMMUNITY_BASE}/notification/bulk`,
 } as const;
 
 export const HTTP_METHODS = {

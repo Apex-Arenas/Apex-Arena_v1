@@ -26,6 +26,7 @@ import PublicTournaments from "./pages/public/tournaments";
 import PublicLeaderboard from "./pages/auth/LeaderboardPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleRoute from "./components/RoleRoute";
+import { NotificationProvider } from "./lib/notification-context";
 
 // Auth pages
 import PlayerProfile from "./pages/auth/player/profile";
@@ -127,7 +128,7 @@ const App = () => {
 
         {/* Authenticated pages with Sidebar layout */}
         <Route path="auth" element={<ProtectedRoute />}>
-          <Route element={<DashboardLayout />}>
+          <Route element={<NotificationProvider><DashboardLayout /></NotificationProvider>}>
             <Route index element={<Dashboard />} />
             <Route path="transactions" element={<TransactionsPage />} />
             <Route path="wallet" element={<WalletPage />} />

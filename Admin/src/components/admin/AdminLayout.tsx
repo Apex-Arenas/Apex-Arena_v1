@@ -1,11 +1,13 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import { useAdminAuth } from "../../lib/admin-auth-context";
-import { Menu, Shield, UserCircle } from "lucide-react";
+import { useAdminNotifications } from "../../lib/admin-notification-context";
+import { Bell, Menu, Shield, UserCircle } from "lucide-react";
 import { useCallback, useState } from "react";
 
 const AdminLayout = () => {
   const { admin } = useAdminAuth();
+  const { unreadCount } = useAdminNotifications();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -52,6 +54,20 @@ const AdminLayout = () => {
                 </p>
               </div>
             </div>
+
+            {/* Notification bell */}
+            <button
+              onClick={() => navigate("/admin/notifications")}
+              className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+              aria-label="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-3.5 h-3.5 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center px-0.5 leading-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
 
             <button
               onClick={() => navigate("/admin/profile")}

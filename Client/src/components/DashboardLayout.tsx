@@ -3,28 +3,15 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { FadeImage } from "./ui/FadeImage";
 import Sidebar from "./Sidebar";
 import { Bell, Menu, LayoutDashboard, Home, Swords, Trophy, Wallet, UserCircle } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { notificationService } from "../services/notification.service";
+import { useCallback, useState } from "react";
+import { useNotifications } from "../lib/notification-context";
 
 const DashboardLayout = () => {
   const { user } = useAuth();
+  const { unreadCount } = useNotifications();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   const handleMobileClose = useCallback(() => setMobileOpen(false), []);
-
-  useEffect(() => {
-    let cancelled = false;
-    notificationService
-      .getUnreadCount()
-      .then((n) => {
-        if (!cancelled) setUnreadCount(n);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const initials = user
     ? `${(user.firstName?.[0] ?? "").toUpperCase()}${(user.lastName?.[0] ?? "").toUpperCase()}`
