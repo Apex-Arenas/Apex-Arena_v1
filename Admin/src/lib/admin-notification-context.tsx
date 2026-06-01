@@ -30,10 +30,19 @@ const AdminNotificationContext = createContext<AdminNotificationContextValue | u
   undefined,
 );
 
+const EMPTY_CTX: AdminNotificationContextValue = {
+  notifications: [],
+  unreadCount: 0,
+  isLoading: false,
+  hasMore: false,
+  fetchMore: () => {},
+  refresh: () => {},
+  markRead: async () => {},
+  markAllRead: async () => {},
+};
+
 export function useAdminNotifications(): AdminNotificationContextValue {
-  const ctx = useContext(AdminNotificationContext);
-  if (!ctx) throw new Error('useAdminNotifications must be used within AdminNotificationProvider');
-  return ctx;
+  return useContext(AdminNotificationContext) ?? EMPTY_CTX;
 }
 
 export function AdminNotificationProvider({ children }: PropsWithChildren) {
@@ -114,6 +123,7 @@ export function AdminNotificationProvider({ children }: PropsWithChildren) {
         actionUrl: payload.action_url,
         isRead: false,
         createdAt: payload.created_at,
+        readBy: [],
       };
 
       setNotifications((prev) => [item, ...prev]);

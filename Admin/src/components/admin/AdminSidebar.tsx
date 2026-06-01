@@ -17,10 +17,12 @@ import {
   X,
   AlertTriangle,
   Trophy,
+  Bell,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 import { useAdminAuth } from "../../lib/admin-auth-context";
+import { useAdminNotifications } from "../../lib/admin-notification-context";
 
 // ─── Nav structure ─────────────────────────────────────────────────────────────
 
@@ -34,6 +36,7 @@ const NAV_GROUPS = [
       { to: "/admin/verifications", icon: BadgeCheck, label: "Verifications" },
       { to: "/admin/games", icon: Gamepad2, label: "Games" },
       { to: "/admin/game-requests", icon: Puzzle, label: "Game Requests" },
+      { to: "/admin/notifications", icon: Bell, label: "Notifications" },
       { to: "/admin/disputes", icon: AlertTriangle, label: "Disputes" },
       { to: "/admin/payouts", icon: Wallet, label: "Payouts" },
       { to: "/admin/escrow", icon: Lock, label: "Escrow" },
@@ -54,6 +57,7 @@ const AdminSidebar = ({ mobileOpen, onMobileClose }: AdminSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
   const { logout } = useAdminAuth();
+  const { unreadCount } = useAdminNotifications();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -124,33 +128,48 @@ const AdminSidebar = ({ mobileOpen, onMobileClose }: AdminSidebarProps) => {
               </p>
             )}
             <div className="space-y-0.5">
-              {group.items.map(({ to, icon: Icon, label, ...rest }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={"end" in rest}
-                  title={collapsed && !isMobile ? label : undefined}
-                  className={({ isActive }) =>
-                    `relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-[color,background-color,border-color,transform,box-shadow] duration-200 ease-out group border ${
-                      isActive
-                        ? "bg-linear-to-r from-amber-500/18 via-amber-500/8 to-transparent text-amber-200 border-amber-500/25 shadow-[0_14px_24px_-20px_rgba(245,158,11,0.95)]"
-                        : "text-slate-400 border-transparent hover:text-white hover:bg-white/4 hover:shadow-[0_10px_18px_-14px_rgba(148,163,184,0.6)]"
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-amber-400" />
-                      )}
-                      <Icon
-                        className={`w-4 h-4 shrink-0 transition-transform duration-200 ease-out group-hover:scale-105 ${isActive ? "text-amber-400" : ""}`}
-                      />
-                      {(!collapsed || isMobile) && <span>{label}</span>}
-                    </>
-                  )}
-                </NavLink>
-              ))}
+              {group.items.map(({ to, icon: Icon, label, ...rest }) => {
+                const isNotifications = to === "/admin/notifications";
+                const badge = isNotifications && unreadCount > 0 ? unreadCount : 0;
+
+                return (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={"end" in rest}
+                    title={collapsed && !isMobile ? label : undefined}
+                    className={({ isActive }) =>
+                      `relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-[color,background-color,border-color,transform,box-shadow] duration-200 ease-out group border ${
+                        isActive
+                          ? "bg-linear-to-r from-amber-500/18 via-amber-500/8 to-transparent text-amber-200 border-amber-500/25 shadow-[0_14px_24px_-20px_rgba(245,158,11,0.95)]"
+                          : "text-slate-400 border-transparent hover:text-white hover:bg-white/4 hover:shadow-[0_10px_18px_-14px_rgba(148,163,184,0.6)]"
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive && (
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-amber-400" />
+                        )}
+                        <Icon
+                          className={`w-4 h-4 shrink-0 transition-transform duration-200 ease-out group-hover:scale-105 ${isActive ? "text-amber-400" : ""}`}
+                        />
+                        {(!collapsed || isMobile) && (
+                          <span className="flex-1">{label}</span>
+                        )}
+                        {badge > 0 && (!collapsed || isMobile) && (
+                          <span className="ml-auto min-w-[18px] h-[18px] rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center px-1 leading-none">
+                            {badge > 99 ? "99+" : badge}
+                          </span>
+                        )}
+                        {badge > 0 && collapsed && !isMobile && (
+                          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500" />
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                );
+              })}
             </div>
           </div>
         ))}

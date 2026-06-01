@@ -11,6 +11,12 @@ function adminHeaders(): { headers: Record<string, string> } {
 
 export type AdminNotifSeverity = 'info' | 'action_required' | 'critical';
 
+export interface AdminNotifReader {
+  adminId: string;
+  username: string;
+  readAt?: string;
+}
+
 export interface AdminNotificationItem {
   id: string;
   eventType: string;
@@ -22,6 +28,7 @@ export interface AdminNotificationItem {
   readAt?: string;
   createdAt: string;
   metadata?: Record<string, unknown>;
+  readBy: AdminNotifReader[];
 }
 
 export interface AdminNotificationsResult {
@@ -35,7 +42,8 @@ export interface AdminNotificationsResult {
 }
 
 function mapNotification(raw: Record<string, unknown>): AdminNotificationItem {
-  // per-admin read status is injected by the service as is_read / read_at
+  const rawReadBy = (raw.read_by ?? []) as Record<string, unknown>[];
+
   return {
     id: String(raw._id ?? raw.id ?? ''),
     eventType: String(raw.event_type ?? raw.eventType ?? 'system_alert'),
@@ -43,10 +51,15 @@ function mapNotification(raw: Record<string, unknown>): AdminNotificationItem {
     title: String(raw.title ?? 'Notification'),
     message: String(raw.message ?? ''),
     actionUrl: (raw.action_url ?? raw.actionUrl) as string | undefined,
-    isRead: Boolean(raw.is_read ?? raw.isRead ?? false),
+    isRead: Boolean(raw.is_read_by_me ?? raw.is_read ?? raw.isRead ?? false),
     readAt: (raw.read_at ?? raw.readAt) as string | undefined,
     createdAt: String(raw.created_at ?? raw.createdAt ?? ''),
     metadata: raw.metadata as Record<string, unknown> | undefined,
+    readBy: rawReadBy.map((r) => ({
+      adminId: String(r.admin_id ?? r.adminId ?? ''),
+      username: String(r.username ?? 'admin'),
+      readAt: (r.read_at ?? r.readAt) as string | undefined,
+    })),
   };
 }
 
@@ -74,18 +87,17 @@ export const adminNotificationService = {
       throw new Error(response.error?.message ?? 'Failed to load notifications');
     }
 
+    // Backend returns: { notifications, total, page, limit, has_more }
     const data = response.data as Record<string, unknown>;
     const list = (data.notifications ?? []) as Record<string, unknown>[];
-    const pagination = (data.pagination ?? {}) as Record<string, unknown>;
+    const total = Number(data.total ?? list.length);
+    const page  = Number(data.page ?? 1);
+    const limit = Number(data.limit ?? 20);
+    const pages = limit > 0 ? Math.ceil(total / limit) : 1;
 
     return {
       notifications: list.map(mapNotification),
-      pagination: {
-        total: Number(pagination.total ?? list.length),
-        page: Number(pagination.page ?? 1),
-        limit: Number(pagination.limit ?? 20),
-        pages: Number(pagination.pages ?? 1),
-      },
+      pagination: { total, page, limit, pages },
     };
   },
 

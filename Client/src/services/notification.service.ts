@@ -69,18 +69,17 @@ export const notificationService = {
       throw new Error(response.error?.message ?? 'Failed to load notifications');
     }
 
+    // Backend returns: { notifications, total, page, limit, has_more }
     const data = response.data as Record<string, unknown>;
     const list = (data.notifications ?? []) as Record<string, unknown>[];
-    const pagination = (data.pagination ?? {}) as Record<string, unknown>;
+    const total = Number(data.total ?? list.length);
+    const page  = Number(data.page ?? 1);
+    const limit = Number(data.limit ?? 20);
+    const pages = limit > 0 ? Math.ceil(total / limit) : 1;
 
     return {
       notifications: list.map((item) => mapNotification(item)),
-      pagination: {
-        total: Number(pagination.total ?? list.length),
-        page: Number(pagination.page ?? 1),
-        limit: Number(pagination.limit ?? 20),
-        pages: Number(pagination.pages ?? 1),
-      },
+      pagination: { total, page, limit, pages },
     };
   },
 

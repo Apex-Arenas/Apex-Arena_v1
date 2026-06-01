@@ -20,6 +20,7 @@ interface NotificationContextValue {
   unreadCount: number;
   isLoading: boolean;
   hasMore: boolean;
+  error: string | null;
   fetchMore: () => void;
   refresh: () => void;
   markRead: (id: string) => Promise<void>;
@@ -31,10 +32,21 @@ const NotificationContext = createContext<NotificationContextValue | undefined>(
   undefined,
 );
 
+const EMPTY_CTX: NotificationContextValue = {
+  notifications: [],
+  unreadCount: 0,
+  isLoading: false,
+  hasMore: false,
+  error: null,
+  fetchMore: () => {},
+  refresh: () => {},
+  markRead: async () => {},
+  markAllRead: async () => {},
+  deleteNotification: async () => {},
+};
+
 export function useNotifications(): NotificationContextValue {
-  const ctx = useContext(NotificationContext);
-  if (!ctx) throw new Error('useNotifications must be used within NotificationProvider');
-  return ctx;
+  return useContext(NotificationContext) ?? EMPTY_CTX;
 }
 
 export function NotificationProvider({ children }: PropsWithChildren) {
@@ -43,12 +55,14 @@ export function NotificationProvider({ children }: PropsWithChildren) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const bootedRef = useRef(false);
 
   const loadPage = useCallback(async (pageNum: number) => {
     setIsLoading(true);
+    setError(null);
     try {
       const result = await notificationService.getNotifications({
         page: pageNum,
@@ -58,8 +72,8 @@ export function NotificationProvider({ children }: PropsWithChildren) {
         pageNum === 1 ? result.notifications : [...prev, ...result.notifications],
       );
       setHasMore(result.pagination.page < result.pagination.pages);
-    } catch {
-      // silent — user can retry
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load notifications');
     } finally {
       setIsLoading(false);
     }
@@ -169,6 +183,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
         unreadCount,
         isLoading,
         hasMore,
+        error,
         fetchMore,
         refresh,
         markRead,
