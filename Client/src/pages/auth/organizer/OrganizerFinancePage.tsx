@@ -687,10 +687,50 @@ export default function OrganizerFinancePage() {
               <p className="text-sm text-slate-500 mt-2">Earnings from completed tournaments will appear here to claim.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {earnings.map((e) => (
-                <EarningCard key={e._id} earning={e} onClaim={() => setClaimingEarn(e)} />
-              ))}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Entry Fee Share column */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
+                    <TrendingUp className="w-3.5 h-3.5 text-orange-400" />
+                  </div>
+                  <h3 className="font-display text-sm font-bold text-white uppercase tracking-wide">Entry Fee Share</h3>
+                  <span className="ml-auto text-xs text-slate-500">
+                    {earnings.filter(e => e.earning_type === "entry_fee_share").length} record{earnings.filter(e => e.earning_type === "entry_fee_share").length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                {earnings.filter(e => e.earning_type === "entry_fee_share").length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-800 py-10 text-center">
+                    <p className="text-sm text-slate-600">No entry fee earnings yet</p>
+                  </div>
+                ) : (
+                  earnings.filter(e => e.earning_type === "entry_fee_share").map((e) => (
+                    <EarningCard key={e._id} earning={e} onClaim={() => setClaimingEarn(e)} />
+                  ))
+                )}
+              </div>
+
+              {/* Prize Pool Refund column */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center">
+                    <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+                  </div>
+                  <h3 className="font-display text-sm font-bold text-white uppercase tracking-wide">Prize Pool Refund</h3>
+                  <span className="ml-auto text-xs text-slate-500">
+                    {earnings.filter(e => e.earning_type === "prize_pool_refund").length} record{earnings.filter(e => e.earning_type === "prize_pool_refund").length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                {earnings.filter(e => e.earning_type === "prize_pool_refund").length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-800 py-10 text-center">
+                    <p className="text-sm text-slate-600">No prize pool refunds yet</p>
+                  </div>
+                ) : (
+                  earnings.filter(e => e.earning_type === "prize_pool_refund").map((e) => (
+                    <EarningCard key={e._id} earning={e} onClaim={() => setClaimingEarn(e)} />
+                  ))
+                )}
+              </div>
             </div>
           )
         )}
