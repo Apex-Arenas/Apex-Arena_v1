@@ -13,11 +13,11 @@ import {
   Shield,
   Swords,
   X,
-  Wallet,
   BarChart2,
   DollarSign,
   Mail,
   ShieldAlert,
+  Star,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth-context";
@@ -28,7 +28,7 @@ const playerNavItems = [
   { to: "/auth",                        icon: Home,       label: "Home",         end: true },
   { to: "/auth/player/join-tournament", icon: Swords,     label: "Tournaments"              },
   { to: "/auth/leaderboard",            icon: Trophy,     label: "Leaderboard"              },
-  { to: "/auth/wallet",                 icon: Wallet,     label: "Wallet"                   },
+  { to: "/auth/prizes",                icon: Star,       label: "Prizes"                   },
   { to: "/auth/player/profile",         icon: UserCircle, label: "Profile"                  },
   { to: "/auth/notifications",          icon: Bell,       label: "Notifications"            },
   { to: "/auth/contact-us",              icon: Mail,       label: "Contact Us"               },
@@ -41,7 +41,7 @@ const organizerNavItems = [
   { to: "/auth/player/join-tournament",    icon: Swords,      label: "Join Tournament"           },
   { to: "/auth/leaderboard",              icon: Trophy,      label: "Leaderboard"               },
   { to: "/auth/organizer/analytics",       icon: BarChart2,   label: "Analytics"                 },
-  { to: "/auth/organizer/payouts",         icon: DollarSign,  label: "Payouts"                   },
+  { to: "/auth/organizer/finance",         icon: DollarSign,  label: "Finance"                   },
   { to: "/auth/organizer/profile",         icon: UserCircle,  label: "Profile"                   },
   { to: "/auth/notifications",             icon: Bell,        label: "Notifications"             },
   { to: "/auth/contact-us",               icon: Mail,        label: "Contact Us"                },

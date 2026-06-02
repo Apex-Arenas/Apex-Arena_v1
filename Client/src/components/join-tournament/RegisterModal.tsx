@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AlertCircle, Loader2, X } from "lucide-react";
+import { AlertCircle, CreditCard, Loader2, X } from "lucide-react";
 import {
   tournamentService,
   type Tournament,
 } from "../../services/tournament.service";
 import { formatFee } from "./utils";
+import { apiPost } from "../../utils/api.utils";
+import { FINANCE_ENDPOINTS } from "../../config/api.config";
 
 interface RegisterModalProps {
   tournament: Tournament;
@@ -70,7 +72,27 @@ export function RegisterModal({
     setIsSubmitting(true);
     setError(null);
     try {
-      await tournamentService.register(tournament.id);
+      const result = await tournamentService.register(tournament.id);
+
+      if (result.status === "pending_payment") {
+        const payRes = await apiPost(FINANCE_ENDPOINTS.TOURNAMENT_PAYMENT_INITIATE, {
+          registration_id: result.registrationId,
+          callback_url: window.location.href,
+        });
+        if (!payRes.success) {
+          throw new Error(
+            (payRes as { error?: { message?: string } }).error?.message ??
+            "Could not initiate payment. Please try again."
+          );
+        }
+        const payData = payRes.data as { authorization_url?: string };
+        if (payData.authorization_url) {
+          window.location.href = payData.authorization_url;
+          return;
+        }
+        throw new Error("No payment URL returned. Please try again.");
+      }
+
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");
@@ -120,10 +142,10 @@ export function RegisterModal({
           </div>
 
           {!tournament.isFree && (
-            <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2.5 text-sm text-amber-300">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2 bg-cyan-500/10 border border-cyan-500/25 rounded-lg px-3 py-2.5 text-sm text-cyan-300">
+              <CreditCard className="w-4 h-4 mt-0.5 shrink-0" />
               <span>
-                Entry fee of{" "}
+                You'll be redirected to pay{" "}
                 <strong>
                   {formatFee(
                     tournament.isFree,
@@ -131,7 +153,7 @@ export function RegisterModal({
                     tournament.currency,
                   )}
                 </strong>{" "}
-                will be deducted from your wallet.
+                via Mobile Money or card.
               </span>
             </div>
           )}
@@ -171,7 +193,9 @@ export function RegisterModal({
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-500 text-slate-950 text-sm font-semibold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isSubmitting ? "Registering..." : "Confirm & Join"}
+              {isSubmitting
+                ? (tournament.isFree ? "Registering..." : "Redirecting...")
+                : tournament.isFree ? "Confirm & Join" : "Pay & Join"}
             </button>
           </div>
         </form>

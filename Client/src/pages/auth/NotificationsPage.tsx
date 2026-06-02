@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Bell, BellOff, Check, CheckCheck, Trash2, Trophy, Swords,
   Wallet, ShieldAlert, UserCheck, Users, Star, Zap, Info,
-  ChevronDown, RefreshCw,
+  ChevronDown, RefreshCw, MessageSquare,
 } from "lucide-react";
 import { useNotifications } from "../../lib/notification-context";
 import type { NotificationItem } from "../../services/notification.service";
@@ -23,44 +23,43 @@ function relativeTime(iso?: string): string {
 }
 
 const TYPE_META: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
-  tournament_registration:     { icon: Trophy,      color: "text-cyan-400",    bg: "bg-cyan-500/10" },
-  tournament_cancelled:        { icon: Trophy,      color: "text-red-400",     bg: "bg-red-500/10" },
-  tournament_started:          { icon: Trophy,      color: "text-green-400",   bg: "bg-green-500/10" },
-  tournament_completed:        { icon: Trophy,      color: "text-amber-400",   bg: "bg-amber-500/10" },
-  tournament_open:             { icon: Trophy,      color: "text-cyan-400",    bg: "bg-cyan-500/10" },
-  match_scheduled:             { icon: Swords,      color: "text-indigo-400",  bg: "bg-indigo-500/10" },
-  match_starting:              { icon: Swords,      color: "text-orange-400",  bg: "bg-orange-500/10" },
-  match_result_submitted:      { icon: Swords,      color: "text-slate-400",   bg: "bg-slate-500/10" },
-  match_disputed:              { icon: ShieldAlert, color: "text-red-400",     bg: "bg-red-500/10" },
-  match_dispute_resolved:      { icon: ShieldAlert, color: "text-green-400",   bg: "bg-green-500/10" },
-  match_result_confirmed:      { icon: Check,       color: "text-green-400",   bg: "bg-green-500/10" },
-  match_forfeit:               { icon: Swords,      color: "text-red-400",     bg: "bg-red-500/10" },
-  prize_won:                   { icon: Star,        color: "text-amber-400",   bg: "bg-amber-500/10" },
-  prize_credited:              { icon: Star,        color: "text-amber-400",   bg: "bg-amber-500/10" },
-  payout_completed:            { icon: Wallet,      color: "text-green-400",   bg: "bg-green-500/10" },
-  payout_failed:               { icon: Wallet,      color: "text-red-400",     bg: "bg-red-500/10" },
-  payout_requested:            { icon: Wallet,      color: "text-cyan-400",    bg: "bg-cyan-500/10" },
-  deposit_confirmed:           { icon: Wallet,      color: "text-green-400",   bg: "bg-green-500/10" },
-  refund_processed:            { icon: Wallet,      color: "text-blue-400",    bg: "bg-blue-500/10" },
-  new_device_login:            { icon: ShieldAlert, color: "text-orange-400",  bg: "bg-orange-500/10" },
-  password_changed:            { icon: ShieldAlert, color: "text-orange-400",  bg: "bg-orange-500/10" },
-  two_fa_enabled:              { icon: ShieldAlert, color: "text-green-400",   bg: "bg-green-500/10" },
-  two_fa_disabled:             { icon: ShieldAlert, color: "text-red-400",     bg: "bg-red-500/10" },
-  account_unbanned:            { icon: UserCheck,   color: "text-green-400",   bg: "bg-green-500/10" },
-  organizer_approved:          { icon: UserCheck,   color: "text-green-400",   bg: "bg-green-500/10" },
-  organizer_rejected:          { icon: UserCheck,   color: "text-red-400",     bg: "bg-red-500/10" },
-  team_invite:                 { icon: Users,       color: "text-indigo-400",  bg: "bg-indigo-500/10" },
-  new_follower:                { icon: Users,       color: "text-cyan-400",    bg: "bg-cyan-500/10" },
-  game_request_approved:       { icon: Zap,         color: "text-green-400",   bg: "bg-green-500/10" },
-  game_request_rejected:       { icon: Zap,         color: "text-red-400",     bg: "bg-red-500/10" },
+  tournament_registration:  { icon: Trophy,      color: "text-cyan-400",   bg: "bg-cyan-500/10"   },
+  tournament_cancelled:     { icon: Trophy,      color: "text-red-400",    bg: "bg-red-500/10"    },
+  tournament_started:       { icon: Trophy,      color: "text-green-400",  bg: "bg-green-500/10"  },
+  tournament_completed:     { icon: Trophy,      color: "text-amber-400",  bg: "bg-amber-500/10"  },
+  tournament_open:          { icon: Trophy,      color: "text-cyan-400",   bg: "bg-cyan-500/10"   },
+  match_scheduled:          { icon: Swords,      color: "text-indigo-400", bg: "bg-indigo-500/10" },
+  match_starting:           { icon: Swords,      color: "text-orange-400", bg: "bg-orange-500/10" },
+  match_result_submitted:   { icon: Swords,      color: "text-slate-400",  bg: "bg-slate-700/40"  },
+  match_disputed:           { icon: ShieldAlert, color: "text-red-400",    bg: "bg-red-500/10"    },
+  match_dispute_resolved:   { icon: ShieldAlert, color: "text-green-400",  bg: "bg-green-500/10"  },
+  match_result_confirmed:   { icon: Check,       color: "text-green-400",  bg: "bg-green-500/10"  },
+  match_forfeit:            { icon: Swords,      color: "text-red-400",    bg: "bg-red-500/10"    },
+  prize_won:                { icon: Star,        color: "text-amber-400",  bg: "bg-amber-500/10"  },
+  prize_credited:           { icon: Star,        color: "text-amber-400",  bg: "bg-amber-500/10"  },
+  payout_completed:         { icon: Wallet,      color: "text-green-400",  bg: "bg-green-500/10"  },
+  payout_failed:            { icon: Wallet,      color: "text-red-400",    bg: "bg-red-500/10"    },
+  payout_requested:         { icon: Wallet,      color: "text-cyan-400",   bg: "bg-cyan-500/10"   },
+  deposit_confirmed:        { icon: Wallet,      color: "text-green-400",  bg: "bg-green-500/10"  },
+  refund_processed:         { icon: Wallet,      color: "text-blue-400",   bg: "bg-blue-500/10"   },
+  new_device_login:         { icon: ShieldAlert, color: "text-orange-400", bg: "bg-orange-500/10" },
+  password_changed:         { icon: ShieldAlert, color: "text-orange-400", bg: "bg-orange-500/10" },
+  two_fa_enabled:           { icon: ShieldAlert, color: "text-green-400",  bg: "bg-green-500/10"  },
+  two_fa_disabled:          { icon: ShieldAlert, color: "text-red-400",    bg: "bg-red-500/10"    },
+  account_unbanned:         { icon: UserCheck,   color: "text-green-400",  bg: "bg-green-500/10"  },
+  organizer_approved:       { icon: UserCheck,   color: "text-green-400",  bg: "bg-green-500/10"  },
+  organizer_rejected:       { icon: UserCheck,   color: "text-red-400",    bg: "bg-red-500/10"    },
+  team_invite:              { icon: Users,       color: "text-indigo-400", bg: "bg-indigo-500/10" },
+  new_follower:             { icon: Users,       color: "text-cyan-400",   bg: "bg-cyan-500/10"   },
+  game_request_approved:    { icon: Zap,         color: "text-green-400",  bg: "bg-green-500/10"  },
+  game_request_rejected:    { icon: Zap,         color: "text-red-400",    bg: "bg-red-500/10"    },
 };
 
 function getTypeMeta(type: string) {
-  return TYPE_META[type] ?? { icon: Info, color: "text-slate-400", bg: "bg-slate-500/10" };
+  return TYPE_META[type] ?? { icon: Info, color: "text-slate-400", bg: "bg-slate-700/40" };
 }
 
-
-// ── Row ───────────────────────────────────────────────────────────────────────
+// ── Notification Row ──────────────────────────────────────────────────────────
 
 function NotifRow({
   notif,
@@ -75,49 +74,47 @@ function NotifRow({
 
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-4 border-b border-slate-800/50 transition-colors
-        ${notif.isRead ? "bg-transparent hover:bg-slate-900/30" : "bg-slate-900/60 hover:bg-slate-900/80"}`}
+      className={`relative flex items-start gap-4 px-6 py-4 border-b border-slate-800 transition-colors group
+        ${notif.isRead ? "hover:bg-slate-800/20" : "bg-cyan-500/[0.04] hover:bg-cyan-500/[0.07]"}`}
     >
-      {/* Unread indicator — single dot, cyan only */}
-      <span className={`flex-shrink-0 mt-2 w-1.5 h-1.5 rounded-full ${!notif.isRead ? "bg-cyan-400" : ""}`} />
+      {/* Unread left accent bar */}
+      {!notif.isRead && (
+        <span className="absolute left-0 inset-y-0 w-[3px] bg-cyan-400 rounded-r-full" />
+      )}
 
       {/* Icon */}
-      <div className={`flex-shrink-0 w-9 h-9 rounded-xl ${bg} flex items-center justify-center mt-0.5`}>
-        <Icon className={`w-4 h-4 ${color}`} />
+      <div className={`flex-shrink-0 w-10 h-10 rounded-xl ${bg} flex items-center justify-center mt-0.5 ring-1 ring-inset ring-white/5`}>
+        <Icon className={`w-5 h-5 ${color}`} />
       </div>
 
-      {/* Body */}
+      {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-3">
           <p className={`text-sm font-semibold leading-snug ${notif.isRead ? "text-slate-300" : "text-white"}`}>
             {notif.title}
+            {!notif.isRead && (
+              <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 align-middle -mt-0.5" />
+            )}
           </p>
-          <span className="flex-shrink-0 text-[11px] text-slate-500 whitespace-nowrap">
+          <span className="flex-shrink-0 text-[11px] text-slate-500 whitespace-nowrap mt-0.5">
             {relativeTime(notif.createdAt)}
           </span>
         </div>
-
         <p className="text-xs text-slate-400 mt-1 leading-relaxed">{notif.message}</p>
 
-        {/* Actions: mark read + delete only */}
-        <div className="flex items-center gap-2 mt-2.5">
+        <div className="flex items-center gap-2 mt-3">
           {!notif.isRead && (
             <button
               onClick={() => onMarkRead(notif.id)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 text-xs font-medium text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs font-medium text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-colors"
             >
               <Check className="w-3 h-3" />
               Mark read
             </button>
           )}
-          {notif.isRead && (
-            <span className="flex items-center gap-1 text-xs text-slate-600">
-              <Check className="w-3 h-3" /> Read
-            </span>
-          )}
           <button
             onClick={() => onDelete(notif.id)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 text-xs font-medium text-slate-500 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-transparent text-xs font-medium text-slate-600 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/8 transition-colors opacity-0 group-hover:opacity-100"
           >
             <Trash2 className="w-3 h-3" />
             Delete
@@ -147,19 +144,41 @@ export default function NotificationsPage() {
   } = useNotifications();
 
   const [tab, setTab] = useState<Tab>("all");
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const displayed = tab === "unread"
     ? notifications.filter((n) => !n.isRead)
     : notifications;
 
+  const tournamentCount = notifications.filter((n) =>
+    n.type.startsWith("tournament") || n.type.startsWith("match")
+  ).length;
+  const walletCount = notifications.filter((n) =>
+    n.type.startsWith("prize") || n.type.startsWith("payout") ||
+    n.type.startsWith("deposit") || n.type.startsWith("refund")
+  ).length;
+
+  const statItems = [
+    { icon: Bell,          iconColor: "text-cyan-400",   bg: "from-cyan-500/25 to-indigo-500/20",  label: "Total",       value: isLoading ? "—" : String(notifications.length) },
+    { icon: MessageSquare, iconColor: "text-amber-400",  bg: "from-amber-500/25 to-orange-500/20", label: "Unread",      value: isLoading ? "—" : String(unreadCount)           },
+    { icon: Trophy,        iconColor: "text-violet-400", bg: "from-violet-500/25 to-indigo-500/20",label: "Tournaments", value: isLoading ? "—" : String(tournamentCount)        },
+    { icon: Wallet,        iconColor: "text-green-400",  bg: "from-green-500/25 to-teal-500/20",   label: "Wallet",      value: isLoading ? "—" : String(walletCount)            },
+  ];
+
   return (
     <div className="min-h-screen">
-      {/* Hero */}
+
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
+        {/* Ambient glows */}
         <div className="absolute -top-40 right-0 w-[700px] h-[400px] rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+        {/* Fine grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-8 pt-10 pb-7">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
+
+          {/* Title + actions */}
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">
@@ -169,19 +188,19 @@ export default function NotificationsPage() {
                 Stay up to date with your tournament activity.
               </p>
             </div>
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-1 shrink-0">
               <button
                 onClick={refresh}
                 disabled={isLoading}
-                className="p-2 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-400 hover:text-white hover:border-slate-600 transition-colors disabled:opacity-50"
                 title="Refresh"
+                className="p-2 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
               </button>
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-300 hover:text-white hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-colors text-sm font-medium"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 text-sm font-medium hover:text-white hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-colors"
                 >
                   <CheckCheck className="w-4 h-4" />
                   <span className="hidden sm:inline">Mark all read</span>
@@ -190,21 +209,64 @@ export default function NotificationsPage() {
             </div>
           </div>
 
+          {/* Stats — mobile toggle */}
+          <div className="sm:hidden mt-4">
+            <button
+              onClick={() => setStatsOpen((o) => !o)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs font-semibold text-slate-400 uppercase tracking-widest"
+            >
+              <span>Stats</span>
+              <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+            </button>
+            {statsOpen && (
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                {statItems.map((s) => (
+                  <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                    <div className={`w-9 h-9 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                      <s.icon className={`w-4 h-4 ${s.iconColor}`} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-display text-base font-bold tabular-nums text-white leading-none">{s.value}</p>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Stats — desktop always visible */}
+          <div className="hidden sm:grid sm:grid-cols-4 gap-3 mt-6">
+            {statItems.map((s) => (
+              <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                  <s.icon className={`w-5 h-5 ${s.iconColor}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-display text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate mt-0.5">{s.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
           {/* Tabs */}
           <div className="flex items-center gap-1 mt-6">
             {(["all", "unread"] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border shrink-0 ${
                   tab === t
-                    ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-cyan-500 text-slate-950 border-cyan-500"
+                    : "bg-slate-900/60 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white"
                 }`}
               >
                 {t === "all" ? "All" : "Unread"}
                 {t === "unread" && unreadCount > 0 && (
-                  <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-cyan-500 text-white text-[10px] font-bold leading-none">
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
+                    tab === "unread" ? "bg-slate-950/20 text-slate-950" : "bg-slate-700 text-slate-400"
+                  }`}>
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
@@ -214,35 +276,41 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      {/* List */}
-      <div className="max-w-3xl mx-auto px-0 sm:px-4 py-4 sm:py-6">
-        <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 overflow-hidden">
+      {/* ── Notification List ─────────────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden">
+
           {error ? (
             <div className="py-16 px-6 text-center">
-              <p className="text-sm font-medium text-red-400">Failed to load notifications</p>
+              <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+                <ShieldAlert className="w-6 h-6 text-red-400" />
+              </div>
+              <p className="text-sm font-semibold text-red-400">Failed to load notifications</p>
               <p className="text-xs text-slate-500 mt-1 font-mono">{error}</p>
               <button onClick={refresh} className="mt-4 text-xs text-cyan-400 hover:underline">
                 Try again
               </button>
             </div>
+
           ) : displayed.length === 0 && !isLoading ? (
             <div className="py-24 px-6 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto mb-5">
+              <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto mb-5">
                 {tab === "unread" ? (
-                  <BellOff className="w-8 h-8 text-slate-600" />
+                  <BellOff className="w-7 h-7 text-slate-600" />
                 ) : (
-                  <Bell className="w-8 h-8 text-slate-600" />
+                  <Bell className="w-7 h-7 text-slate-600" />
                 )}
               </div>
-              <p className="font-display text-xl font-semibold text-slate-300">
+              <p className="font-display text-lg font-semibold text-slate-300">
                 {tab === "unread" ? "All caught up" : "No notifications yet"}
               </p>
-              <p className="text-sm text-slate-500 mt-2">
+              <p className="text-sm text-slate-500 mt-2 max-w-xs mx-auto">
                 {tab === "unread"
                   ? "You have no unread notifications."
                   : "Notifications will appear here when there's activity on your account."}
               </p>
             </div>
+
           ) : (
             <>
               {displayed.map((n) => (
@@ -264,7 +332,7 @@ export default function NotificationsPage() {
               )}
 
               {!isLoading && hasMore && tab === "all" && (
-                <div className="px-4 py-4 text-center">
+                <div className="px-4 py-4 text-center border-t border-slate-800">
                   <button
                     onClick={fetchMore}
                     className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-cyan-400 transition-colors"

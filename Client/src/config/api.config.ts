@@ -207,24 +207,41 @@ export const TOURNAMENT_ENDPOINTS = {
 
   // League
   LEAGUE: `${API_BASE_URLS.TOURNAMENT}/league`, // + /:tournamentId/table | /overview | /matchweeks | /matchweeks/:week | /generate | /advance
+
+  // Winnings (player)
+  WINNINGS: `${API_BASE_URLS.TOURNAMENT}/winnings`,               // GET
+  WINNINGS_CLAIM: `${API_BASE_URLS.TOURNAMENT}/winnings`,         // POST + /:winning_id/claim
+
+  // Refunds (player)
+  REFUNDS: `${API_BASE_URLS.TOURNAMENT}/refunds`,                  // GET
+  REFUNDS_CLAIM: `${API_BASE_URLS.TOURNAMENT}/refunds`,            // POST + /:refund_id/claim
+
+  // Organizer Earnings
+  ORGANIZER_EARNINGS: `${API_BASE_URLS.TOURNAMENT}/organizer-earnings`,       // GET
+  ORGANIZER_EARNINGS_CLAIM: `${API_BASE_URLS.TOURNAMENT}/organizer-earnings`, // POST + /:earning_id/claim
 } as const;
 
 
 export const FINANCE_ENDPOINTS = {
 
-  //  Wallet 
+  //  Wallet
   WALLET: `${API_BASE_URLS.FINANCE}/wallet`,                        // GET
-  DEPOSIT: `${API_BASE_URLS.FINANCE}/deposit`,                      // POST
+  DEPOSIT: `${API_BASE_URLS.FINANCE}/deposit`,                      // POST (410 Gone — direct-pay era)
   DEPOSIT_VERIFY: `${API_BASE_URLS.FINANCE}/deposit/verify`,        // GET — TheTeller redirect callback (no JWT)
   TRANSACTIONS: `${API_BASE_URLS.FINANCE}/transactions`,            // GET
 
-  //  Escrow (User) 
+  //  Tournament Payments (Direct-Pay)
+  TOURNAMENT_PAYMENT_INITIATE: `${API_BASE_URLS.FINANCE}/tournament-payment/initiate`,      // POST
+  TOURNAMENT_PAYMENT_MY_PAYMENTS: `${API_BASE_URLS.FINANCE}/tournament-payment/my-payments`, // GET
+  TOURNAMENT_PAYMENT_BY_REGISTRATION: `${API_BASE_URLS.FINANCE}/tournament-payment`,         // GET + /:registration_id
+
+  //  Escrow (User)
   ESCROW_INITIATE_DEPOSIT: `${API_BASE_URLS.FINANCE}/escrow/initiate-deposit`, // POST — organizer funds prize pool in a single call
   ESCROW_DEPOSIT: `${API_BASE_URLS.FINANCE}/escrow/deposit`,        // POST — organizer records prize pool deposit
   ESCROW_STATUS: `${API_BASE_URLS.FINANCE}/escrow`,                 // + /:tournamentId (GET)
   ESCROW_SUBMIT_WINNERS: `${API_BASE_URLS.FINANCE}/escrow`,         // + /:tournamentId/winners (POST)
 
-  // Escrow (Admin) 
+  // Escrow (Admin)
   ADMIN_ESCROW_PROCESSOR_RUN: `${API_BASE_URLS.FINANCE}/admin/escrow/processor/run`, // POST — manually trigger escrow processor
   ADMIN_ESCROW_STATUS: `${API_BASE_URLS.FINANCE}/admin/escrow`,     // + /:tournamentId (GET)
   ADMIN_ESCROW_CANCEL: `${API_BASE_URLS.FINANCE}/admin/escrow`,     // + /:tournamentId/cancel (POST)
@@ -234,7 +251,7 @@ export const FINANCE_ENDPOINTS = {
   PAYOUT_MY_REQUESTS: `${API_BASE_URLS.FINANCE}/payouts/my-requests`, // GET — own requests
   PAYOUT_DETAIL: `${API_BASE_URLS.FINANCE}/payouts`,                // + /:id (GET, DELETE)
 
-  // Payouts (Admin) 
+  // Payouts (Admin)
   ADMIN_PAYOUTS_PENDING: `${API_BASE_URLS.FINANCE}/admin/payouts/pending`, // GET — all pending requests
   ADMIN_PAYOUT_DETAIL: `${API_BASE_URLS.FINANCE}/admin/payouts`,    // + /:id (GET)
   ADMIN_PAYOUT_APPROVE: `${API_BASE_URLS.FINANCE}/admin/payouts`,   // + /:id/approve (PATCH)

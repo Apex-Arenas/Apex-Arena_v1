@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Activity, ShieldAlert, AlertTriangle, Info, AlertCircle,
+  Activity, ShieldAlert, AlertTriangle, AlertCircle,
   CheckCircle, XCircle, RefreshCw, ChevronDown, User,
   Zap, Wallet, Trophy, UserCheck, Shield, Globe,
 } from 'lucide-react';
