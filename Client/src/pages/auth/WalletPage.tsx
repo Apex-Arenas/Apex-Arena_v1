@@ -157,7 +157,8 @@ function DepositModal({ onClose }: { onClose: () => void }) {
         idempotency_key: generateUniqueIdempotencyKey(),
       });
       if (!res.success) {
-        setError((res as { error?: { message?: string } }).error?.message ?? "Deposit initiation failed.");
+        const err = (res as { error?: string | { message?: string } }).error;
+        setError((typeof err === 'string' ? err : err?.message) ?? "Deposit initiation failed.");
         return;
       }
       const data = res.data as Record<string, unknown>;

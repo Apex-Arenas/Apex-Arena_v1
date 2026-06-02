@@ -256,11 +256,12 @@
     // ── Parse URL ──────────────────────────────────────────────────────────────
     const sp          = new URLSearchParams(window.location.search);
     const reference   = sp.get('reference') || sp.get('trxref') || sp.get('transaction_id') || '';
-    const typeParam   = sp.get('type');          // 'wallet' | 'escrow' | null
+    const typeParam   = sp.get('type');          // 'wallet' | 'escrow' | 'entry' | null
     const statusParam = sp.get('status');        // pre-resolved by server: 'success' | 'pending' | 'failed'
     const reasonParam = sp.get('reason') || '';
 
-    // For server-resolved wallet redirects the type is always wallet
+    // For server-resolved wallet redirects the type is always wallet.
+    // For tournament entry payments the type=entry param is set by RegisterModal.
     const flowType = typeParam || (statusParam ? 'wallet' : 'escrow');
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -269,6 +270,7 @@
 
     function returnPath() {
       if (flowType === 'wallet') return SITE + '/auth/wallet';
+      if (flowType === 'entry')  return SITE + '/auth/prizes';
       const tid = sp.get('tournamentId');
       return tid
         ? SITE + '/auth/organizer/tournaments/' + tid
@@ -300,21 +302,28 @@
         icon: null,
       },
       success: {
-        badge: { cls: 'badge-green', text: flowType === 'wallet' ? 'Wallet Deposit' : 'Prize Pool' },
-        heading: flowType === 'wallet' ? 'Deposit Confirmed' : 'Payment Confirmed',
+        badge: {
+          cls: 'badge-green',
+          text: flowType === 'wallet' ? 'Wallet Deposit' : flowType === 'entry' ? 'Entry Paid' : 'Prize Pool',
+        },
+        heading: flowType === 'wallet' ? 'Deposit Confirmed' : flowType === 'entry' ? 'You\'re Registered!' : 'Payment Confirmed',
         message: flowType === 'wallet'
           ? 'Your wallet has been topped up successfully. Your new balance is now available.'
+          : flowType === 'entry'
+          ? 'Your entry fee was received. You\'re now registered for the tournament. Head to your Prizes page to track winnings and refunds.'
           : 'Your prize pool deposit was completed. Your tournament will open for registration once our system confirms it.',
         icon: 'success',
         fillCls: 'fill-green',
-        seconds: 4,
+        seconds: 5,
       },
       processing: {
         badge: { cls: 'badge-amber', text: 'Processing' },
-        heading: flowType === 'wallet' ? 'Deposit Processing' : 'Payment Processing',
+        heading: flowType === 'wallet' ? 'Deposit Processing' : flowType === 'entry' ? 'Payment Processing' : 'Payment Processing',
         message: 'Your payment was received and is being processed. '
           + (flowType === 'wallet'
               ? 'Your wallet balance will update within a few seconds.'
+              : flowType === 'entry'
+              ? 'Your registration will be confirmed once the payment clears — this usually takes a few seconds. Check your tournaments page shortly.'
               : 'Your tournament will open for registration once our system confirms the payment — this usually takes a few seconds.'),
         icon: 'processing',
         fillCls: 'fill-amber',
@@ -411,6 +420,21 @@
           </a>
           <a class="btn btn-ghost" href="${SITE}/auth">Dashboard</a>
         `;
+      } else if (flowType === 'entry') {
+        div.innerHTML = `
+          <a class="btn btn-gradient" href="${SITE}/auth/prizes">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+              <path d="M4 22h16"/>
+              <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+              <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+              <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+            </svg>
+            Prizes &amp; Refunds
+          </a>
+          <a class="btn btn-ghost" href="${SITE}/auth/player/join-tournament">Browse Tournaments</a>
+        `;
       } else {
         div.innerHTML = `
           <a class="btn btn-gradient" href="${SITE}/auth/organizer/tournaments">
@@ -429,7 +453,7 @@
       }
     }
 
-    // ── Verify payment via API (single attempt) ──────────────────────────────
+    // ── Verify wallet/escrow payment via transactions API ────────────────────
     async function checkOnce(ref) {
       const token = getToken();
       if (!token) return null; // not logged in — can't check
@@ -465,14 +489,49 @@
       }
     }
 
+    // ── Verify tournament entry payment via tournament-payment API ────────────
+    async function checkEntryOnce(ref) {
+      const token = getToken();
+      if (!token) return null;
+
+      try {
+        const res = await fetch(`${API}/finance/tournament-payment/my-payments?limit=20`, {
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) return null;
+
+        const json = await res.json();
+        const raw  = json?.data;
+        const list = Array.isArray(raw)
+          ? raw
+          : (raw?.payments ?? raw?.data ?? []);
+
+        const match = list.find(p =>
+          p.gateway_reference === ref ||
+          p.idempotency_key === ref.replace(/^ENTRY-/, '')
+        );
+
+        if (!match) return null;
+        if (match.status === 'completed') return 'success';
+        if (match.status === 'failed')    return 'failed';
+        return 'processing';
+      } catch {
+        return null;
+      }
+    }
+
     // ── Retry verify — polls up to 4 times, 2 s apart ────────────────────────
     async function verifyWithRetry(ref) {
       const ATTEMPTS = 4;
       const DELAY_MS = 2000;
+      const checker  = flowType === 'entry' ? checkEntryOnce : checkOnce;
 
       for (let i = 0; i < ATTEMPTS; i++) {
         if (i > 0) await new Promise(r => setTimeout(r, DELAY_MS));
-        const result = await checkOnce(ref);
+        const result = await checker(ref);
         // Stop as soon as we get a definitive answer (success or failed)
         if (result === 'success' || result === 'failed') return result;
       }

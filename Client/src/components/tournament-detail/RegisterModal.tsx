@@ -72,7 +72,7 @@ export default function RegisterModal({
         // Paid tournament — initiate gateway payment
         const payRes = await apiPost(FINANCE_ENDPOINTS.TOURNAMENT_PAYMENT_INITIATE, {
           registration_id: result.registrationId,
-          callback_url: window.location.href,
+          callback_url: `${window.location.origin}/payment-callback.html?type=entry`,
         });
         if (!payRes.success) {
           throw new Error(
