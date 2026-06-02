@@ -42,6 +42,7 @@ const organizerNavItems = [
   { to: "/auth/leaderboard",              icon: Trophy,      label: "Leaderboard"               },
   { to: "/auth/organizer/analytics",       icon: BarChart2,   label: "Analytics"                 },
   { to: "/auth/organizer/finance",         icon: DollarSign,  label: "Finance"                   },
+  { to: "/auth/prizes",                   icon: Star,        label: "Prizes"                    },
   { to: "/auth/organizer/profile",         icon: UserCircle,  label: "Profile"                   },
   { to: "/auth/notifications",             icon: Bell,        label: "Notifications"             },
   { to: "/auth/contact-us",               icon: Mail,        label: "Contact Us"                },
