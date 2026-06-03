@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth-context";
-import { notificationService } from "../services/notification.service";
+import { useNotifications } from "../lib/notification-context";
 import { organizerService } from "../services/organizer.service";
 
 const playerNavItems = [
@@ -55,19 +55,11 @@ interface SidebarProps {
 
 const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [pendingDisputeCount, setPendingDisputeCount] = useState(0);
   const { logout, user } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
-
-  useEffect(() => {
-    let cancelled = false;
-    notificationService.getUnreadCount()
-      .then((n) => { if (!cancelled) setUnreadCount(n); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
 
   const isOrganizer = user?.role === "organizer";
 
