@@ -270,7 +270,7 @@
 
     function returnPath() {
       if (flowType === 'wallet') return SITE + '/auth/wallet';
-      if (flowType === 'entry')  return SITE + '/auth/prizes';
+      if (flowType === 'entry')  return SITE + '/auth/player/join-tournament';
       const tid = sp.get('tournamentId');
       return tid
         ? SITE + '/auth/organizer/tournaments/' + tid
@@ -310,7 +310,7 @@
         message: flowType === 'wallet'
           ? 'Your wallet has been topped up successfully. Your new balance is now available.'
           : flowType === 'entry'
-          ? 'Your entry fee was received. You\'re now registered for the tournament. Head to your Prizes page to track winnings and refunds.'
+          ? 'Your entry fee was received. You\'re now registered for the tournament. You can view your registration in the My Registrations tab.'
           : 'Your prize pool deposit was completed. Your tournament will open for registration once our system confirms it.',
         icon: 'success',
         fillCls: 'fill-green',
@@ -422,7 +422,7 @@
         `;
       } else if (flowType === 'entry') {
         div.innerHTML = `
-          <a class="btn btn-gradient" href="${SITE}/auth/prizes">
+          <a class="btn btn-gradient" href="${SITE}/auth/player/join-tournament">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
               <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
@@ -431,9 +431,9 @@
               <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
               <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
             </svg>
-            Prizes &amp; Refunds
+            My Registrations
           </a>
-          <a class="btn btn-ghost" href="${SITE}/auth/player/join-tournament">Browse Tournaments</a>
+          <a class="btn btn-ghost" href="${SITE}/auth">Dashboard</a>
         `;
       } else {
         div.innerHTML = `
