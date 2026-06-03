@@ -95,10 +95,10 @@ function DropdownNotifRow({
     <div
       onClick={onClick}
       className={`relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors group
-        ${notif.isRead ? "hover:bg-slate-800/30" : "bg-cyan-500/[0.04] hover:bg-cyan-500/[0.08]"}`}
+        ${notif.isRead ? "hover:bg-slate-800/30" : "bg-cyan-500/4 hover:bg-cyan-500/8"}`}
     >
       {/* Left color bar */}
-      <span className={`absolute left-0 inset-y-0 w-[3px] ${bar} rounded-r-full ${notif.isRead ? "opacity-20" : "opacity-100"}`} />
+      <span className={`absolute left-0 inset-y-0 w-0.75 ${bar} rounded-r-full ${notif.isRead ? "opacity-20" : "opacity-100"}`} />
 
       {/* Icon */}
       <div className={`shrink-0 w-8 h-8 rounded-lg ${bg} flex items-center justify-center mt-0.5 ring-1 ring-inset ring-white/5`}>
@@ -223,7 +223,7 @@ const DashboardLayout = () => {
                 </button>
 
                 {notifOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-[340px] max-w-[calc(100vw-1rem)] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
+                  <div className="absolute right-0 top-full mt-2 w-85 max-w-[calc(100vw-1rem)] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/50 z-50 overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
                       <div className="flex items-center gap-2">
@@ -255,7 +255,7 @@ const DashboardLayout = () => {
                     </div>
 
                     {/* Notification rows */}
-                    <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-800/60">
+                    <div className="max-h-90 overflow-y-auto divide-y divide-slate-800/60">
                       {notifications.length === 0 ? (
                         <div className="py-10 text-center">
                           <Bell className="w-6 h-6 text-slate-600 mx-auto mb-2" />
