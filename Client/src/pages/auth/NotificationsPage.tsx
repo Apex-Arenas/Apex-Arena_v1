@@ -96,13 +96,13 @@ function NotifRow({
   return (
     <div
       className={`relative flex items-start gap-4 px-6 py-4 border-b border-slate-800 transition-colors group
-        ${notif.isRead ? "hover:bg-slate-800/20" : "bg-cyan-500/[0.04] hover:bg-cyan-500/[0.07]"}`}
+        ${notif.isRead ? "hover:bg-slate-800/20" : "bg-cyan-500/4 hover:bg-cyan-500/7"}`}
     >
       {/* Left accent bar — always shown, bright for unread, subtle for read */}
-      <span className={`absolute left-0 inset-y-0 w-[3px] ${bar} rounded-r-full transition-opacity ${notif.isRead ? "opacity-20" : "opacity-100"}`} />
+      <span className={`absolute left-0 inset-y-0 w-0.75 ${bar} rounded-r-full transition-opacity ${notif.isRead ? "opacity-20" : "opacity-100"}`} />
 
       {/* Icon */}
-      <div className={`flex-shrink-0 w-10 h-10 rounded-xl ${bg} flex items-center justify-center mt-0.5 ring-1 ring-inset ring-white/5`}>
+      <div className={`shrink-0 w-10 h-10 rounded-xl ${bg} flex items-center justify-center mt-0.5 ring-1 ring-inset ring-white/5`}>
         <Icon className={`w-5 h-5 ${color}`} />
       </div>
 
@@ -115,7 +115,7 @@ function NotifRow({
               <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 align-middle -mt-0.5" />
             )}
           </p>
-          <span className="flex-shrink-0 text-[11px] text-slate-500 whitespace-nowrap mt-0.5">
+          <span className="shrink-0 text-[11px] text-slate-500 whitespace-nowrap mt-0.5">
             {relativeTime(notif.createdAt)}
           </span>
         </div>
@@ -190,8 +190,8 @@ export default function NotificationsPage() {
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
         {/* Ambient glows */}
-        <div className="absolute -top-40 right-0 w-[700px] h-[400px] rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute -top-40 right-0 w-175 h-100 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
         {/* Fine grid */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
