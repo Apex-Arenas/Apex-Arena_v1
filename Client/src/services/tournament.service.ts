@@ -533,7 +533,9 @@ export const tournamentService = {
     const data = response.data as Record<string, unknown>;
     const reg = (data.registration ?? data) as Record<string, unknown>;
     return {
-      registrationId: String(reg.registration_id ?? reg._id ?? reg.id ?? ''),
+      registrationId: String(
+        reg.registration_id ?? reg.registrationId ?? reg._id ?? reg.id ?? ''
+      ),
       status: String(reg.status ?? 'registered'),
       message: data.message as string | undefined,
     };

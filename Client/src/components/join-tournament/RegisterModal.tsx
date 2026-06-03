@@ -75,8 +75,24 @@ export function RegisterModal({
       const result = await tournamentService.register(tournament.id);
 
       if (result.status === "pending_payment") {
+        // Resolve the registration ID. The server should return it directly, but
+        // older deployed builds may omit it — fall back to fetching registrations.
+        let registrationId = result.registrationId;
+        if (!registrationId) {
+          const myRegs = await tournamentService.getMyRegistrations();
+          const pending = myRegs.find(
+            (r) => r.tournamentId === tournament.id && r.status === "pending_payment",
+          );
+          registrationId = pending?.registrationId ?? "";
+        }
+        if (!registrationId) {
+          throw new Error(
+            "Registration was saved but we could not retrieve its ID. Please refresh and use the 'Complete Payment' button from your registrations.",
+          );
+        }
+
         const payRes = await apiPost(FINANCE_ENDPOINTS.TOURNAMENT_PAYMENT_INITIATE, {
-          registration_id: result.registrationId,
+          registration_id: registrationId,
           callback_url: `${window.location.origin}/payment-callback.html?type=entry`,
         });
         if (!payRes.success) {
