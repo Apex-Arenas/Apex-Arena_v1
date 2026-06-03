@@ -24,57 +24,57 @@ function relTime(iso?: string) {
 }
 
 const NOTIF_TYPE_META: Record<string, { color: string; bar: string; bg: string; icon: React.ElementType }> = {
-  tournament_registration:  { color: "text-cyan-400",   bar: "bg-cyan-400",   bg: "bg-cyan-500/10",   icon: TrophyIcon  },
-  tournament_cancelled:     { color: "text-red-400",    bar: "bg-red-400",    bg: "bg-red-500/10",    icon: TrophyIcon  },
-  tournament_started:       { color: "text-green-400",  bar: "bg-green-400",  bg: "bg-green-500/10",  icon: TrophyIcon  },
-  tournament_completed:     { color: "text-amber-400",  bar: "bg-amber-400",  bg: "bg-amber-500/10",  icon: TrophyIcon  },
-  tournament_open:          { color: "text-cyan-400",   bar: "bg-cyan-400",   bg: "bg-cyan-500/10",   icon: TrophyIcon  },
-  match_scheduled:          { color: "text-indigo-400", bar: "bg-indigo-400", bg: "bg-indigo-500/10", icon: Swords      },
-  match_starting:           { color: "text-orange-400", bar: "bg-orange-400", bg: "bg-orange-500/10", icon: Swords      },
-  match_result_submitted:   { color: "text-slate-400",  bar: "bg-slate-500",  bg: "bg-slate-700/40",  icon: Swords      },
-  match_disputed:           { color: "text-red-400",    bar: "bg-red-400",    bg: "bg-red-500/10",    icon: ShieldAlert },
-  match_dispute_resolved:   { color: "text-green-400",  bar: "bg-green-400",  bg: "bg-green-500/10",  icon: ShieldAlert },
-  match_result_confirmed:   { color: "text-green-400",  bar: "bg-green-400",  bg: "bg-green-500/10",  icon: Check       },
-  match_forfeit:            { color: "text-red-400",    bar: "bg-red-400",    bg: "bg-red-500/10",    icon: Swords      },
-  prize_won:                { color: "text-amber-400",  bar: "bg-amber-400",  bg: "bg-amber-500/10",  icon: Star        },
-  prize_credited:           { color: "text-amber-400",  bar: "bg-amber-400",  bg: "bg-amber-500/10",  icon: Star        },
-  payout_completed:         { color: "text-green-400",  bar: "bg-green-400",  bg: "bg-green-500/10",  icon: Wallet      },
-  payout_failed:            { color: "text-red-400",    bar: "bg-red-400",    bg: "bg-red-500/10",    icon: Wallet      },
-  payout_requested:         { color: "text-cyan-400",   bar: "bg-cyan-400",   bg: "bg-cyan-500/10",   icon: Wallet      },
-  deposit_confirmed:        { color: "text-green-400",  bar: "bg-green-400",  bg: "bg-green-500/10",  icon: Wallet      },
-  refund_processed:         { color: "text-blue-400",   bar: "bg-blue-400",   bg: "bg-blue-500/10",   icon: Wallet      },
-  new_device_login:         { color: "text-orange-400", bar: "bg-orange-400", bg: "bg-orange-500/10", icon: ShieldAlert },
-  password_changed:         { color: "text-orange-400", bar: "bg-orange-400", bg: "bg-orange-500/10", icon: ShieldAlert },
-  two_fa_enabled:           { color: "text-green-400",  bar: "bg-green-400",  bg: "bg-green-500/10",  icon: ShieldAlert },
-  two_fa_disabled:          { color: "text-red-400",    bar: "bg-red-400",    bg: "bg-red-500/10",    icon: ShieldAlert },
-  account_unbanned:         { color: "text-green-400",  bar: "bg-green-400",  bg: "bg-green-500/10",  icon: Users       },
-  organizer_approved:       { color: "text-green-400",  bar: "bg-green-400",  bg: "bg-green-500/10",  icon: Users       },
-  organizer_rejected:       { color: "text-red-400",    bar: "bg-red-400",    bg: "bg-red-500/10",    icon: Users       },
-  team_invite:              { color: "text-indigo-400", bar: "bg-indigo-400", bg: "bg-indigo-500/10", icon: Users       },
-  new_follower:             { color: "text-cyan-400",   bar: "bg-cyan-400",   bg: "bg-cyan-500/10",   icon: Users       },
-  game_request_approved:    { color: "text-green-400",  bar: "bg-green-400",  bg: "bg-green-500/10",  icon: Zap         },
-  game_request_rejected:    { color: "text-red-400",    bar: "bg-red-400",    bg: "bg-red-500/10",    icon: Zap         },
+  tournament_registration:  { color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25",   icon: TrophyIcon  },
+  tournament_cancelled:     { color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25",    icon: TrophyIcon  },
+  tournament_started:       { color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25",  icon: TrophyIcon  },
+  tournament_completed:     { color: "text-amber-400",  bar: "bg-amber-500",  bg: "bg-amber-500/25",  icon: TrophyIcon  },
+  tournament_open:          { color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25",   icon: TrophyIcon  },
+  match_scheduled:          { color: "text-indigo-400", bar: "bg-indigo-500", bg: "bg-indigo-500/25", icon: Swords      },
+  match_starting:           { color: "text-orange-400", bar: "bg-orange-500", bg: "bg-orange-500/25", icon: Swords      },
+  match_result_submitted:   { color: "text-slate-400",  bar: "bg-slate-500",  bg: "bg-slate-700/50",  icon: Swords      },
+  match_disputed:           { color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25",    icon: ShieldAlert },
+  match_dispute_resolved:   { color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25",  icon: ShieldAlert },
+  match_result_confirmed:   { color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25",  icon: Check       },
+  match_forfeit:            { color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25",    icon: Swords      },
+  prize_won:                { color: "text-amber-400",  bar: "bg-amber-500",  bg: "bg-amber-500/25",  icon: Star        },
+  prize_credited:           { color: "text-amber-400",  bar: "bg-amber-500",  bg: "bg-amber-500/25",  icon: Star        },
+  payout_completed:         { color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25",  icon: Wallet      },
+  payout_failed:            { color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25",    icon: Wallet      },
+  payout_requested:         { color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25",   icon: Wallet      },
+  deposit_confirmed:        { color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25",  icon: Wallet      },
+  refund_processed:         { color: "text-blue-400",   bar: "bg-blue-500",   bg: "bg-blue-500/25",   icon: Wallet      },
+  new_device_login:         { color: "text-orange-400", bar: "bg-orange-500", bg: "bg-orange-500/25", icon: ShieldAlert },
+  password_changed:         { color: "text-orange-400", bar: "bg-orange-500", bg: "bg-orange-500/25", icon: ShieldAlert },
+  two_fa_enabled:           { color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25",  icon: ShieldAlert },
+  two_fa_disabled:          { color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25",    icon: ShieldAlert },
+  account_unbanned:         { color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25",  icon: Users       },
+  organizer_approved:       { color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25",  icon: Users       },
+  organizer_rejected:       { color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25",    icon: Users       },
+  team_invite:              { color: "text-indigo-400", bar: "bg-indigo-500", bg: "bg-indigo-500/25", icon: Users       },
+  new_follower:             { color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25",   icon: Users       },
+  game_request_approved:    { color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25",  icon: Zap         },
+  game_request_rejected:    { color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25",    icon: Zap         },
 };
 
 function inferNotifMeta(type: string): { color: string; bar: string; bg: string; icon: React.ElementType } {
   const t = type.toLowerCase();
   if (t.includes("cancel") || t.includes("fail") || t.includes("reject") || t.includes("forfeit") || t.includes("disput") || t.includes("ban"))
-    return { icon: ShieldAlert, color: "text-red-400",    bar: "bg-red-400",    bg: "bg-red-500/10"    };
+    return { icon: ShieldAlert, color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25"    };
   if (t.includes("complet") || t.includes("confirm") || t.includes("approv") || t.includes("success") || t.includes("unbann"))
-    return { icon: CheckCheck,  color: "text-green-400",  bar: "bg-green-400",  bg: "bg-green-500/10"  };
+    return { icon: CheckCheck,  color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  };
   if (t.includes("prize") || t.includes("win") || t.includes("reward") || t.includes("earn"))
-    return { icon: Star,        color: "text-amber-400",  bar: "bg-amber-400",  bg: "bg-amber-500/10"  };
+    return { icon: Star,        color: "text-amber-400",  bar: "bg-amber-500",  bg: "bg-amber-500/25"  };
   if (t.includes("payout") || t.includes("deposit") || t.includes("wallet") || t.includes("payment") || t.includes("refund") || t.includes("escrow"))
-    return { icon: Wallet,      color: "text-cyan-400",   bar: "bg-cyan-400",   bg: "bg-cyan-500/10"   };
+    return { icon: Wallet,      color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25"   };
   if (t.includes("match") || t.includes("start") || t.includes("schedul"))
-    return { icon: Swords,      color: "text-orange-400", bar: "bg-orange-400", bg: "bg-orange-500/10" };
+    return { icon: Swords,      color: "text-orange-400", bar: "bg-orange-500", bg: "bg-orange-500/25" };
   if (t.includes("login") || t.includes("password") || t.includes("2fa") || t.includes("device") || t.includes("security"))
-    return { icon: ShieldAlert, color: "text-orange-400", bar: "bg-orange-400", bg: "bg-orange-500/10" };
+    return { icon: ShieldAlert, color: "text-orange-400", bar: "bg-orange-500", bg: "bg-orange-500/25" };
   if (t.includes("team") || t.includes("follow") || t.includes("organizer") || t.includes("member"))
-    return { icon: Users,       color: "text-indigo-400", bar: "bg-indigo-400", bg: "bg-indigo-500/10" };
+    return { icon: Users,       color: "text-indigo-400", bar: "bg-indigo-500", bg: "bg-indigo-500/25" };
   if (t.includes("tournament") || t.includes("register") || t.includes("publish") || t.includes("open"))
-    return { icon: TrophyIcon,  color: "text-cyan-400",   bar: "bg-cyan-400",   bg: "bg-cyan-500/10"   };
-  return { icon: Info,          color: "text-slate-400",  bar: "bg-slate-500",  bg: "bg-slate-700/40"  };
+    return { icon: TrophyIcon,  color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25"   };
+  return { icon: Info,          color: "text-slate-400",  bar: "bg-slate-500",  bg: "bg-slate-700/50"  };
 }
 
 function getNotifMeta(type: string) {
