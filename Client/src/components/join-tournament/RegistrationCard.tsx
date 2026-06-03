@@ -1,4 +1,4 @@
-import { CalendarDays, ExternalLink, Gamepad2, LogOut, Users } from "lucide-react";
+import { CalendarDays, CreditCard, ExternalLink, Gamepad2, LogOut, Users } from "lucide-react";
 import { type MyTournamentRegistration } from "../../services/tournament.service";
 import { FadeImage } from "../ui/FadeImage";
 import { formatDate } from "./utils";
@@ -7,7 +7,9 @@ interface RegistrationCardProps {
   registration: MyTournamentRegistration;
   canWithdraw: boolean;
   isWithdrawing: boolean;
+  isCompletingPayment?: boolean;
   onRequestWithdraw: (registration: MyTournamentRegistration) => void;
+  onCompletePayment?: (registrationId: string) => void;
   onOpenDetails: (tournamentId: string) => void;
 }
 
@@ -34,7 +36,9 @@ export function RegistrationCard({
   registration,
   canWithdraw,
   isWithdrawing,
+  isCompletingPayment,
   onRequestWithdraw,
+  onCompletePayment,
   onOpenDetails,
 }: RegistrationCardProps) {
   const tourMeta = TOUR_STATUS_META[registration.tournamentStatus] ?? {
@@ -166,17 +170,28 @@ export function RegistrationCard({
 
         {/* CTA — full-width, pinned to bottom */}
         <div className="mt-auto space-y-2">
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenDetails(registration.tournamentId); }}
-            className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-              isLive
-                ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 hover:shadow-lg hover:shadow-orange-500/25"
-                : "border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 hover:text-white"
-            }`}
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            {isLive ? "View Live" : "View Details"}
-          </button>
+          {registration.status === "pending_payment" && onCompletePayment ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); onCompletePayment(registration.registrationId); }}
+              disabled={isCompletingPayment}
+              className="w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-amber-500/15 text-amber-300 border border-amber-500/35 hover:bg-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              {isCompletingPayment ? "Redirecting…" : "Complete Payment"}
+            </button>
+          ) : (
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpenDetails(registration.tournamentId); }}
+              className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                isLive
+                  ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 hover:shadow-lg hover:shadow-orange-500/25"
+                  : "border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 hover:text-white"
+              }`}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              {isLive ? "View Live" : "View Details"}
+            </button>
+          )}
           {canWithdraw && (
             <button
               onClick={(e) => { e.stopPropagation(); onRequestWithdraw(registration); }}

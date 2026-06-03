@@ -75,8 +75,9 @@ export default function RegisterModal({
           callback_url: `${window.location.origin}/payment-callback.html?type=entry`,
         });
         if (!payRes.success) {
+          const err = (payRes as { error?: string | { message?: string } }).error;
           throw new Error(
-            (payRes as { error?: { message?: string } }).error?.message ??
+            (typeof err === 'string' ? err : err?.message) ??
             "Could not initiate payment. Please try again."
           );
         }

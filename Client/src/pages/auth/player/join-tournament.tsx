@@ -17,8 +17,8 @@ import {
   type MyTournamentRegistration,
   type Tournament,
 } from "../../../services/tournament.service";
-import { TOURNAMENT_ENDPOINTS } from "../../../config/api.config";
-import { apiGet } from "../../../utils/api.utils";
+import { TOURNAMENT_ENDPOINTS, FINANCE_ENDPOINTS } from "../../../config/api.config";
+import { apiGet, apiPost } from "../../../utils/api.utils";
 import {
   RegistrationCard,
   RegisterModal,
@@ -205,9 +205,11 @@ const JoinTournament = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [myRegistrations, setMyRegistrations] = useState<MyTournamentRegistration[]>([]);
   const [registrationByTournament, setRegistrationByTournament] = useState<Record<string, string>>({});
+  const [registrationIdByTournament, setRegistrationIdByTournament] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(true);
   const [withdrawingTournamentId, setWithdrawingTournamentId] = useState<string | null>(null);
+  const [completingPaymentId, setCompletingPaymentId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [freeFilter, setFreeFilter] = useState<"" | "free" | "paid">("");
@@ -228,14 +230,22 @@ const JoinTournament = () => {
     try {
       const registrations = await tournamentService.getMyRegistrations();
       setMyRegistrations(registrations);
-      const map = registrations.reduce<Record<string, string>>((acc, item) => {
-        if (!acc[item.tournamentId]) acc[item.tournamentId] = item.status;
-        return acc;
-      }, {});
-      setRegistrationByTournament(map);
+      const statusMap: Record<string, string> = {};
+      const idMap: Record<string, string> = {};
+      for (const item of registrations) {
+        if (!statusMap[item.tournamentId]) {
+          statusMap[item.tournamentId] = item.status;
+          if (item.status === "pending_payment") {
+            idMap[item.tournamentId] = item.registrationId;
+          }
+        }
+      }
+      setRegistrationByTournament(statusMap);
+      setRegistrationIdByTournament(idMap);
     } catch {
       setMyRegistrations([]);
       setRegistrationByTournament({});
+      setRegistrationIdByTournament({});
     } finally {
       setIsLoadingRegistrations(false);
     }
@@ -300,6 +310,33 @@ const JoinTournament = () => {
     setSuccessMsg("You've successfully joined the tournament! Check your registrations for details.");
     void Promise.all([fetchTournaments(), fetchMyRegistrations()]);
     setTimeout(() => setSuccessMsg(null), 6000);
+  };
+
+  const handleCompletePayment = async (registrationId: string) => {
+    setCompletingPaymentId(registrationId);
+    setErrorMsg(null);
+    try {
+      const payRes = await apiPost(FINANCE_ENDPOINTS.TOURNAMENT_PAYMENT_INITIATE, {
+        registration_id: registrationId,
+        callback_url: `${window.location.origin}/payment-callback.html?type=entry`,
+      });
+      if (!payRes.success) {
+        const err = (payRes as { error?: string | { message?: string } }).error;
+        throw new Error(
+          (typeof err === "string" ? err : err?.message) ??
+          "Could not initiate payment. Please try again."
+        );
+      }
+      const payData = payRes.data as { authorization_url?: string };
+      if (payData.authorization_url) {
+        window.location.href = payData.authorization_url;
+        return;
+      }
+      throw new Error("No payment URL returned. Please try again.");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to initiate payment.");
+      setCompletingPaymentId(null);
+    }
   };
 
   const handleWithdrawRequest = (registration: MyTournamentRegistration) => {
@@ -632,8 +669,10 @@ const JoinTournament = () => {
                     key={t.id}
                     tournament={t}
                     registrationStatus={registrationByTournament[t.id]}
+                    registrationId={registrationIdByTournament[t.id]}
                     isLoadingRegistrations={isLoadingRegistrations}
                     onRegister={setSelectedTournament}
+                    onCompletePayment={handleCompletePayment}
                     onOpenDetails={(id) => navigate(`/auth/tournaments/${id}`)}
                   />
                 ))}
@@ -675,7 +714,9 @@ const JoinTournament = () => {
                     registration={registration}
                     canWithdraw={canWithdrawRegistration(registration.status)}
                     isWithdrawing={withdrawingTournamentId === registration.tournamentId}
+                    isCompletingPayment={completingPaymentId === registration.registrationId}
                     onRequestWithdraw={handleWithdrawRequest}
+                    onCompletePayment={handleCompletePayment}
                     onOpenDetails={(id) => navigate(`/auth/tournaments/${id}`)}
                   />
                 ))}

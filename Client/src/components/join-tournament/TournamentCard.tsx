@@ -11,8 +11,10 @@ import {
 interface TournamentCardProps {
   tournament: Tournament;
   registrationStatus?: string;
+  registrationId?: string;
   isLoadingRegistrations: boolean;
   onRegister: (t: Tournament) => void;
+  onCompletePayment?: (registrationId: string) => void;
   onOpenDetails: (tournamentId: string) => void;
 }
 
@@ -39,8 +41,10 @@ const REG_STATUS_META: Record<string, { label: string; cls: string }> = {
 export function TournamentCard({
   tournament,
   registrationStatus,
+  registrationId,
   isLoadingRegistrations,
   onRegister,
+  onCompletePayment,
   onOpenDetails,
 }: TournamentCardProps) {
   const meta = STATUS_META[tournament.status] ?? {
@@ -53,10 +57,11 @@ export function TournamentCard({
   const hasImage = !!imageUrl;
 
   const normalizedStatus = normalizeRegistrationStatus(registrationStatus);
+  const isPendingPayment = normalizedStatus === "pending_payment";
   const isAlreadyRegistered =
     tournament.isRegistered === true || isActiveRegistrationStatus(normalizedStatus);
   const canRegister =
-    !isLoadingRegistrations && tournament.status === "open" && !isAlreadyRegistered;
+    !isLoadingRegistrations && tournament.status === "open" && !isAlreadyRegistered && !isPendingPayment;
   const isFull = tournament.currentCount >= tournament.maxParticipants;
 
   const regMeta = normalizedStatus ? (REG_STATUS_META[normalizedStatus] ?? null) : null;
@@ -185,6 +190,20 @@ export function TournamentCard({
           {isLoadingRegistrations ? (
             <button disabled className="w-full py-2.5 rounded-xl text-sm font-bold bg-slate-800/60 text-slate-500 border border-slate-700 opacity-50 flex items-center justify-center">
               Checking...
+            </button>
+          ) : isPendingPayment ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (registrationId && onCompletePayment) {
+                  onCompletePayment(registrationId);
+                } else {
+                  onOpenDetails(tournament.id);
+                }
+              }}
+              className="w-full py-2.5 rounded-xl text-sm font-bold transition-all bg-amber-500/15 text-amber-300 border border-amber-500/35 hover:bg-amber-500/25 flex items-center justify-center gap-2"
+            >
+              Complete Payment
             </button>
           ) : isAlreadyRegistered ? (
             <button
