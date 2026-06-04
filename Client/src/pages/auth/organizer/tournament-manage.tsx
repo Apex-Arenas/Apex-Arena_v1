@@ -571,6 +571,8 @@ const TournamentManage = () => {
   const [statsOpen, setStatsOpen] = useState(false);
   const [extendDate, setExtendDate] = useState("");
   const [isExtending, setIsExtending] = useState(false);
+  const [openWinnerDropdown, setOpenWinnerDropdown] = useState<number | null>(null);
+  const [winnerDropdownSearch, setWinnerDropdownSearch] = useState("");
 
   const hasFetched = useRef(false);
 
@@ -1136,6 +1138,8 @@ const TournamentManage = () => {
     }
 
     setWinnerRows(defaults);
+    setOpenWinnerDropdown(null);
+    setWinnerDropdownSearch("");
     setShowWinnersModal(true);
   };
 
@@ -2612,25 +2616,115 @@ const TournamentManage = () => {
                       Position #{row.position}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    {/* Player picker */}
                     <div className="space-y-1">
                       <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                        In-Game ID
+                        Player
                       </label>
-                      <input
-                        type="text"
-                        value={row.inGameId}
-                        onChange={(e) =>
-                          handleWinnerRowChange(
-                            index,
-                            "inGameId",
-                            e.target.value,
-                          )
-                        }
-                        placeholder="Winner's ID"
-                        className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60 transition-colors"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (openWinnerDropdown === index) {
+                            setOpenWinnerDropdown(null);
+                          } else {
+                            setOpenWinnerDropdown(index);
+                            setWinnerDropdownSearch("");
+                          }
+                        }}
+                        className={`w-full bg-slate-800/60 border rounded-xl px-3 py-2 text-sm text-left flex items-center justify-between gap-2 transition-colors ${openWinnerDropdown === index ? "border-indigo-500/60" : "border-slate-700 hover:border-indigo-500/40"}`}
+                      >
+                        {row.inGameId ? (
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-5 h-5 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-[10px] font-bold text-indigo-300 shrink-0">
+                              {registrants.find(r => r.inGameId === row.inGameId)?.displayName?.[0]?.toUpperCase() ?? "?"}
+                            </div>
+                            <span className="text-white text-sm font-semibold truncate">
+                              {registrants.find(r => r.inGameId === row.inGameId)?.displayName ?? row.inGameId}
+                            </span>
+                            <span className="text-slate-500 text-xs shrink-0">{row.inGameId}</span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-600 text-sm">Select player…</span>
+                        )}
+                        <ChevronDown className={`w-3.5 h-3.5 text-slate-500 shrink-0 transition-transform duration-150 ${openWinnerDropdown === index ? "rotate-180" : ""}`} />
+                      </button>
+                      {openWinnerDropdown === index && (
+                        <div className="border border-slate-700 rounded-xl bg-slate-950 overflow-hidden shadow-xl">
+                          <div className="p-2 border-b border-slate-800">
+                            <input
+                              type="text"
+                              value={winnerDropdownSearch}
+                              onChange={(e) => setWinnerDropdownSearch(e.target.value)}
+                              placeholder="Search players…"
+                              autoFocus
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/60 transition-colors"
+                            />
+                          </div>
+                          <div className="max-h-40 overflow-y-auto">
+                            {(() => {
+                              const alreadySelected = winnerRows
+                                .filter((_, i) => i !== index)
+                                .map(r => r.inGameId.toLowerCase())
+                                .filter(Boolean);
+                              const eligible = registrants
+                                .filter(r => ACTIVE_REGISTRANT_STATUSES.has(r.status) && r.inGameId)
+                                .filter(r => {
+                                  if (!winnerDropdownSearch) return true;
+                                  const q = winnerDropdownSearch.toLowerCase();
+                                  return (
+                                    r.displayName.toLowerCase().includes(q) ||
+                                    r.inGameId.toLowerCase().includes(q)
+                                  );
+                                });
+                              if (eligible.length === 0) {
+                                return (
+                                  <div className="px-3 py-4 text-center text-xs text-slate-500">
+                                    No players found
+                                  </div>
+                                );
+                              }
+                              return eligible.map(player => {
+                                const isUsed = alreadySelected.includes(player.inGameId.toLowerCase());
+                                const isSelected = row.inGameId === player.inGameId;
+                                return (
+                                  <button
+                                    key={player.userId}
+                                    type="button"
+                                    disabled={isUsed}
+                                    onClick={() => {
+                                      handleWinnerRowChange(index, "inGameId", player.inGameId);
+                                      setOpenWinnerDropdown(null);
+                                      setWinnerDropdownSearch("");
+                                    }}
+                                    className={`w-full px-3 py-2.5 flex items-center gap-2.5 text-left transition-colors ${isUsed ? "opacity-40 cursor-not-allowed" : "hover:bg-slate-800/80"} ${isSelected ? "bg-indigo-500/10" : ""}`}
+                                  >
+                                    <div className="w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-[10px] font-bold text-indigo-300 shrink-0">
+                                      {player.displayName?.[0]?.toUpperCase() ?? "?"}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-semibold text-white truncate leading-tight">
+                                        {player.displayName}
+                                      </p>
+                                      <p className="text-[10px] text-slate-500 truncate">
+                                        {player.inGameId}
+                                      </p>
+                                    </div>
+                                    {isSelected && (
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                    )}
+                                    {isUsed && !isSelected && (
+                                      <span className="text-[10px] text-slate-600 shrink-0">taken</span>
+                                    )}
+                                  </button>
+                                );
+                              });
+                            })()}
+                          </div>
+                        </div>
+                      )}
                     </div>
+                    {/* Prize % */}
                     <div className="space-y-1">
                       <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                         Prize %
