@@ -2640,7 +2640,7 @@ const TournamentManage = () => {
                                 .map(r => r.inGameId.toLowerCase())
                                 .filter(Boolean);
                               const eligible = registrants
-                                .filter(r => ACTIVE_REGISTRANT_STATUSES.has(r.status) && r.inGameId)
+                                .filter(r => r.inGameId)
                                 .filter(r => {
                                   if (!winnerDropdownSearch) return true;
                                   const q = winnerDropdownSearch.toLowerCase();
