@@ -1098,7 +1098,9 @@ const TournamentManage = () => {
     if (unresolved.length > 0) {
       defaults = unresolved.map((winner) => ({
         position: winner.position,
-        inGameId: winner.inGameId,
+        // Clear "not_registered" IDs so the organizer must re-pick the correct player.
+        // Keeping the stale wrong ID would cause the same mismatch on re-submission.
+        inGameId: winner.matchStatus === "not_registered" ? "" : winner.inGameId,
         prizePercentage: distributionByPosition.get(winner.position) ?? 0,
       }));
 
@@ -1157,10 +1159,12 @@ const TournamentManage = () => {
       }
     }
 
+    // Pre-highlight any rows that were cleared (not_registered) so they're immediately visible
+    const clearedIndices = new Set(defaults.map((r, i) => r.inGameId === "" ? i : -1).filter(i => i >= 0));
     setWinnerRows(defaults);
     setOpenWinnerDropdown(null);
     setWinnerDropdownSearch("");
-    setEmptyWinnerIndices(new Set());
+    setEmptyWinnerIndices(clearedIndices);
     setShowWinnersModal(true);
   };
 
@@ -1372,7 +1376,12 @@ const TournamentManage = () => {
     tournament.status === "awaiting_deposit" && !tournament.isFree;
   const canSubmitWinners =
     escrowSummary !== null &&
-    ["awaiting_results", "tournament_active"].includes(escrowSummary.status);
+    [
+      "awaiting_results",
+      "tournament_active",
+      "verifying_winners",
+      "disputed",
+    ].includes(escrowSummary.status);
   const disputedWinners = (
     escrowSummary?.winnerSubmissions?.winners ?? []
   ).filter((winner: EscrowWinnerSummary) => winner.matchStatus !== "matched");
@@ -1913,32 +1922,49 @@ const TournamentManage = () => {
             </div>
 
             {(() => {
-              // Primary source: escrow submitted winners (directly correlated to the winner list)
-              // Fallback: tournament results API
               const submittedWinners = escrowSummary?.winnerSubmissions?.winners ?? [];
               type StandingEntry = { position: number; inGameId: string; displayName: string; prize: string | null };
-              const effectiveStandings: StandingEntry[] = submittedWinners.length > 0
-                ? [...submittedWinners]
-                    .sort((a, b) => a.position - b.position)
-                    .map(w => {
-                      const reg = registrants.find(r => r.inGameId === w.inGameId);
-                      return {
-                        position: w.position,
-                        inGameId: w.inGameId,
-                        displayName: reg?.displayName ?? w.inGameId,
-                        prize: w.prizeAmountLabel ?? null,
-                      };
-                    })
-                : (tournamentResults ?? []).map((e, idx) => ({
+              let effectiveStandings: StandingEntry[] = [];
+
+              if (submittedWinners.length > 0) {
+                // Priority 1: submitted winners from escrow
+                effectiveStandings = [...submittedWinners]
+                  .sort((a, b) => a.position - b.position)
+                  .map(w => {
+                    const reg = registrants.find(r => r.inGameId === w.inGameId);
+                    return { position: w.position, inGameId: w.inGameId, displayName: reg?.displayName ?? w.inGameId, prize: w.prizeAmountLabel ?? null };
+                  });
+              } else {
+                // Priority 2: bracket match outcomes — same source as the Results sidebar
+                const gfRound = bracketRounds.find(r => r.bracket === "grand_final") ?? bracketRounds[bracketRounds.length - 1];
+                const gfMatch = gfRound?.matches?.find(m => m.status === "completed");
+                const bracketChampion = gfMatch?.participants?.find(p => p.result === "win");
+                if (bracketChampion) {
+                  const bracketRunnerUp = gfMatch?.participants?.find(p => p.result === "loss");
+                  const wbRoundsData = bracketRounds.filter(r => r !== gfRound && r.bracket !== "grand_final");
+                  const sfLosers = (wbRoundsData[wbRoundsData.length - 1]?.matches ?? [])
+                    .filter(m => m.status === "completed")
+                    .flatMap(m => m.participants?.filter(p => p.result === "loss") ?? []);
+                  const addBracketEntry = (pos: number, p: typeof bracketChampion | undefined) => {
+                    if (!p) return;
+                    const inGameId = getParticipantLabel(p);
+                    const reg = registrants.find(r => r.inGameId === inGameId);
+                    effectiveStandings.push({ position: pos, inGameId, displayName: reg?.displayName ?? inGameId, prize: null });
+                  };
+                  addBracketEntry(1, bracketChampion);
+                  addBracketEntry(2, bracketRunnerUp);
+                  addBracketEntry(3, sfLosers[0]);
+                }
+                // Priority 3: tournament results API (last resort)
+                if (effectiveStandings.length === 0) {
+                  effectiveStandings = (tournamentResults ?? []).map((e, idx) => ({
                     position: Number(e.position ?? e.final_placement ?? idx + 1),
                     inGameId: String(e.in_game_id ?? e.inGameId ?? ""),
                     displayName: String(e.username ?? e.in_game_id ?? e.inGameId ?? "—"),
-                    prize: e.prize_amount_ghs
-                      ? `GHS ${String(e.prize_amount_ghs)}`
-                      : e.prize_percentage
-                        ? `${String(e.prize_percentage)}%`
-                        : null,
+                    prize: e.prize_amount_ghs ? `GHS ${String(e.prize_amount_ghs)}` : e.prize_percentage ? `${String(e.prize_percentage)}%` : null,
                   }));
+                }
+              }
 
               if (isLoadingResults && effectiveStandings.length === 0) {
                 return (
@@ -2471,14 +2497,14 @@ const TournamentManage = () => {
                   <div className="space-y-2">
                     <div className="rounded-xl border border-red-500/25 bg-red-500/8 px-3 py-2.5 flex gap-2.5">
                       <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                      <p className="text-xs text-red-300">
-                        <span className="font-semibold">
-                          Needs attention ·{" "}
-                        </span>
-                        {disputedWinners.length > 0
-                          ? "Some winner IDs could not be matched."
-                          : `Status: ${normalizeEscrowStatusLabel(escrowSummary.status)}. Check payment flow.`}
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-xs text-red-300">
+                          <span className="font-semibold">Needs attention · </span>
+                          {disputedWinners.length > 0
+                            ? "Submitted winner IDs could not be matched to registered players. The escrow is locked — contact support with the correct IDs shown below."
+                            : `Status: ${normalizeEscrowStatusLabel(escrowSummary.status)}. Check payment flow.`}
+                        </p>
+                      </div>
                     </div>
 
                     {disputedWinners.length > 0 && (
@@ -2490,40 +2516,46 @@ const TournamentManage = () => {
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="text-slate-500 border-b border-red-500/10">
-                                <th className="px-3 py-2 text-left font-semibold">
-                                  #
-                                </th>
-                                <th className="px-3 py-2 text-left font-semibold">
-                                  In-Game ID
-                                </th>
-                                <th className="px-3 py-2 text-left font-semibold">
-                                  Match
-                                </th>
-                                <th className="px-3 py-2 text-left font-semibold">
-                                  Prize
-                                </th>
+                                <th className="px-3 py-2 text-left font-semibold">#</th>
+                                <th className="px-3 py-2 text-left font-semibold">Submitted ID</th>
+                                <th className="px-3 py-2 text-left font-semibold">Correct ID (registered)</th>
+                                <th className="px-3 py-2 text-left font-semibold">Prize</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {disputedWinners.map((winner) => (
-                                <tr
-                                  key={`${winner.position}-${winner.inGameId}`}
-                                  className="border-b border-red-500/8 last:border-b-0"
-                                >
-                                  <td className="px-3 py-2 font-bold text-white">
-                                    #{winner.position}
-                                  </td>
-                                  <td className="px-3 py-2 text-slate-200">
-                                    {winner.inGameId}
-                                  </td>
-                                  <td className="px-3 py-2 text-amber-300 capitalize">
-                                    {winner.matchStatus.replace(/_/g, " ")}
-                                  </td>
-                                  <td className="px-3 py-2 text-slate-400">
-                                    {winner.prizeAmountLabel ?? "—"}
-                                  </td>
-                                </tr>
-                              ))}
+                              {disputedWinners.map((winner) => {
+                                const match = registrants.find(
+                                  r => r.displayName.toLowerCase() === winner.inGameId.toLowerCase() ||
+                                       r.inGameId.toLowerCase() === winner.inGameId.toLowerCase() ||
+                                       r.username.toLowerCase() === winner.inGameId.toLowerCase()
+                                );
+                                return (
+                                  <tr
+                                    key={`${winner.position}-${winner.inGameId}`}
+                                    className="border-b border-red-500/8 last:border-b-0"
+                                  >
+                                    <td className="px-3 py-2 font-bold text-white">
+                                      #{winner.position}
+                                    </td>
+                                    <td className="px-3 py-2 text-red-300 line-through opacity-70">
+                                      {winner.inGameId}
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      {match ? (
+                                        <div>
+                                          <p className="text-emerald-300 font-semibold">{match.inGameId}</p>
+                                          <p className="text-slate-500 text-[10px]">{match.displayName}</p>
+                                        </div>
+                                      ) : (
+                                        <span className="text-slate-500 italic">not found in registrants</span>
+                                      )}
+                                    </td>
+                                    <td className="px-3 py-2 text-slate-400">
+                                      {winner.prizeAmountLabel ?? "—"}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -2631,16 +2663,11 @@ const TournamentManage = () => {
             </div>
 
             <div className="px-5 py-4 space-y-3 max-h-[55vh] overflow-y-auto">
-              {!canSubmitWinners && (
+              {escrowSummary?.status === "disputed" && (
                 <div className="rounded-xl border border-amber-500/25 bg-amber-500/8 px-3 py-2.5 flex gap-2.5">
                   <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-300">
-                    Escrow is{" "}
-                    <span className="font-semibold">
-                      {normalizeEscrowStatusLabel(escrowSummary?.status)}
-                    </span>
-                    . Review IDs here, but submission requires awaiting_results
-                    or tournament_active status.
+                    Escrow is <span className="font-semibold">disputed</span> — previous winner IDs could not be matched. Select the correct players below and re-submit to resolve.
                   </p>
                 </div>
               )}
