@@ -642,7 +642,9 @@ const TournamentManage = () => {
       if (
         t &&
         [
+          "open",
           "locked",
+          "started",
           "ready_to_start",
           "ongoing",
           "awaiting_results",
@@ -1271,6 +1273,7 @@ const TournamentManage = () => {
   const hasBracketGenerated =
     totalBracketMatches > 0 ||
     [
+      "started",
       "ready_to_start",
       "ongoing",
       "awaiting_results",
