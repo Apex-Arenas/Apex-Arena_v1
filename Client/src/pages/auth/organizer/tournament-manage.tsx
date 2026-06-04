@@ -1886,138 +1886,110 @@ const TournamentManage = () => {
               </span>
             </div>
 
-            {isLoadingResults ? (
-              <div className="flex items-center justify-center py-12 gap-3">
-                <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
-                <span className="text-sm text-slate-500">Loading results…</span>
-              </div>
-            ) : tournamentResults && tournamentResults.length > 0 ? (
-              <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
-                {/* Podium cards for top 3 */}
-                {tournamentResults.slice(0, 3).length > 0 && (
+            {(() => {
+              // Primary source: escrow submitted winners (directly correlated to the winner list)
+              // Fallback: tournament results API
+              const submittedWinners = escrowSummary?.winnerSubmissions?.winners ?? [];
+              type StandingEntry = { position: number; inGameId: string; displayName: string; prize: string | null };
+              const effectiveStandings: StandingEntry[] = submittedWinners.length > 0
+                ? [...submittedWinners]
+                    .sort((a, b) => a.position - b.position)
+                    .map(w => {
+                      const reg = registrants.find(r => r.inGameId === w.inGameId);
+                      return {
+                        position: w.position,
+                        inGameId: w.inGameId,
+                        displayName: reg?.displayName ?? w.inGameId,
+                        prize: w.prizeAmountLabel ?? null,
+                      };
+                    })
+                : (tournamentResults ?? []).map((e, idx) => ({
+                    position: Number(e.position ?? e.final_placement ?? idx + 1),
+                    inGameId: String(e.in_game_id ?? e.inGameId ?? ""),
+                    displayName: String(e.username ?? e.in_game_id ?? e.inGameId ?? "—"),
+                    prize: e.prize_amount_ghs
+                      ? `GHS ${String(e.prize_amount_ghs)}`
+                      : e.prize_percentage
+                        ? `${String(e.prize_percentage)}%`
+                        : null,
+                  }));
+
+              if (isLoadingResults && effectiveStandings.length === 0) {
+                return (
+                  <div className="flex items-center justify-center py-12 gap-3">
+                    <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+                    <span className="text-sm text-slate-500">Loading results…</span>
+                  </div>
+                );
+              }
+
+              if (effectiveStandings.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-14 px-6 text-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center">
+                      <Trophy className="w-5 h-5 text-slate-600" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-400">No results recorded yet</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
+                  {/* Podium — top 3 */}
                   <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                     {[
-                      {
-                        pos: 1,
-                        color: "from-amber-500/20 to-amber-500/5",
-                        border: "border-amber-500/30",
-                        badge:
-                          "text-amber-300 bg-amber-500/15 border-amber-500/30",
-                        medal: "🥇",
-                      },
-                      {
-                        pos: 2,
-                        color: "from-slate-400/15 to-slate-400/5",
-                        border: "border-slate-500/30",
-                        badge:
-                          "text-slate-300 bg-slate-500/15 border-slate-500/30",
-                        medal: "🥈",
-                      },
-                      {
-                        pos: 3,
-                        color: "from-orange-600/15 to-orange-600/5",
-                        border: "border-orange-500/25",
-                        badge:
-                          "text-orange-300 bg-orange-500/10 border-orange-500/25",
-                        medal: "🥉",
-                      },
+                      { pos: 1, color: "from-amber-500/20 to-amber-500/5", border: "border-amber-500/30", badge: "text-amber-300 bg-amber-500/15 border-amber-500/30", medal: "🥇" },
+                      { pos: 2, color: "from-slate-400/15 to-slate-400/5", border: "border-slate-500/30", badge: "text-slate-300 bg-slate-500/15 border-slate-500/30", medal: "🥈" },
+                      { pos: 3, color: "from-orange-600/15 to-orange-600/5", border: "border-orange-500/25", badge: "text-orange-300 bg-orange-500/10 border-orange-500/25", medal: "🥉" },
                     ].map(({ pos, color, border, badge, medal }) => {
-                      const entry =
-                        tournamentResults.find(
-                          (e) =>
-                            Number(e.position ?? e.final_placement) === pos,
-                        ) ?? tournamentResults[pos - 1];
+                      const entry = effectiveStandings.find(e => e.position === pos);
                       if (!entry) return null;
                       return (
-                        <div
-                          key={pos}
-                          className={`rounded-xl border bg-linear-to-b ${color} ${border} p-2 sm:p-3 text-center`}
-                        >
+                        <div key={pos} className={`rounded-xl border bg-linear-to-b ${color} ${border} p-2 sm:p-3 text-center`}>
                           <div className="text-xl sm:text-2xl mb-1">{medal}</div>
-                          <p className="text-[10px] sm:text-xs font-bold text-white truncate">
-                            {String(
-                              entry.in_game_id ??
-                                entry.inGameId ??
-                                entry.username ??
-                                "—",
-                            )}
-                          </p>
-                          <p
-                            className={`text-[10px] font-semibold mt-1 px-1.5 py-0.5 rounded-full border inline-block ${badge}`}
-                          >
-                            {entry.prize_amount_ghs
-                              ? `GHS ${String(entry.prize_amount_ghs)}`
-                              : entry.prize_percentage
-                                ? `${String(entry.prize_percentage)}%`
-                                : "—"}
+                          <p className="text-[10px] sm:text-xs font-bold text-white truncate">{entry.displayName}</p>
+                          {entry.displayName !== entry.inGameId && entry.inGameId && (
+                            <p className="text-[9px] text-slate-500 truncate mt-0.5">{entry.inGameId}</p>
+                          )}
+                          <p className={`text-[10px] font-semibold mt-1.5 px-1.5 py-0.5 rounded-full border inline-block ${badge}`}>
+                            {entry.prize ?? "—"}
                           </p>
                         </div>
                       );
                     })}
                   </div>
-                )}
-                {/* Rest of standings */}
-                {tournamentResults.length > 3 && (
-                  <div className="rounded-xl border border-slate-800 overflow-hidden">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-slate-800/60 bg-slate-950/20">
-                          {["#", "Player", "Prize"].map((h) => (
-                            <th
-                              key={h}
-                              className="px-4 py-2.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest"
-                            >
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {tournamentResults.slice(3).map((entry, idx) => (
-                          <tr
-                            key={idx}
-                            className="border-b border-slate-800/40 last:border-b-0 hover:bg-slate-800/20 transition-colors"
-                          >
-                            <td className="px-4 py-2.5 text-sm font-bold text-slate-400">
-                              #
-                              {String(
-                                entry.position ??
-                                  entry.final_placement ??
-                                  idx + 4,
-                              )}
-                            </td>
-                            <td className="px-4 py-2.5 text-sm font-medium text-white">
-                              {String(
-                                entry.in_game_id ??
-                                  entry.inGameId ??
-                                  entry.username ??
-                                  "—",
-                              )}
-                            </td>
-                            <td className="px-4 py-2.5 text-sm text-slate-400">
-                              {entry.prize_amount_ghs
-                                ? `GHS ${String(entry.prize_amount_ghs)}`
-                                : entry.prize_percentage
-                                  ? `${String(entry.prize_percentage)}%`
-                                  : "—"}
-                            </td>
+                  {/* 4th place and beyond */}
+                  {effectiveStandings.length > 3 && (
+                    <div className="rounded-xl border border-slate-800 overflow-hidden">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-slate-800/60 bg-slate-950/20">
+                            {["#", "Player", "Prize"].map(h => (
+                              <th key={h} className="px-4 py-2.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">{h}</th>
+                            ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-14 px-6 text-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center">
-                  <Trophy className="w-5 h-5 text-slate-600" />
+                        </thead>
+                        <tbody>
+                          {effectiveStandings.slice(3).map(entry => (
+                            <tr key={entry.position} className="border-b border-slate-800/40 last:border-b-0 hover:bg-slate-800/20 transition-colors">
+                              <td className="px-4 py-2.5 text-sm font-bold text-slate-400">#{entry.position}</td>
+                              <td className="px-4 py-2.5">
+                                <p className="text-sm font-medium text-white">{entry.displayName}</p>
+                                {entry.displayName !== entry.inGameId && entry.inGameId && (
+                                  <p className="text-xs text-slate-500">{entry.inGameId}</p>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5 text-sm text-slate-400">{entry.prize ?? "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm font-medium text-slate-400">
-                  No results recorded yet
-                </p>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
