@@ -64,11 +64,12 @@ export interface BracketRound {
 }
 
 export const BRACKET_VISIBLE_STATUSES = new Set([
+  "open",
   "locked",
+  "started",
   "ready_to_start",
   "ongoing",
   "awaiting_results",
   "verifying_results",
   "completed",
-  "started",
 ]);
