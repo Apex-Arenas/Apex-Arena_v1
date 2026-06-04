@@ -1376,12 +1376,7 @@ const TournamentManage = () => {
     tournament.status === "awaiting_deposit" && !tournament.isFree;
   const canSubmitWinners =
     escrowSummary !== null &&
-    [
-      "awaiting_results",
-      "tournament_active",
-      "verifying_winners",
-      "disputed",
-    ].includes(escrowSummary.status);
+    ["awaiting_results", "tournament_active", "disputed"].includes(escrowSummary.status);
   const disputedWinners = (
     escrowSummary?.winnerSubmissions?.winners ?? []
   ).filter((winner: EscrowWinnerSummary) => winner.matchStatus !== "matched");
@@ -2663,7 +2658,14 @@ const TournamentManage = () => {
             </div>
 
             <div className="px-5 py-4 space-y-3 max-h-[55vh] overflow-y-auto">
-              {escrowSummary?.status === "disputed" && (
+              {escrowSummary?.status === "verifying_winners" ? (
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-3 py-2.5 flex gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-emerald-300">
+                    <span className="font-semibold">Winners verified.</span> Prizes will be distributed automatically within 5 minutes. No further action needed.
+                  </p>
+                </div>
+              ) : escrowSummary?.status === "disputed" && (
                 <div className="rounded-xl border border-amber-500/25 bg-amber-500/8 px-3 py-2.5 flex gap-2.5">
                   <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-300">
