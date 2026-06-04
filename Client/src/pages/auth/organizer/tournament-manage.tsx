@@ -40,8 +40,8 @@ import {
   type Tournament,
 } from "../../../services/tournament.service";
 import { LeagueView } from "../../../components/league/LeagueView";
-import { apiGet } from "../../../utils/api.utils";
-import { TOURNAMENT_ENDPOINTS } from "../../../config/api.config";
+import { apiGet, apiPost } from "../../../utils/api.utils";
+import { TOURNAMENT_ENDPOINTS, FINANCE_ENDPOINTS } from "../../../config/api.config";
 import { showSuccess, showError } from "../../../utils/toast.utils";
 import { DateTimePicker } from "../../../components/ui/DateTimePicker";
 import {
@@ -571,6 +571,7 @@ const TournamentManage = () => {
   const [statsOpen, setStatsOpen] = useState(false);
   const [extendDate, setExtendDate] = useState("");
   const [isExtending, setIsExtending] = useState(false);
+  const [isAllocatingWinnings, setIsAllocatingWinnings] = useState(false);
   const [openWinnerDropdown, setOpenWinnerDropdown] = useState<number | null>(null);
   const [winnerDropdownSearch, setWinnerDropdownSearch] = useState("");
   const [emptyWinnerIndices, setEmptyWinnerIndices] = useState<Set<number>>(new Set());
@@ -974,6 +975,19 @@ const TournamentManage = () => {
       );
     } finally {
       setIsExtending(false);
+    }
+  };
+
+  const handleAllocateWinnings = async () => {
+    if (!tournamentId) return;
+    setIsAllocatingWinnings(true);
+    try {
+      await apiPost(`${FINANCE_ENDPOINTS.ESCROW_ALLOCATE_WINNINGS}/${tournamentId}/allocate-winnings`, {});
+      showToast("success", "Winnings allocated — players can now see and claim their prizes.");
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Failed to allocate winnings.");
+    } finally {
+      setIsAllocatingWinnings(false);
     }
   };
 
@@ -1911,9 +1925,22 @@ const TournamentManage = () => {
                   </p>
                 </div>
               </div>
-              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                Completed
-              </span>
+              <div className="flex items-center gap-2">
+                {escrowSummary?.processingSchedule?.prizesDistributed && (
+                  <button
+                    onClick={() => void handleAllocateWinnings()}
+                    disabled={isAllocatingWinnings}
+                    title="Send winnings to players' Prizes page"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold hover:bg-amber-500/25 disabled:opacity-50 transition-colors"
+                  >
+                    {isAllocatingWinnings ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trophy className="w-3 h-3" />}
+                    {isAllocatingWinnings ? "Sending…" : "Send to Players"}
+                  </button>
+                )}
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  Completed
+                </span>
+              </div>
             </div>
 
             {(() => {
