@@ -131,6 +131,7 @@ const App = () => {
           <Route element={<NotificationProvider><DashboardLayout /></NotificationProvider>}>
             <Route index element={<Dashboard />} />
             <Route path="transactions" element={<TransactionsPage />} />
+            <Route path="wallet" element={<TransactionsPage />} />
             <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="prizes" element={<PrizesPage />} />

@@ -18,6 +18,7 @@ import {
   Mail,
   ShieldAlert,
   Star,
+  Wallet,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth-context";
@@ -28,10 +29,11 @@ const playerNavItems = [
   { to: "/auth",                        icon: Home,       label: "Home",         end: true },
   { to: "/auth/player/join-tournament", icon: Swords,     label: "Tournaments"              },
   { to: "/auth/leaderboard",            icon: Trophy,     label: "Leaderboard"              },
-  { to: "/auth/prizes",                icon: Star,       label: "Prizes"                   },
+  { to: "/auth/wallet",                 icon: Wallet,     label: "Wallet"                   },
+  { to: "/auth/prizes",                 icon: Star,       label: "Prizes"                   },
   { to: "/auth/player/profile",         icon: UserCircle, label: "Profile"                  },
   { to: "/auth/notifications",          icon: Bell,       label: "Notifications"            },
-  { to: "/auth/contact-us",              icon: Mail,       label: "Contact Us"               },
+  { to: "/auth/contact-us",             icon: Mail,       label: "Contact Us"               },
 ] as const;
 
 const organizerNavItems = [
@@ -39,10 +41,11 @@ const organizerNavItems = [
   { to: "/auth/organizer/tournaments",     icon: ListTodo,    label: "My Tournaments"            },
   { to: "/auth/organizer/disputes",        icon: ShieldAlert, label: "Disputes",       badge: "disputes" as const },
   { to: "/auth/player/join-tournament",    icon: Swords,      label: "Join Tournament"           },
-  { to: "/auth/leaderboard",              icon: Trophy,      label: "Leaderboard"               },
+  { to: "/auth/leaderboard",               icon: Trophy,      label: "Leaderboard"               },
   { to: "/auth/organizer/analytics",       icon: BarChart2,   label: "Analytics"                 },
   { to: "/auth/organizer/finance",         icon: DollarSign,  label: "Finance"                   },
-  { to: "/auth/prizes",                   icon: Star,        label: "Prizes"                    },
+  { to: "/auth/wallet",                    icon: Wallet,      label: "Wallet"                    },
+  { to: "/auth/prizes",                    icon: Star,        label: "Prizes"                    },
   { to: "/auth/organizer/profile",         icon: UserCircle,  label: "Profile"                   },
   { to: "/auth/notifications",             icon: Bell,        label: "Notifications"             },
   { to: "/auth/contact-us",               icon: Mail,        label: "Contact Us"                },
