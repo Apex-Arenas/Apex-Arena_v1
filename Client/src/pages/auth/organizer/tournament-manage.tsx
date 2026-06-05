@@ -1537,41 +1537,32 @@ const TournamentManage = () => {
           <div className="py-5 space-y-4">
             {/* Title + status + meta */}
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-linear-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-linear-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0 mt-0.5">
                 <Trophy className="w-5 h-5 text-cyan-400" />
               </div>
               <div className="flex-1 min-w-0">
-                {/* Title + status badge end-to-end + stats toggle */}
+                {/* Title + badge — same line, spread apart */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center justify-between min-w-0 flex-1">
-                    <h1 className="font-display text-xl sm:text-2xl font-bold text-white leading-tight truncate">
-                      {tournament.title}
-                    </h1>
-                    <span className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border ${
-                      tournament.status === "open"
-                        ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
-                        : tournament.status === "awaiting_deposit" || tournament.status === "published"
-                          ? "bg-amber-500/15 text-amber-300 border-amber-500/25"
-                          : tournament.status === "draft"
-                            ? "bg-slate-600/20 text-slate-400 border-slate-600/25"
-                            : tournament.status === "cancelled"
-                              ? "bg-red-500/15 text-red-400 border-red-500/25"
-                              : tournament.status === "completed"
-                                ? "bg-amber-500/15 text-amber-300 border-amber-500/25"
-                                : "bg-cyan-500/15 text-cyan-300 border-cyan-500/25"
-                    }`}>
-                      {tournament.status.replace(/_/g, " ")}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setStatsOpen(v => !v)}
-                    className="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors shrink-0"
-                  >
-                    Stats
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
-                  </button>
+                  <h1 className="font-display text-xl md:text-2xl font-bold text-white leading-tight truncate min-w-0">
+                    {tournament.title}
+                  </h1>
+                  <span className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border ${
+                    tournament.status === "open"
+                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                      : tournament.status === "awaiting_deposit" || tournament.status === "published"
+                        ? "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                        : tournament.status === "draft"
+                          ? "bg-slate-600/20 text-slate-400 border-slate-600/25"
+                          : tournament.status === "cancelled"
+                            ? "bg-red-500/15 text-red-400 border-red-500/25"
+                            : tournament.status === "completed"
+                              ? "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                              : "bg-cyan-500/15 text-cyan-300 border-cyan-500/25"
+                  }`}>
+                    {tournament.status.replace(/_/g, " ")}
+                  </span>
                 </div>
-                {/* Meta chips — horizontal scroll on mobile */}
+                {/* Meta chips + stats toggle on mobile */}
                 <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto no-scrollbar">
                   <span className="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50 text-[11px] font-semibold text-slate-300">
                     {tournament.game?.name ?? "Unknown Game"}
@@ -1594,6 +1585,14 @@ const TournamentManage = () => {
                       )}
                     </span>
                   )}
+                  {/* Stats toggle — sits at end of chips row on mobile */}
+                  <button
+                    onClick={() => setStatsOpen(v => !v)}
+                    className="md:hidden shrink-0 ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors"
+                  >
+                    Stats
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+                  </button>
                 </div>
               </div>
             </div>
