@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Wallet, ArrowDownLeft, ArrowUpRight, RefreshCw, Loader2,
-  X, AlertCircle, Phone, Banknote, Plus, Trophy, ExternalLink,
+  Wallet, Banknote, RefreshCw, Loader2, X, Phone,
+  Plus, Trophy, ArrowDownLeft, ArrowUpRight, ChevronDown,
+  CheckCircle2, XCircle, Clock, TrendingUp, Send,
 } from "lucide-react";
 import {
   organizerService,
@@ -47,33 +48,32 @@ interface Transaction {
   type: string;
   direction: "credit" | "debit";
   amount: number;
-  currency: string;
   status: string;
   description: string;
   createdAt: string;
 }
 
-// ─── Config maps ──────────────────────────────────────────────────────────────
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 const TX_META: Record<string, { label: string; iconBg: string; iconColor: string; amountCls: string; sign: string }> = {
-  deposit:          { label: "Deposit",     iconBg: "bg-emerald-500/15", iconColor: "text-emerald-400", amountCls: "text-emerald-400", sign: "+" },
-  prize_won:        { label: "Prize Won",   iconBg: "bg-amber-500/15",  iconColor: "text-amber-400",   amountCls: "text-amber-400",   sign: "+" },
-  refund:           { label: "Refund",      iconBg: "bg-emerald-500/15", iconColor: "text-emerald-400", amountCls: "text-emerald-400", sign: "+" },
-  wallet_topup:     { label: "Top Up",      iconBg: "bg-emerald-500/15", iconColor: "text-emerald-400", amountCls: "text-emerald-400", sign: "+" },
-  entry_fee:        { label: "Entry Fee",   iconBg: "bg-red-500/15",    iconColor: "text-red-400",     amountCls: "text-red-400",     sign: "-" },
-  payout_completed: { label: "Withdrawal",  iconBg: "bg-cyan-500/15",   iconColor: "text-cyan-400",    amountCls: "text-cyan-300",    sign: "-" },
-  payout_approved:  { label: "Withdrawal",  iconBg: "bg-indigo-500/15", iconColor: "text-indigo-400",  amountCls: "text-indigo-300",  sign: "-" },
-  platform_fee:     { label: "Platform Fee",iconBg: "bg-slate-700/60",  iconColor: "text-slate-400",   amountCls: "text-slate-400",   sign: "-" },
+  deposit:          { label: "Deposit",      iconBg: "bg-emerald-500/15", iconColor: "text-emerald-400", amountCls: "text-emerald-400", sign: "+" },
+  prize_won:        { label: "Prize Won",    iconBg: "bg-amber-500/15",  iconColor: "text-amber-400",   amountCls: "text-amber-400",   sign: "+" },
+  refund:           { label: "Refund",       iconBg: "bg-emerald-500/15", iconColor: "text-emerald-400", amountCls: "text-emerald-400", sign: "+" },
+  wallet_topup:     { label: "Top Up",       iconBg: "bg-emerald-500/15", iconColor: "text-emerald-400", amountCls: "text-emerald-400", sign: "+" },
+  entry_fee:        { label: "Entry Fee",    iconBg: "bg-red-500/15",    iconColor: "text-red-400",     amountCls: "text-red-400",     sign: "-" },
+  payout_completed: { label: "Withdrawal",   iconBg: "bg-cyan-500/15",   iconColor: "text-cyan-400",    amountCls: "text-cyan-300",    sign: "-" },
+  payout_approved:  { label: "Withdrawal",   iconBg: "bg-indigo-500/15", iconColor: "text-indigo-400",  amountCls: "text-indigo-300",  sign: "-" },
+  platform_fee:     { label: "Platform Fee", iconBg: "bg-slate-700/60",  iconColor: "text-slate-400",   amountCls: "text-slate-400",   sign: "-" },
 };
 
 const PAYOUT_STATUS: Record<string, { label: string; cls: string; dot: string }> = {
-  pending:      { label: "Pending",      cls: "bg-amber-500/15 text-amber-300 border-amber-500/25",     dot: "bg-amber-400" },
-  under_review: { label: "Under Review", cls: "bg-blue-500/15 text-blue-300 border-blue-500/25",        dot: "bg-blue-400" },
-  approved:     { label: "Approved",     cls: "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",        dot: "bg-cyan-400" },
-  processing:   { label: "Processing",   cls: "bg-indigo-500/15 text-indigo-300 border-indigo-500/25",  dot: "bg-indigo-400 animate-pulse" },
+  pending:      { label: "Pending",      cls: "bg-amber-500/15 text-amber-300 border-amber-500/25",      dot: "bg-amber-400" },
+  under_review: { label: "Under Review", cls: "bg-blue-500/15 text-blue-300 border-blue-500/25",         dot: "bg-blue-400" },
+  approved:     { label: "Approved",     cls: "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",         dot: "bg-cyan-400" },
+  processing:   { label: "Processing",   cls: "bg-indigo-500/15 text-indigo-300 border-indigo-500/25",   dot: "bg-indigo-400 animate-pulse" },
   completed:    { label: "Completed",    cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25", dot: "bg-emerald-400" },
-  rejected:     { label: "Rejected",     cls: "bg-red-500/15 text-red-300 border-red-500/25",           dot: "bg-red-400" },
-  cancelled:    { label: "Cancelled",    cls: "bg-slate-600/20 text-slate-400 border-slate-600/25",     dot: "bg-slate-500" },
+  rejected:     { label: "Rejected",     cls: "bg-red-500/15 text-red-300 border-red-500/25",            dot: "bg-red-400" },
+  cancelled:    { label: "Cancelled",    cls: "bg-slate-600/20 text-slate-400 border-slate-600/25",      dot: "bg-slate-500" },
 };
 
 // ─── MoMo Form ────────────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ function MomoForm({
       {onNotesChange && (
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">
-            Notes <span className="text-slate-600 normal-case">(optional)</span>
+            Notes <span className="text-slate-600 normal-case font-normal">(optional)</span>
           </label>
           <input type="text" value={notes} onChange={e => onNotesChange(e.target.value)}
             placeholder="Any notes for the admin..."
@@ -172,8 +172,8 @@ function WithdrawModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center z-50 p-4 sm:p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-2xl rounded-t-2xl w-full max-w-sm overflow-hidden shadow-2xl mb-0 sm:mb-0">
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center">
@@ -188,7 +188,7 @@ function WithdrawModal({
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Amount (GHS)</label>
             <div className="relative">
@@ -215,9 +215,9 @@ function WithdrawModal({
         <div className="px-5 pb-5 flex gap-2.5">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-sm font-semibold text-slate-300 hover:border-slate-600 transition-colors">Cancel</button>
           <button onClick={() => void handleSubmit()} disabled={!valid || submitting}
-            className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-cyan-500 text-slate-950 text-sm font-bold hover:bg-cyan-400 disabled:opacity-50 transition-colors"
+            className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 transition-all"
           >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Banknote className="w-4 h-4" />}
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             {submitting ? "Submitting…" : "Withdraw"}
           </button>
         </div>
@@ -244,17 +244,13 @@ function TransactionsTab({ refresh }: { refresh: number }) {
           type: String(t.type ?? ""),
           direction: (t.direction ?? (["deposit", "prize_won", "refund", "wallet_topup"].includes(String(t.type)) ? "credit" : "debit")) as "credit" | "debit",
           amount: Number(t.amount ?? 0),
-          currency: String(t.currency ?? "GHS"),
           status: String(t.status ?? ""),
           description: String((t.metadata as Record<string, unknown>)?.description ?? t.description ?? ""),
           createdAt: String(t.created_at ?? t.createdAt ?? ""),
         })));
       }
-    } catch {
-      setTransactions([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setTransactions([]); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => { void load(); }, [load, refresh]);
@@ -262,8 +258,8 @@ function TransactionsTab({ refresh }: { refresh: number }) {
   if (loading) return (
     <div className="space-y-2">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 p-4 rounded-xl bg-slate-900/60 border border-slate-800 animate-pulse">
-          <div className="w-9 h-9 rounded-xl bg-slate-800 shrink-0" />
+        <div key={i} className="flex items-center gap-3 p-4 rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse">
+          <div className="w-10 h-10 rounded-xl bg-slate-800 shrink-0" />
           <div className="flex-1 space-y-2"><div className="h-3 w-32 bg-slate-800 rounded" /><div className="h-2.5 w-20 bg-slate-800 rounded" /></div>
           <div className="h-4 w-16 bg-slate-800 rounded" />
         </div>
@@ -272,18 +268,18 @@ function TransactionsTab({ refresh }: { refresh: number }) {
   );
 
   if (transactions.length === 0) return (
-    <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center">
-        <Wallet className="w-6 h-6 text-slate-600" />
+    <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+      <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-2">
+        <TrendingUp className="w-7 h-7 text-slate-600" />
       </div>
-      <p className="text-sm font-medium text-slate-400">No transactions yet</p>
-      <p className="text-xs text-slate-600">Your transaction history will appear here</p>
+      <p className="font-display text-lg font-semibold text-slate-300">No transactions yet</p>
+      <p className="text-sm text-slate-500">Your transaction history will appear here.</p>
     </div>
   );
 
   return (
-    <div className="space-y-1.5">
-      {transactions.map(tx => {
+    <div className="space-y-2">
+      {transactions.map((tx, i) => {
         const meta = TX_META[tx.type] ?? {
           label: tx.type.replace(/_/g, " "),
           iconBg: "bg-slate-700/60", iconColor: "text-slate-400",
@@ -295,19 +291,19 @@ function TransactionsTab({ refresh }: { refresh: number }) {
           tx.status === "failed" || tx.status === "cancelled" ? "text-red-400" :
           "text-amber-400";
         return (
-          <div key={tx.id} className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-slate-900/60 border border-slate-800/60 hover:border-slate-700/80 hover:bg-slate-900 transition-colors">
-            <div className={`w-9 h-9 rounded-xl ${meta.iconBg} flex items-center justify-center shrink-0`}>
+          <div key={tx.id || i} className="flex items-center gap-3 px-5 py-4 rounded-2xl border border-slate-800 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-900 transition-colors">
+            <div className={`w-10 h-10 rounded-xl ${meta.iconBg} flex items-center justify-center shrink-0`}>
               {tx.direction === "credit"
-                ? <ArrowDownLeft className={`w-4 h-4 ${meta.iconColor}`} />
-                : <ArrowUpRight className={`w-4 h-4 ${meta.iconColor}`} />}
+                ? <ArrowDownLeft className={`w-4.5 h-4.5 ${meta.iconColor}`} />
+                : <ArrowUpRight className={`w-4.5 h-4.5 ${meta.iconColor}`} />}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white capitalize">{meta.label}</p>
-              <p className="text-[11px] text-slate-500 truncate">{tx.description || fmtDateTime(tx.createdAt)}</p>
+              <p className="text-xs text-slate-500 truncate mt-0.5">{tx.description || fmtDateTime(tx.createdAt)}</p>
             </div>
             <div className="text-right shrink-0">
               <p className={`text-sm font-bold ${meta.amountCls}`}>{meta.sign}{fmtGhs(tx.amount)}</p>
-              <p className={`text-[10px] capitalize ${statusCls}`}>{tx.status}</p>
+              <p className={`text-[10px] capitalize mt-0.5 ${statusCls}`}>{tx.status}</p>
             </div>
           </div>
         );
@@ -332,14 +328,9 @@ function WithdrawalsTab({
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const list = await organizerService.getMyPayoutRequests();
-      setRequests(list);
-    } catch {
-      setRequests([]);
-    } finally {
-      setLoading(false);
-    }
+    try { setRequests(await organizerService.getMyPayoutRequests()); }
+    catch { setRequests([]); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => { void load(); }, [load, refresh]);
@@ -353,16 +344,14 @@ function WithdrawalsTab({
       onBalanceChange();
     } catch (err) {
       showError(err instanceof Error ? err.message : "Could not cancel.");
-    } finally {
-      setCancelling(null);
-    }
+    } finally { setCancelling(null); }
   };
 
   if (loading) return (
     <div className="space-y-2">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 animate-pulse space-y-2">
-          <div className="h-3 w-24 bg-slate-800 rounded" /><div className="h-4 w-20 bg-slate-800 rounded" />
+        <div key={i} className="p-5 rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse space-y-3">
+          <div className="h-3 w-28 bg-slate-800 rounded" /><div className="h-4 w-20 bg-slate-800 rounded" />
         </div>
       ))}
     </div>
@@ -371,79 +360,75 @@ function WithdrawalsTab({
   const active = requests.filter(r => !["completed", "rejected", "cancelled"].includes(r.status));
   const history = requests.filter(r => ["completed", "rejected", "cancelled"].includes(r.status));
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-500">{requests.length} request{requests.length !== 1 ? "s" : ""}</p>
-        <button onClick={onRequestNew} disabled={availableBalance <= 0}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 disabled:opacity-50 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />New Withdrawal
-        </button>
+  if (requests.length === 0) return (
+    <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+      <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-2">
+        <Banknote className="w-7 h-7 text-slate-600" />
       </div>
+      <p className="font-display text-lg font-semibold text-slate-300">No withdrawals yet</p>
+      <p className="text-sm text-slate-500">Submit a request to withdraw your available balance.</p>
+    </div>
+  );
 
-      {requests.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-14 gap-3 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center">
-            <Banknote className="w-6 h-6 text-slate-600" />
-          </div>
-          <p className="text-sm font-medium text-slate-400">No withdrawals yet</p>
-          <p className="text-xs text-slate-600">Submit a withdrawal request to send funds to Mobile Money</p>
+  return (
+    <div className="space-y-6">
+      {active.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">In Progress</p>
+          {active.map(req => {
+            const m = PAYOUT_STATUS[req.status] ?? { label: req.status, cls: "bg-slate-700/50 text-slate-400 border-slate-600/25", dot: "bg-slate-500" };
+            const canCancel = ["pending", "under_review"].includes(req.status);
+            return (
+              <div key={req.id} className="rounded-2xl border border-slate-700/80 bg-slate-900 overflow-hidden">
+                <div className="flex items-center justify-between gap-3 px-5 py-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <p className="text-base font-bold text-white">{fmtGhs(req.amountGhs * 100)}</p>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${m.cls}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />{m.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 truncate">{req.network} · {req.momoNumber} · {fmtDate(req.createdAt)}</p>
+                  </div>
+                  {canCancel && (
+                    <button onClick={() => void handleCancel(req.id)} disabled={cancelling === req.id}
+                      className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-red-400 border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 disabled:opacity-50 transition-colors"
+                    >
+                      {cancelling === req.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      ) : (
-        <div className="space-y-5">
-          {active.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">In Progress</p>
-              {active.map(req => {
-                const m = PAYOUT_STATUS[req.status] ?? { label: req.status, cls: "bg-slate-700/50 text-slate-400 border-slate-600/25", dot: "bg-slate-500" };
-                const canCancel = ["pending", "under_review"].includes(req.status);
-                return (
-                  <div key={req.id} className="rounded-xl border border-slate-700/80 bg-slate-900/80">
-                    <div className="flex items-center justify-between gap-3 px-4 py-3.5">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-bold text-white">{fmtGhs(req.amountGhs * 100)}</p>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${m.cls}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />{m.label}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5">{req.network} · {req.momoNumber} · {fmtDate(req.createdAt)}</p>
-                      </div>
-                      {canCancel && (
-                        <button onClick={() => void handleCancel(req.id)} disabled={cancelling === req.id}
-                          className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-400 border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 disabled:opacity-50 transition-colors"
-                        >
-                          {cancelling === req.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
-                          Cancel
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {history.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">History</p>
-              {history.map(req => {
-                const m = PAYOUT_STATUS[req.status] ?? { label: req.status, cls: "bg-slate-700/50 text-slate-400 border-slate-600/25", dot: "bg-slate-500" };
-                return (
-                  <div key={req.id} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-slate-800/60 bg-slate-900/40">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-slate-300">{fmtGhs(req.amountGhs * 100)}</p>
-                      <p className="text-xs text-slate-600">{req.network} · {fmtDate(req.createdAt)}</p>
-                      {req.rejectionReason && <p className="text-xs text-red-400 mt-0.5">{req.rejectionReason}</p>}
-                    </div>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${m.cls}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />{m.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+      )}
+
+      {history.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">History</p>
+          {history.map(req => {
+            const m = PAYOUT_STATUS[req.status] ?? { label: req.status, cls: "bg-slate-700/50 text-slate-400 border-slate-600/25", dot: "bg-slate-500" };
+            const icon = req.status === "completed"
+              ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              : req.status === "rejected" || req.status === "cancelled"
+                ? <XCircle className="w-4 h-4 text-red-400" />
+                : <Clock className="w-4 h-4 text-slate-500" />;
+            return (
+              <div key={req.id} className="flex items-center gap-3 px-5 py-3.5 rounded-2xl border border-slate-800 bg-slate-900/50 hover:border-slate-700 transition-colors">
+                <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">{icon}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-300">{fmtGhs(req.amountGhs * 100)}</p>
+                  <p className="text-xs text-slate-600 truncate">{req.network} · {fmtDate(req.createdAt)}</p>
+                  {req.rejectionReason && <p className="text-xs text-red-400/80 mt-0.5">{req.rejectionReason}</p>}
+                </div>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${m.cls}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />{m.label}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -461,25 +446,21 @@ const WalletPage = () => {
   const [activeTab, setActiveTab] = useState<Tab>("transactions");
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const loadBalance = useCallback(async () => {
     setBalanceLoading(true);
-    try {
-      const b = await organizerService.getWalletBalance();
-      setBalance(b);
-    } catch {
-      setBalance(null);
-    } finally {
-      setBalanceLoading(false);
-    }
+    try { setBalance(await organizerService.getWalletBalance()); }
+    catch { setBalance(null); }
+    finally { setBalanceLoading(false); }
   }, []);
 
   useEffect(() => { void loadBalance(); }, [loadBalance]);
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     setRefreshKey(k => k + 1);
     void loadBalance();
-  };
+  }, [loadBalance]);
 
   const handleWithdrawSuccess = () => {
     setShowWithdrawModal(false);
@@ -487,109 +468,166 @@ const WalletPage = () => {
     setActiveTab("withdrawals");
   };
 
-  const TABS: { id: Tab; label: string }[] = [
-    { id: "transactions", label: "Transactions" },
-    { id: "withdrawals",  label: "Withdrawals"  },
-  ];
+  const balanceStats = balance ? [
+    { icon: Banknote,   iconColor: "text-cyan-400",   bg: "from-cyan-500/25 to-blue-500/20",     label: "Available", value: fmtGhs(balance.availableBalance) },
+    { icon: Clock,      iconColor: "text-amber-400",  bg: "from-amber-500/25 to-orange-500/20",  label: "Pending",   value: fmtGhs(balance.pendingBalance)   },
+    { icon: Wallet,     iconColor: "text-indigo-400", bg: "from-indigo-500/25 to-violet-500/20", label: "In Escrow", value: fmtGhs(balance.escrowLocked)     },
+    { icon: TrendingUp, iconColor: "text-white",      bg: "from-slate-500/25 to-slate-600/20",   label: "Total",     value: fmtGhs(balance.totalBalance)    },
+  ] as { icon: React.ElementType; iconColor: string; bg: string; label: string; value: string }[] : [];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className="min-h-screen">
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-white">Wallet</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Your balance, transactions and withdrawals</p>
+      {/* ── Hero ──────────────────────────────────────────────────────────────── */}
+      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
+        {/* Background decorations — same as PrizesPage */}
+        <div className="absolute -top-40 right-0 w-150 h-100 rounded-full bg-cyan-500/6 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
+          {/* Title row */}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="font-display text-3xl sm:text-5xl font-bold text-white leading-none">Wallet</h1>
+              <p className="text-sm sm:text-base text-slate-400 mt-2 sm:mt-3 max-w-md">Your balance, transactions and withdrawals — send funds to Mobile Money.</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setShowWithdrawModal(true)}
+                disabled={!balance || balance.availableBalance <= 0}
+                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 text-xs sm:text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-40 transition-all"
+              >
+                <Banknote className="w-4 h-4" />
+                Withdraw
+              </button>
+              <button
+                onClick={refresh}
+                disabled={balanceLoading}
+                className="p-2 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${balanceLoading ? "animate-spin" : ""}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Stats — mobile toggle */}
+          <div className="sm:hidden mt-4">
+            <button onClick={() => setStatsOpen(o => !o)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs font-semibold text-slate-400 uppercase tracking-widest"
+            >
+              <span>Balance</span>
+              <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+            </button>
+            {statsOpen && (
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                {balanceLoading
+                  ? Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3 animate-pulse">
+                        <div className="w-8 h-8 rounded-lg bg-slate-700" />
+                        <div className="space-y-1.5"><div className="h-2.5 w-12 bg-slate-700 rounded" /><div className="h-4 w-20 bg-slate-700 rounded" /></div>
+                      </div>
+                    ))
+                  : balanceStats.map(s => (
+                      <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
+                        <div className={`w-8 h-8 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                          <s.icon className={`w-3.5 h-3.5 ${s.iconColor}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">{s.label}</p>
+                          <p className={`font-display text-base font-bold leading-tight ${s.iconColor}`}>{s.value}</p>
+                        </div>
+                      </div>
+                    ))
+                }
+              </div>
+            )}
+          </div>
+
+          {/* Stats — desktop always visible */}
+          <div className="hidden sm:grid sm:grid-cols-4 gap-3 mt-6">
+            {balanceLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3 animate-pulse">
+                    <div className="w-10 h-10 rounded-xl bg-slate-700 shrink-0" />
+                    <div className="space-y-2"><div className="h-2.5 w-16 bg-slate-700 rounded" /><div className="h-5 w-24 bg-slate-700 rounded" /></div>
+                  </div>
+                ))
+              : balanceStats.length > 0
+                ? balanceStats.map(s => (
+                    <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3 hover:border-slate-600/60 transition-colors">
+                      <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                        <s.icon className={`w-5 h-5 ${s.iconColor}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{s.label}</p>
+                        <p className={`font-display text-xl font-bold tabular-nums leading-tight ${s.iconColor}`}>{s.value}</p>
+                      </div>
+                    </div>
+                  ))
+                : (
+                  <div className="col-span-4 flex items-center gap-3 bg-slate-800/30 border border-slate-800 rounded-xl px-5 py-4">
+                    <Wallet className="w-5 h-5 text-slate-600 shrink-0" />
+                    <p className="text-sm text-slate-500">No balance yet. Win tournaments to earn prizes.</p>
+                  </div>
+                )
+            }
+          </div>
+
+          {/* Prizes link */}
+          <button
+            onClick={() => navigate("/auth/prizes")}
+            className="mt-4 flex items-center gap-2 text-sm text-slate-400 hover:text-amber-300 transition-colors group"
+          >
+            <Trophy className="w-4 h-4 text-amber-500/70 group-hover:text-amber-400 transition-colors" />
+            View tournament prizes &amp; refunds →
+          </button>
         </div>
-        <button onClick={refresh} disabled={balanceLoading}
-          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white disabled:opacity-50 transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${balanceLoading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
       </div>
 
-      {/* ── Balance strip ── */}
-      {balanceLoading ? (
-        <div className="grid grid-cols-3 gap-px bg-slate-800/60 rounded-2xl overflow-hidden animate-pulse">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-slate-900/90 px-4 py-5 space-y-2">
-              <div className="h-2.5 w-16 bg-slate-800 rounded" />
-              <div className="h-6 w-24 bg-slate-800 rounded" />
-            </div>
-          ))}
-        </div>
-      ) : balance ? (
-        <div className={`grid gap-px bg-slate-800/60 rounded-2xl overflow-hidden`}
-          style={{ gridTemplateColumns: balance.escrowLocked > 0 ? "repeat(4,1fr)" : "repeat(3,1fr)" }}
-        >
+      {/* ── Tabs ──────────────────────────────────────────────────────────────── */}
+      <div className="border-b border-slate-800/60 bg-slate-950/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex gap-1">
           {([
-            { label: "Available", value: balance.availableBalance, cls: "text-emerald-400", sub: "Ready to withdraw" },
-            { label: "Pending",   value: balance.pendingBalance,   cls: "text-amber-400",  sub: "Awaiting processing" },
-            ...(balance.escrowLocked > 0
-              ? [{ label: "In Escrow", value: balance.escrowLocked, cls: "text-indigo-400", sub: "Locked in tournament" }]
-              : []),
-            { label: "Total",     value: balance.totalBalance,     cls: "text-white",      sub: "All funds" },
-          ] as { label: string; value: number; cls: string; sub: string }[]).map(({ label, value, cls, sub }) => (
-            <div key={label} className="bg-slate-900/90 px-4 py-4">
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">{label}</p>
-              <p className={`font-display text-xl font-bold mt-1 tabular-nums ${cls}`}>{fmtGhs(value)}</p>
-              <p className="text-[10px] text-slate-600 mt-0.5">{sub}</p>
-            </div>
+            { id: "transactions" as Tab, label: "Transactions" },
+            { id: "withdrawals"  as Tab, label: "Withdrawals"  },
+          ]).map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-3.5 text-sm font-semibold border-b-2 transition-colors ${
+                activeTab === t.id
+                  ? "border-orange-400 text-orange-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              {t.label}
+            </button>
           ))}
+          <div className="ml-auto flex items-center pb-1">
+            <button
+              onClick={() => setShowWithdrawModal(true)}
+              disabled={!balance || balance.availableBalance <= 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-400 text-xs font-semibold hover:border-slate-600 hover:text-white disabled:opacity-40 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">New Withdrawal</span>
+            </button>
+          </div>
         </div>
-      ) : (
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-500/8 border border-red-500/20 text-red-300 text-xs">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          Could not load balance. Click Refresh to try again.
-        </div>
-      )}
-
-      {/* ── Action row ── */}
-      <div className="flex gap-2.5">
-        <button
-          onClick={() => setShowWithdrawModal(true)}
-          disabled={!balance || balance.availableBalance <= 0}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500 text-slate-950 text-sm font-bold hover:bg-cyan-400 disabled:opacity-40 transition-colors"
-        >
-          <Banknote className="w-4 h-4" />
-          Withdraw
-        </button>
-        <button
-          onClick={() => navigate("/auth/prizes")}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/8 text-amber-300 text-sm font-semibold hover:bg-amber-500/15 transition-colors"
-        >
-          <Trophy className="w-4 h-4" />
-          Prizes & Refunds
-          <ExternalLink className="w-3 h-3 opacity-60" />
-        </button>
       </div>
 
-      {/* ── Tabs ── */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-        <div className="flex border-b border-slate-800">
-          {TABS.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-3 py-3 text-xs font-semibold transition-colors ${
-                activeTab === tab.id
-                  ? "text-white border-b-2 border-cyan-400 -mb-px bg-cyan-500/5"
-                  : "text-slate-500 hover:text-slate-300"
-              }`}
-            >{tab.label}</button>
-          ))}
-        </div>
-
-        <div className="p-4">
-          {activeTab === "transactions" && <TransactionsTab refresh={refreshKey} />}
-          {activeTab === "withdrawals" && (
-            <WithdrawalsTab
-              availableBalance={balance?.availableBalance ?? 0}
-              onRequestNew={() => setShowWithdrawModal(true)}
-              refresh={refreshKey}
-              onBalanceChange={refresh}
-            />
-          )}
-        </div>
+      {/* ── Content ───────────────────────────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {activeTab === "transactions" && <TransactionsTab refresh={refreshKey} />}
+        {activeTab === "withdrawals" && (
+          <WithdrawalsTab
+            availableBalance={balance?.availableBalance ?? 0}
+            onRequestNew={() => setShowWithdrawModal(true)}
+            refresh={refreshKey}
+            onBalanceChange={refresh}
+          />
+        )}
       </div>
 
       {showWithdrawModal && balance && (

@@ -2,13 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Star, Trophy, Medal, Crown, ChevronDown, RefreshCw,
   Phone, X, Loader2, CheckCircle2, Clock, AlertTriangle,
-  RotateCcw, Banknote,
+  RotateCcw,
 } from "lucide-react";
 import { apiGet, apiPost } from "../../utils/api.utils";
 import { TOURNAMENT_ENDPOINTS } from "../../config/api.config";
 import { showSuccess, showError } from "../../utils/toast.utils";
-import { organizerService, type WalletBalance } from "../../services/organizer.service";
-import { useNavigate } from "react-router-dom";
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
@@ -122,7 +120,7 @@ function WinningClaimModal({ winning, onClose, onClaimed }: { winning: Winning; 
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
           <div>
             <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Mobile Money Network</label>
             <div className="grid grid-cols-3 gap-2">
@@ -315,7 +313,7 @@ function RefundClaimModal({ refund, onClose, onClaimed }: { refund: Refund; onCl
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
           <div>
             <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Mobile Money Network</label>
             <div className="grid grid-cols-3 gap-2">
@@ -425,12 +423,8 @@ function RefundCard({ refund, onClaim }: { refund: Refund; onClaim: () => void }
 type Tab = "winnings" | "refunds";
 
 export default function PrizesPage() {
-  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("winnings");
   const [statsOpen, setStatsOpen] = useState(false);
-
-  // Wallet balance
-  const [balance, setBalance] = useState<WalletBalance | null>(null);
 
   // Winnings state
   const [winnings, setWinnings] = useState<Winning[]>([]);
@@ -469,7 +463,6 @@ export default function PrizesPage() {
   useEffect(() => {
     void loadWinnings();
     void loadRefunds();
-    organizerService.getWalletBalance().then(setBalance).catch(() => null);
   }, [loadWinnings, loadRefunds]);
 
   const loading = tab === "winnings" ? winLoading : refLoading;
@@ -514,38 +507,6 @@ export default function PrizesPage() {
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </button>
           </div>
-
-          {/* Wallet balance strip */}
-          {balance && (
-            <div className="mt-5 flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-px rounded-xl overflow-hidden border border-slate-700/60 bg-slate-800/50">
-                {([
-                  { label: "Available", value: balance.availableBalance, cls: "text-emerald-400" },
-                  { label: "Pending",   value: balance.pendingBalance,   cls: "text-amber-400"  },
-                  ...(balance.escrowLocked > 0
-                    ? [{ label: "In Escrow", value: balance.escrowLocked, cls: "text-indigo-400" }]
-                    : []),
-                  { label: "Total",     value: balance.totalBalance,     cls: "text-white"      },
-                ] as { label: string; value: number; cls: string }[]).map(({ label, value, cls }) => (
-                  <div key={label} className="px-4 py-2.5 border-r border-slate-700/60 last:border-r-0">
-                    <p className="text-[9px] text-slate-500 uppercase tracking-widest font-semibold">{label}</p>
-                    <p className={`font-display text-sm font-bold tabular-nums mt-0.5 ${cls}`}>
-                      GHS {(value / 100).toLocaleString("en-GH", { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              {balance.availableBalance > 0 && (
-                <button
-                  onClick={() => navigate("/auth/transactions")}
-                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-bold hover:bg-cyan-500/25 transition-colors"
-                >
-                  <Banknote className="w-3.5 h-3.5" />
-                  Withdraw
-                </button>
-              )}
-            </div>
-          )}
 
           {/* Stats — mobile toggle */}
           <div className="sm:hidden mt-4">
