@@ -284,10 +284,7 @@ function buildEscrowStages(escrow: EscrowStatusSummary): EscrowStageItem[] {
       hint: "Prize pool funding",
       state: depositState,
       timestamp: organizerDepositAt,
-      detail:
-        depositState === "completed" && !organizerDepositAt
-          ? "Completed (timestamp unavailable)"
-          : undefined,
+      detail: undefined,
     },
     {
       key: "entries",
@@ -298,9 +295,7 @@ function buildEscrowStages(escrow: EscrowStatusSummary): EscrowStageItem[] {
       detail:
         entriesState === "active"
           ? "Currently accepting entries"
-          : entriesState === "completed" && !schedule?.cancellationCutoff
-            ? "Closed (timestamp unavailable)"
-            : undefined,
+          : undefined,
     },
     {
       key: "results",
@@ -328,19 +323,14 @@ function buildEscrowStages(escrow: EscrowStatusSummary): EscrowStageItem[] {
       detail:
         prizesDistributed && winnerSubmissions?.totalPrizeDistributedLabel
           ? `Distributed: ${winnerSubmissions.totalPrizeDistributedLabel}`
-          : prizesDistributed
-            ? "Completed (timestamp unavailable)"
-            : undefined,
+          : undefined,
     },
     {
       key: "organizer",
       label: "Organizer Payout",
       hint: "Final release",
       state: organizerState,
-      detail:
-        organizerState === "completed"
-          ? "Released (timestamp unavailable)"
-          : undefined,
+      detail: undefined,
     },
   ];
 }
@@ -1440,7 +1430,7 @@ const TournamentManage = () => {
     <div className="min-h-screen">
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <div className="border-b border-slate-800/60 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-14 xl:px-20">
 
           {/* ── Top bar: back + actions + utility ── */}
           <div className="flex items-center justify-between gap-3 py-3 border-b border-slate-800/50">
@@ -1473,8 +1463,8 @@ const TournamentManage = () => {
                 <button onClick={() => void handleRecalculateStandings()} disabled={isRecalculating}
                   className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 text-xs font-medium hover:border-slate-500 hover:text-white disabled:opacity-60 transition-colors">
                   {isRecalculating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">{isRecalculating ? "Recalculating…" : "Recalculate Table"}</span>
-                  <span className="sm:hidden">{isRecalculating ? "…" : "Recalc"}</span>
+                  <span className="hidden md:inline">{isRecalculating ? "Recalculating…" : "Recalculate Table"}</span>
+                  <span className="md:hidden">{isRecalculating ? "…" : "Recalc"}</span>
                 </button>
               )}
               {canAdvanceMatchweek && (
@@ -1550,42 +1540,53 @@ const TournamentManage = () => {
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-linear-to-br from-cyan-500/20 to-indigo-500/20 border border-slate-700/60 flex items-center justify-center shrink-0 mt-0.5">
                 <Trophy className="w-5 h-5 text-cyan-400" />
               </div>
-              <div className="flex-1 min-w-0 space-y-2">
-                <div className="flex items-start gap-2 flex-wrap">
-                  <h1 className="font-display text-lg sm:text-2xl font-bold text-white leading-tight break-words">
-                    {tournament.title}
-                  </h1>
-                  <span className={`shrink-0 self-center text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border ${
-                    tournament.status === "open"
-                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
-                      : tournament.status === "awaiting_deposit" || tournament.status === "published"
-                        ? "bg-amber-500/15 text-amber-300 border-amber-500/25"
-                        : tournament.status === "draft"
-                          ? "bg-slate-600/20 text-slate-400 border-slate-600/25"
-                          : tournament.status === "cancelled"
-                            ? "bg-red-500/15 text-red-400 border-red-500/25"
-                            : tournament.status === "completed"
-                              ? "bg-amber-500/15 text-amber-300 border-amber-500/25"
-                              : "bg-cyan-500/15 text-cyan-300 border-cyan-500/25"
-                  }`}>
-                    {tournament.status.replace(/_/g, " ")}
-                  </span>
+              <div className="flex-1 min-w-0">
+                {/* Title + status badge end-to-end + stats toggle */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between min-w-0 flex-1">
+                    <h1 className="font-display text-xl sm:text-2xl font-bold text-white leading-tight truncate">
+                      {tournament.title}
+                    </h1>
+                    <span className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border ${
+                      tournament.status === "open"
+                        ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                        : tournament.status === "awaiting_deposit" || tournament.status === "published"
+                          ? "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                          : tournament.status === "draft"
+                            ? "bg-slate-600/20 text-slate-400 border-slate-600/25"
+                            : tournament.status === "cancelled"
+                              ? "bg-red-500/15 text-red-400 border-red-500/25"
+                              : tournament.status === "completed"
+                                ? "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                                : "bg-cyan-500/15 text-cyan-300 border-cyan-500/25"
+                    }`}>
+                      {tournament.status.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setStatsOpen(v => !v)}
+                    className="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors shrink-0"
+                  >
+                    Stats
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+                  </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50 text-[11px] font-semibold text-slate-300">
+                {/* Meta chips — horizontal scroll on mobile */}
+                <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto no-scrollbar">
+                  <span className="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50 text-[11px] font-semibold text-slate-300">
                     {tournament.game?.name ?? "Unknown Game"}
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50 text-[11px] text-slate-400">
+                  <span className="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50 text-[11px] text-slate-400">
                     {tournament.format ?? "Solo"}
                   </span>
-                  <span className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold ${tournament.isFree ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" : "bg-amber-500/10 border-amber-500/20 text-amber-300"}`}>
+                  <span className={`shrink-0 px-2.5 py-1 rounded-lg border text-[11px] font-semibold ${tournament.isFree ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" : "bg-amber-500/10 border-amber-500/20 text-amber-300"}`}>
                     {tournament.isFree ? "Free" : `GHS ${(tournament.entryFee / 100).toFixed(2)}`}
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50 text-[11px] text-slate-400 capitalize">
+                  <span className="shrink-0 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/50 text-[11px] text-slate-400 capitalize">
                     {(tournament.tournamentType ?? "—").replace(/_/g, " ")}
                   </span>
                   {leagueSettings?.fixturesGenerated && !canGenerateLeagueFixtures && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[11px] font-semibold">
+                    <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[11px] font-semibold">
                       <CheckCircle2 className="w-3 h-3" />
                       Fixtures
                       {leagueSettings?.currentMatchweek != null && leagueSettings?.totalMatchweeks != null && leagueSettings.currentMatchweek > 0 && (
@@ -1595,20 +1596,11 @@ const TournamentManage = () => {
                   )}
                 </div>
               </div>
-
-              {/* Mobile stats toggle */}
-              <button
-                onClick={() => setStatsOpen(v => !v)}
-                className="sm:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors shrink-0 mt-0.5"
-              >
-                Stats
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
-              </button>
             </div>
 
             {/* Stats — mobile dropdown */}
             {statsOpen && (
-              <div className="sm:hidden grid grid-cols-2 gap-2">
+              <div className="md:hidden grid grid-cols-2 gap-2">
                 {[
                   { icon: Users,       label: "Registrants", value: String(activeRegistrants.length), sub: `of ${tournament.maxParticipants} max`,        accent: "text-white",       iconColor: "text-slate-400",   iconBg: "bg-slate-800 border-slate-700/50"        },
                   { icon: UserCheck,   label: "Checked In",  value: String(checkedInCount),           sub: `${activeRegistrants.length > 0 ? Math.round((checkedInCount / activeRegistrants.length) * 100) : 0}% ready`, accent: "text-emerald-400", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10 border-emerald-500/20" },
@@ -1630,7 +1622,7 @@ const TournamentManage = () => {
             )}
 
             {/* Stats — desktop always visible */}
-            <div className="hidden sm:grid grid-cols-4 gap-3">
+            <div className="hidden md:grid grid-cols-4 gap-3">
               {[
                 { icon: Users,       label: "Registrants", value: String(activeRegistrants.length), sub: `of ${tournament.maxParticipants} max`,        accent: "text-white",       iconColor: "text-slate-400",   iconBg: "bg-slate-800 border-slate-700/50"        },
                 { icon: UserCheck,   label: "Checked In",  value: String(checkedInCount),           sub: `${activeRegistrants.length > 0 ? Math.round((checkedInCount / activeRegistrants.length) * 100) : 0}% ready`, accent: "text-emerald-400", iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10 border-emerald-500/20" },
@@ -1654,7 +1646,7 @@ const TournamentManage = () => {
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 py-4 sm:py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-14 xl:px-20 py-4 md:py-6">
         {/* Registration Shortfall Alert */}
         {registrationShortfall && showRegistrationAlert && (
           <div className="rounded-2xl border border-amber-500/30 bg-linear-to-r from-amber-500/10 to-amber-500/5 p-4 flex gap-3">
@@ -1694,7 +1686,7 @@ const TournamentManage = () => {
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-start mt-4 sm:mt-5">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 items-start mt-4 md:mt-5">
         {/* ── MAIN column ── */}
         <div className="flex-1 min-w-0 space-y-5">
 
@@ -1925,47 +1917,49 @@ const TournamentManage = () => {
         {tournament.status === "completed" && (
           <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4 border-b border-slate-800/80 bg-slate-950/30">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
-                  <Trophy className="w-4 h-4 text-amber-400" />
+            <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-slate-800/80 bg-slate-950/30 space-y-2">
+              {/* Title + badge */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center shrink-0">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="font-display text-sm font-bold text-white">Final Standings</h2>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Tournament completed · Prize distribution</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-display text-sm font-bold text-white">
-                    Final Standings
-                  </h2>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Tournament completed · Prize distribution
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {tournament.entryFee > 0 && escrowSummary?.processingSchedule?.prizesDistributed && (
-                  <button
-                    onClick={() => void handleAllocateWinnings()}
-                    disabled={isAllocatingWinnings}
-                    title="Send winnings to players' Prizes page"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold hover:bg-amber-500/25 disabled:opacity-50 transition-colors"
-                  >
-                    {isAllocatingWinnings ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trophy className="w-3 h-3" />}
-                    {isAllocatingWinnings ? "Sending…" : "Send to Players"}
-                  </button>
-                )}
-                {tournament.entryFee > 0 && escrowSummary && (
-                  <button
-                    onClick={() => void handleAllocateEarnings()}
-                    disabled={isAllocatingEarnings}
-                    title="Send entry fee earnings to your Finance page"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-semibold hover:bg-cyan-500/25 disabled:opacity-50 transition-colors"
-                  >
-                    {isAllocatingEarnings ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wallet className="w-3 h-3" />}
-                    {isAllocatingEarnings ? "Sending…" : "Send to Finance"}
-                  </button>
-                )}
-                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
                   Completed
                 </span>
               </div>
+              {/* Action buttons — own row */}
+              {tournament.entryFee > 0 && (
+                <div className="flex items-center gap-2">
+                  {escrowSummary?.processingSchedule?.prizesDistributed && (
+                    <button
+                      onClick={() => void handleAllocateWinnings()}
+                      disabled={isAllocatingWinnings}
+                      title="Send winnings to players' Prizes page"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold hover:bg-amber-500/25 disabled:opacity-50 transition-colors"
+                    >
+                      {isAllocatingWinnings ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trophy className="w-3 h-3" />}
+                      {isAllocatingWinnings ? "Sending…" : "Send to Players"}
+                    </button>
+                  )}
+                  {escrowSummary && (
+                    <button
+                      onClick={() => void handleAllocateEarnings()}
+                      disabled={isAllocatingEarnings}
+                      title="Send entry fee earnings to your Finance page"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-semibold hover:bg-cyan-500/25 disabled:opacity-50 transition-colors"
+                    >
+                      {isAllocatingEarnings ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wallet className="w-3 h-3" />}
+                      {isAllocatingEarnings ? "Sending…" : "Send to Finance"}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {(() => {
@@ -2094,7 +2088,7 @@ const TournamentManage = () => {
 
           {/* Participants */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-            <div className="flex flex-col gap-3 px-5 py-4 border-b border-slate-800/60 bg-slate-950/20 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-800/60 bg-slate-950/20 md:flex-row md:items-center md:justify-between md:px-5 md:py-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center shrink-0">
                   <Users className="w-4 h-4 text-cyan-400" />
@@ -2110,14 +2104,14 @@ const TournamentManage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="relative flex-1 sm:flex-none">
+                <div className="relative flex-1 md:flex-none">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                   <input
                     type="text"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder="Search players..."
-                    className="w-full sm:w-44 bg-slate-800/60 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 transition-colors"
+                    className="w-full md:w-44 bg-slate-800/60 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 transition-colors"
                   />
                 </div>
                 <button
@@ -2126,7 +2120,7 @@ const TournamentManage = () => {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold hover:bg-emerald-500 hover:text-slate-950 hover:border-emerald-500 disabled:opacity-50 transition-colors shrink-0"
                 >
                   {actionLoading === "bulk" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckSquare className="w-3.5 h-3.5" />}
-                  Bulk Check-In
+                  <span className="hidden md:inline">Bulk </span>Check-In
                 </button>
               </div>
             </div>
@@ -2142,8 +2136,8 @@ const TournamentManage = () => {
               </div>
             ) : (
               <>
-                {/* Mobile card list — visible below sm */}
-                <div className="sm:hidden divide-y divide-slate-800/50">
+                {/* Mobile card list — visible below md */}
+                <div className="md:hidden divide-y divide-slate-800/50">
                   {filteredRegistrants.map(r => (
                     <div key={r.registrationId} className="px-4 py-3 flex items-center justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -2184,8 +2178,8 @@ const TournamentManage = () => {
                     </div>
                   ))}
                 </div>
-                {/* Desktop table — visible from sm up */}
-                <div className="hidden sm:block overflow-x-auto">
+                {/* Desktop table — visible from md up */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full min-w-160">
                     <thead>
                       <tr className="border-b border-slate-800/60 bg-slate-950/20">
