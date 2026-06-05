@@ -355,10 +355,8 @@ function TransactionsTab({ refresh }: { refresh: number }) {
 // ─── Withdrawals Tab ──────────────────────────────────────────────────────────
 
 function WithdrawalsTab({
-  availableBalance, onRequestNew, refresh, onBalanceChange,
+  refresh, onBalanceChange,
 }: {
-  availableBalance: number;
-  onRequestNew: () => void;
   refresh: number;
   onBalanceChange: () => void;
 }) {
@@ -674,8 +672,6 @@ const WalletPage = () => {
         {activeTab === "transactions" && <TransactionsTab refresh={refreshKey} />}
         {activeTab === "withdrawals" && (
           <WithdrawalsTab
-            availableBalance={balance?.availableBalance ?? 0}
-            onRequestNew={() => setShowWithdrawModal(true)}
             refresh={refreshKey}
             onBalanceChange={refresh}
           />
