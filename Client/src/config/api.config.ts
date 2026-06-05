@@ -241,6 +241,7 @@ export const FINANCE_ENDPOINTS = {
   ESCROW_STATUS: `${API_BASE_URLS.FINANCE}/escrow`,                 // + /:tournamentId (GET)
   ESCROW_SUBMIT_WINNERS: `${API_BASE_URLS.FINANCE}/escrow`,         // + /:tournamentId/winners (POST)
   ESCROW_ALLOCATE_WINNINGS: `${API_BASE_URLS.FINANCE}/escrow`,     // + /:tournamentId/allocate-winnings (POST)
+  ESCROW_ALLOCATE_EARNINGS: `${API_BASE_URLS.FINANCE}/escrow`,    // + /:tournamentId/allocate-earnings (POST)
 
   // Escrow (Admin)
   ADMIN_ESCROW_PROCESSOR_RUN: `${API_BASE_URLS.FINANCE}/admin/escrow/processor/run`, // POST — manually trigger escrow processor

@@ -684,7 +684,7 @@ export default function OrganizerFinancePage() {
                 <TrendingUp className="w-7 h-7 text-slate-600" />
               </div>
               <p className="font-display text-lg font-semibold text-slate-300">No earnings yet</p>
-              <p className="text-sm text-slate-500 mt-2">Earnings from completed tournaments will appear here to claim.</p>
+              <p className="text-sm text-slate-500 mt-2">Earnings appear here when a <span className="text-slate-300 font-medium">paid tournament</span> you hosted completes — you receive 90% of all entry fees collected. Free tournaments generate no earnings.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

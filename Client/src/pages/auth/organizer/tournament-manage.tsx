@@ -572,6 +572,7 @@ const TournamentManage = () => {
   const [extendDate, setExtendDate] = useState("");
   const [isExtending, setIsExtending] = useState(false);
   const [isAllocatingWinnings, setIsAllocatingWinnings] = useState(false);
+  const [isAllocatingEarnings, setIsAllocatingEarnings] = useState(false);
   const [openWinnerDropdown, setOpenWinnerDropdown] = useState<number | null>(null);
   const [winnerDropdownSearch, setWinnerDropdownSearch] = useState("");
   const [emptyWinnerIndices, setEmptyWinnerIndices] = useState<Set<number>>(new Set());
@@ -988,6 +989,19 @@ const TournamentManage = () => {
       showToast("error", err instanceof Error ? err.message : "Failed to allocate winnings.");
     } finally {
       setIsAllocatingWinnings(false);
+    }
+  };
+
+  const handleAllocateEarnings = async () => {
+    if (!tournamentId) return;
+    setIsAllocatingEarnings(true);
+    try {
+      await apiPost(`${FINANCE_ENDPOINTS.ESCROW_ALLOCATE_EARNINGS}/${tournamentId}/allocate-earnings`, {});
+      showToast("success", "Earnings sent to Finance page — you can now claim them.");
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Failed to send earnings.");
+    } finally {
+      setIsAllocatingEarnings(false);
     }
   };
 
@@ -1926,7 +1940,7 @@ const TournamentManage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {escrowSummary?.processingSchedule?.prizesDistributed && (
+                {tournament.entryFee > 0 && escrowSummary?.processingSchedule?.prizesDistributed && (
                   <button
                     onClick={() => void handleAllocateWinnings()}
                     disabled={isAllocatingWinnings}
@@ -1935,6 +1949,17 @@ const TournamentManage = () => {
                   >
                     {isAllocatingWinnings ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trophy className="w-3 h-3" />}
                     {isAllocatingWinnings ? "Sending…" : "Send to Players"}
+                  </button>
+                )}
+                {tournament.entryFee > 0 && escrowSummary && (
+                  <button
+                    onClick={() => void handleAllocateEarnings()}
+                    disabled={isAllocatingEarnings}
+                    title="Send entry fee earnings to your Finance page"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-semibold hover:bg-cyan-500/25 disabled:opacity-50 transition-colors"
+                  >
+                    {isAllocatingEarnings ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wallet className="w-3 h-3" />}
+                    {isAllocatingEarnings ? "Sending…" : "Send to Finance"}
                   </button>
                 )}
                 <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
