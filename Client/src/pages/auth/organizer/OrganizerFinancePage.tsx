@@ -1,18 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  AlertCircle, CheckCircle2, Clock3, Loader2,
-  Send, X, DollarSign, Banknote, ArrowDownToLine, Trash2,
-  ChevronLeft, ChevronRight, ChevronDown,
-  TrendingUp, RotateCcw, Phone, Clock, AlertTriangle,
+  DollarSign, TrendingUp, RotateCcw, Banknote, Send,
+  CheckCircle2, Clock, AlertCircle, X, Loader2, Phone,
+  ChevronDown, RefreshCw, ArrowDownToLine, XCircle, Clock3,
 } from "lucide-react";
 import { organizerService, type PayoutRequest, type WalletBalance } from "../../../services/organizer.service";
 import { apiGet, apiPost } from "../../../utils/api.utils";
 import { TOURNAMENT_ENDPOINTS } from "../../../config/api.config";
 import { showSuccess, showError } from "../../../utils/toast.utils";
 
-// ─── Shared ───────────────────────────────────────────────────────────────────
-
-const MOMO_NETWORKS = ["MTN", "Vodafone", "AirtelTigo"] as const;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtGhs(pesewas: number) {
   return `GHS ${(pesewas / 100).toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -23,35 +20,43 @@ function fmtDate(iso?: string) {
   return new Date(iso).toLocaleDateString("en-GH", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// ─── Payouts types + components ───────────────────────────────────────────────
-
-const PAGE_SIZE = 10;
-
-const NETWORK_COLORS: Record<string, string> = {
-  MTN:        "bg-yellow-400/15 text-yellow-300 border-yellow-400/20",
-  Vodafone:   "bg-red-400/15 text-red-300 border-red-400/20",
-  AirtelTigo: "bg-blue-400/15 text-blue-300 border-blue-400/20",
-};
-
-const PAYOUT_STATUS_META: Record<string, { label: string; dot: string; text: string; bg: string }> = {
-  pending:   { label: "Pending",   dot: "bg-amber-400",   text: "text-amber-300",   bg: "bg-amber-400/10 border-amber-400/20"    },
-  approved:  { label: "Approved",  dot: "bg-emerald-400", text: "text-emerald-300", bg: "bg-emerald-400/10 border-emerald-400/20" },
-  completed: { label: "Paid",      dot: "bg-emerald-400", text: "text-emerald-300", bg: "bg-emerald-400/10 border-emerald-400/20" },
-  rejected:  { label: "Rejected",  dot: "bg-red-400",     text: "text-red-300",     bg: "bg-red-400/10 border-red-400/20"         },
-  cancelled: { label: "Cancelled", dot: "bg-slate-500",   text: "text-slate-400",   bg: "bg-slate-700/20 border-slate-700"        },
-};
-
-const inputCls = "w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/70 focus:bg-slate-800 transition-colors";
-const selectCls = "w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500/70 focus:bg-slate-800 transition-colors";
-
-function validateMomo(number: string): string | null {
-  const cleaned = number.trim().replace(/\s/g, "");
-  if (!cleaned) return "Enter your mobile money number.";
-  if (!/^0[0-9]{9}$/.test(cleaned)) return "MoMo number must be 10 digits starting with 0 (e.g. 0241234567).";
+function validateMomo(n: string) {
+  const c = n.trim().replace(/\s/g, "");
+  if (!c) return "Enter your MoMo number.";
+  if (!/^0[0-9]{9}$/.test(c)) return "Must be 10 digits starting with 0.";
   return null;
 }
 
-// ─── Earnings types + components ──────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const PAGE_SIZE = 10;
+const MOMO_NETWORKS = ["MTN", "Vodafone", "AirtelTigo"] as const;
+
+const NETWORK_STYLE: Record<string, string> = {
+  MTN:        "bg-yellow-400/10 text-yellow-300 border-yellow-400/20",
+  Vodafone:   "bg-red-400/10 text-red-300 border-red-400/20",
+  AirtelTigo: "bg-blue-400/10 text-blue-300 border-blue-400/20",
+};
+
+const PAYOUT_STATUS: Record<string, { label: string; dot: string; cls: string }> = {
+  pending:      { label: "Pending",      dot: "bg-amber-400",              cls: "bg-amber-400/10 text-amber-300 border-amber-400/20"    },
+  under_review: { label: "Under Review", dot: "bg-blue-400",               cls: "bg-blue-400/10 text-blue-300 border-blue-400/20"       },
+  approved:     { label: "Approved",     dot: "bg-cyan-400",               cls: "bg-cyan-400/10 text-cyan-300 border-cyan-400/20"       },
+  processing:   { label: "Processing",   dot: "bg-indigo-400 animate-pulse", cls: "bg-indigo-400/10 text-indigo-300 border-indigo-400/20" },
+  completed:    { label: "Paid",         dot: "bg-emerald-400",            cls: "bg-emerald-400/10 text-emerald-300 border-emerald-400/20" },
+  rejected:     { label: "Rejected",     dot: "bg-red-400",                cls: "bg-red-400/10 text-red-300 border-red-400/20"         },
+  cancelled:    { label: "Cancelled",    dot: "bg-slate-500",              cls: "bg-slate-700/20 text-slate-400 border-slate-700"      },
+};
+
+const EARNING_STATUS: Record<string, { label: string; dot: string; cls: string }> = {
+  pending_claim: { label: "Unclaimed",  dot: "bg-amber-400",   cls: "bg-amber-500/15 text-amber-300 border-amber-500/25"      },
+  claimed:       { label: "Pending",    dot: "bg-blue-400",    cls: "bg-blue-500/15 text-blue-300 border-blue-500/25"         },
+  processing:    { label: "Processing", dot: "bg-indigo-400 animate-pulse", cls: "bg-indigo-500/15 text-indigo-300 border-indigo-500/25" },
+  paid:          { label: "Paid",       dot: "bg-emerald-400", cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25" },
+  failed:        { label: "Failed",     dot: "bg-red-400",     cls: "bg-red-500/15 text-red-300 border-red-500/25"            },
+};
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type EarningType   = "entry_fee_share" | "prize_pool_refund";
 type EarningStatus = "pending_claim" | "claimed" | "processing" | "paid" | "failed";
@@ -69,146 +74,288 @@ interface Earning {
   payout_completed_at?: string;
 }
 
-const TYPE_META: Record<EarningType, { label: string; icon: React.ElementType; color: string; bg: string }> = {
-  entry_fee_share:   { label: "Entry Fee Share",   icon: TrendingUp, color: "text-orange-400", bg: "bg-orange-500/15 border-orange-500/25" },
-  prize_pool_refund: { label: "Prize Pool Refund", icon: RotateCcw,  color: "text-cyan-400",   bg: "bg-cyan-500/15 border-cyan-500/25"     },
-};
+// ─── Pagination ───────────────────────────────────────────────────────────────
 
-const EARNING_STATUS_META: Record<EarningStatus, { label: string; cls: string; dot: string }> = {
-  pending_claim: { label: "Unclaimed",  cls: "bg-amber-500/15 text-amber-300 border-amber-500/25",      dot: "bg-amber-400"   },
-  claimed:       { label: "Pending",    cls: "bg-blue-500/15 text-blue-300 border-blue-500/25",          dot: "bg-blue-400"    },
-  processing:    { label: "Processing", cls: "bg-indigo-500/15 text-indigo-300 border-indigo-500/25",   dot: "bg-indigo-400"  },
-  paid:          { label: "Paid",       cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25", dot: "bg-emerald-400" },
-  failed:        { label: "Failed",     cls: "bg-red-500/15 text-red-300 border-red-500/25",             dot: "bg-red-400"     },
-};
+function Pagination({ page, total, onPage }: { page: number; total: number; onPage: (p: number) => void }) {
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 pt-4">
+      <button onClick={() => onPage(page - 1)} disabled={page === 1}
+        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-slate-800 hover:border-slate-700 hover:text-white disabled:opacity-40 transition-colors">
+        ← Prev
+      </button>
+      <div className="flex items-center gap-1">
+        {Array.from({ length: pages }, (_, i) => i + 1).map(p => (
+          <button key={p} onClick={() => onPage(p)}
+            className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+              p === page ? "bg-orange-500/20 border border-orange-500/40 text-orange-300" : "text-slate-500 hover:text-white hover:bg-slate-800/60"
+            }`}>{p}</button>
+        ))}
+      </div>
+      <button onClick={() => onPage(page + 1)} disabled={page === pages}
+        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-slate-800 hover:border-slate-700 hover:text-white disabled:opacity-40 transition-colors">
+        Next →
+      </button>
+    </div>
+  );
+}
 
-function EarningClaimModal({ earning, onClose, onClaimed }: { earning: Earning; onClose: () => void; onClaimed: () => void }) {
+// ─── New Withdrawal Modal ──────────────────────────────────────────────────────
+
+function WithdrawalModal({ availableGhs, onClose, onSuccess }: {
+  availableGhs: number; onClose: () => void; onSuccess: () => void;
+}) {
+  const [amount, setAmount]         = useState("");
+  const [network, setNetwork]       = useState<typeof MOMO_NETWORKS[number]>("MTN");
   const [momoNumber, setMomoNumber] = useState("");
-  const [network, setNetwork] = useState<typeof MOMO_NETWORKS[number]>("MTN");
+  const [momoError, setMomoError]   = useState<string | null>(null);
   const [accountName, setAccountName] = useState("");
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes]           = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
 
-  const momoValid = /^0[0-9]{9}$/.test(momoNumber.trim());
-  const isValid = momoValid && accountName.trim().length > 0;
+  const amtNum = parseFloat(amount) || 0;
+  const valid  = amtNum > 0 && amtNum <= availableGhs && !momoError && momoNumber.length === 10 && accountName.trim().length > 0;
 
-  async function handleClaim() {
-    if (!isValid || submitting) return;
+  const submit = async () => {
+    if (!valid) return;
     setSubmitting(true);
-    setError("");
     try {
-      const res = await apiPost(`${TOURNAMENT_ENDPOINTS.ORGANIZER_EARNINGS_CLAIM}/${earning._id}/claim`, {
-        momo_number: momoNumber.trim(),
-        network,
-        account_name: accountName.trim(),
+      await organizerService.requestPayout({
+        amountGhs: amtNum, requestType: "wallet_withdrawal",
+        momoNumber: momoNumber.trim(), network,
+        accountName: accountName.trim(),
         notes: notes.trim() || undefined,
       });
-      if (!res.success) throw new Error((res as { error?: { message?: string } }).error?.message ?? "Claim failed.");
-      showSuccess("Earnings claim submitted. Payment will be processed within 1–2 business days.");
-      onClaimed();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
+      showSuccess("Withdrawal request submitted.");
+      onSuccess();
+    } catch (e) { showError(e instanceof Error ? e.message : "Request failed."); }
+    finally { setSubmitting(false); }
+  };
 
   return (
-    <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center">
-              <Banknote className="w-5 h-5 text-orange-400" />
+    <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
+              <Send className="w-4 h-4 text-orange-400" />
             </div>
             <div>
-              <h2 className="font-display text-base font-bold text-white">Claim Earnings</h2>
-              <p className="text-xs text-slate-400">{fmtGhs(earning.net_amount)} net payout</p>
+              <h3 className="font-display text-sm font-bold text-white">New Withdrawal</h3>
+              <p className="text-[11px] text-slate-500">Available: GHS {availableGhs.toFixed(2)}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
-          {/* Fee breakdown */}
-          <div className="rounded-xl bg-slate-800/60 border border-slate-700 divide-y divide-slate-700/50">
-            <div className="flex items-center justify-between px-4 py-2.5 text-sm">
-              <span className="text-slate-400">Gross amount</span>
-              <span className="text-white font-semibold">{fmtGhs(earning.gross_amount)}</span>
+        <div className="px-5 py-4 space-y-4 max-h-[65vh] overflow-y-auto">
+          {/* Amount */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Amount (GHS)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500">GHS</span>
+              <input type="number" min="1" max={availableGhs} step="0.01" value={amount}
+                onChange={e => setAmount(e.target.value)} placeholder="0.00"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-xl pl-11 pr-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
+              />
             </div>
-            <div className="flex items-center justify-between px-4 py-2.5 text-sm">
-              <span className="text-slate-400">Platform fee (10%)</span>
-              <span className="text-red-400">− {fmtGhs(earning.platform_fee)}</span>
-            </div>
-            <div className="flex items-center justify-between px-4 py-2.5 text-sm font-bold">
-              <span className="text-white">You receive</span>
-              <span className="text-emerald-400">{fmtGhs(earning.net_amount)}</span>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Mobile Money Network</label>
-            <div className="grid grid-cols-3 gap-2">
-              {MOMO_NETWORKS.map((n) => (
-                <button key={n} type="button" onClick={() => setNetwork(n)}
-                  className={`py-2 rounded-lg text-sm font-semibold border transition-colors ${
-                    network === n ? "border-orange-500 bg-orange-500/15 text-orange-300" : "border-slate-700 bg-slate-800/60 text-slate-300 hover:border-slate-500"
-                  }`}
-                >{n}</button>
+            <div className="flex gap-1.5 mt-1">
+              {[0.25, 0.5, 0.75, 1].map(pct => (
+                <button key={pct} type="button" onClick={() => setAmount((availableGhs * pct).toFixed(2))}
+                  className="flex-1 py-1 rounded-lg text-[10px] font-bold text-slate-400 bg-slate-800/60 border border-slate-700/60 hover:border-orange-500/40 hover:text-orange-300 transition-colors">
+                  {pct === 1 ? "Max" : `${pct * 100}%`}
+                </button>
               ))}
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">MoMo Number</label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input type="tel" value={momoNumber}
-                onChange={(e) => setMomoNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                placeholder="0551234567"
-                className="w-full pl-10 pr-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-orange-500/60 transition-colors"
-              />
+          {/* Network */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Network</label>
+            <div className="grid grid-cols-3 gap-2">
+              {MOMO_NETWORKS.map(n => (
+                <button key={n} type="button" onClick={() => setNetwork(n)}
+                  className={`py-2 rounded-xl text-xs font-bold border transition-colors ${
+                    network === n ? "bg-orange-500/15 border-orange-500/40 text-orange-300" : "bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-600"
+                  }`}>{n}</button>
+              ))}
             </div>
-            {momoNumber.length > 0 && !momoValid && (
-              <p className="text-xs text-red-400 mt-1">Enter a valid 10-digit number starting with 0.</p>
-            )}
           </div>
 
-          <div>
-            <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Account Name</label>
-            <input type="text" value={accountName} onChange={(e) => setAccountName(e.target.value)}
-              placeholder="Business or personal name on MoMo"
-              className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-orange-500/60 transition-colors"
+          {/* MoMo Number */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">MoMo Number</label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+              <input type="tel" maxLength={10} value={momoNumber}
+                onChange={e => { setMomoNumber(e.target.value.replace(/\D/g, "")); setMomoError(null); }}
+                onBlur={() => setMomoError(validateMomo(momoNumber))}
+                placeholder="0XX XXX XXXX"
+                className={`w-full bg-slate-800/60 border rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none transition-colors ${momoError ? "border-red-500/50" : "border-slate-700 focus:border-orange-500/60"}`}
+              />
+            </div>
+            {momoError && <p className="text-[11px] text-red-400 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{momoError}</p>}
+          </div>
+
+          {/* Account Name */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Account Name</label>
+            <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)}
+              placeholder="Full name on MoMo account"
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
             />
           </div>
 
-          <div>
-            <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1.5">Notes <span className="normal-case text-slate-600">(optional)</span></label>
-            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any notes for admin"
-              className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-orange-500/60 transition-colors"
+          {/* Notes */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+              Notes <span className="text-slate-600 normal-case font-normal">(optional)</span>
+            </label>
+            <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
+              placeholder="Any notes for admin..."
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
+            />
+          </div>
+        </div>
+
+        <div className="px-5 pb-5 flex gap-2.5">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-sm font-semibold text-slate-300 hover:border-slate-600 transition-colors">Cancel</button>
+          <button onClick={() => void submit()} disabled={!valid || submitting}
+            className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 transition-all">
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {submitting ? "Submitting…" : "Submit Request"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Claim Earnings Modal ─────────────────────────────────────────────────────
+
+function ClaimModal({ earning, onClose, onClaimed }: { earning: Earning; onClose: () => void; onClaimed: () => void }) {
+  const [network, setNetwork]       = useState<typeof MOMO_NETWORKS[number]>("MTN");
+  const [momoNumber, setMomoNumber] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [notes, setNotes]           = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]           = useState("");
+
+  const netPayout = earning.gross_amount - earning.platform_fee;
+  const momoValid = /^0[0-9]{9}$/.test(momoNumber.trim());
+  const valid     = momoValid && accountName.trim().length > 0;
+
+  const handleClaim = async () => {
+    if (!valid || submitting) return;
+    setSubmitting(true); setError("");
+    try {
+      const res = await apiPost(`${TOURNAMENT_ENDPOINTS.ORGANIZER_EARNINGS_CLAIM}/${earning._id}/claim`, {
+        momo_number: momoNumber.trim(), network, account_name: accountName.trim(),
+        notes: notes.trim() || undefined,
+      });
+      if (!res.success) throw new Error((res as { error?: { message?: string } }).error?.message ?? "Claim failed.");
+      showSuccess("Earnings claim submitted — processed within 1–2 business days.");
+      onClaimed();
+    } catch (e) { setError(e instanceof Error ? e.message : "Something went wrong."); }
+    finally { setSubmitting(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800/80 bg-slate-950/30">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
+              <Banknote className="w-4 h-4 text-orange-400" />
+            </div>
+            <div>
+              <h3 className="font-display text-sm font-bold text-white">Claim Earnings</h3>
+              <p className="text-[11px] text-slate-500">{fmtGhs(netPayout)} to your MoMo account</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors"><X className="w-4 h-4" /></button>
+        </div>
+
+        <div className="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          {/* Breakdown */}
+          <div className="rounded-xl bg-slate-800/60 border border-slate-700/60 divide-y divide-slate-700/40 text-sm">
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <span className="text-slate-400">Total entry fees</span>
+              <span className="text-white font-semibold">{fmtGhs(earning.gross_amount)}</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-2.5">
+              <span className="text-slate-400">Platform fee (10%)</span>
+              <span className="text-red-400">− {fmtGhs(earning.platform_fee)}</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800/40">
+              <span className="text-white font-semibold">You receive</span>
+              <span className="text-emerald-400 font-bold">{fmtGhs(netPayout)}</span>
+            </div>
+          </div>
+
+          {/* Network */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Network</label>
+            <div className="grid grid-cols-3 gap-2">
+              {MOMO_NETWORKS.map(n => (
+                <button key={n} type="button" onClick={() => setNetwork(n)}
+                  className={`py-2 rounded-xl text-xs font-bold border transition-colors ${
+                    network === n ? "bg-orange-500/15 border-orange-500/40 text-orange-300" : "bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-600"
+                  }`}>{n}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* MoMo */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">MoMo Number</label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+              <input type="tel" maxLength={10} value={momoNumber}
+                onChange={e => setMomoNumber(e.target.value.replace(/\D/g, ""))} placeholder="0XX XXX XXXX"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Name */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Account Name</label>
+            <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)}
+              placeholder="Name on MoMo account"
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
+            />
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Notes <span className="text-slate-600 normal-case font-normal">(optional)</span></label>
+            <input type="text" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes..."
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/60 transition-colors"
             />
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
-              <AlertTriangle className="w-4 h-4 shrink-0" />{error}
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-xs">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />{error}
             </div>
           )}
 
-          <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-slate-800/60 border border-slate-700 text-xs text-slate-400">
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs text-slate-400">
             <Clock className="w-3.5 h-3.5 shrink-0 mt-0.5 text-orange-400" />
-            Earnings are processed within 1–2 business days after admin review.
+            Payment processed within 1–2 business days after admin review.
           </div>
+        </div>
 
-          <button onClick={() => void handleClaim()} disabled={!isValid || submitting}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 font-bold text-sm hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
+        <div className="px-5 pb-5 flex gap-2.5">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-sm font-semibold text-slate-300 hover:border-slate-600 transition-colors">Cancel</button>
+          <button onClick={() => void handleClaim()} disabled={!valid || submitting}
+            className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-50 transition-all">
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Banknote className="w-4 h-4" />}
-            {submitting ? "Submitting…" : `Claim ${fmtGhs(earning.net_amount)}`}
+            {submitting ? "Claiming…" : `Claim ${fmtGhs(netPayout)}`}
           </button>
         </div>
       </div>
@@ -216,95 +363,28 @@ function EarningClaimModal({ earning, onClose, onClaimed }: { earning: Earning; 
   );
 }
 
-function EarningCard({ earning, onClaim }: { earning: Earning; onClaim: () => void }) {
-  const statusMeta = EARNING_STATUS_META[earning.status];
-  const typeMeta   = TYPE_META[earning.earning_type];
-  const TypeIcon   = typeMeta.icon;
-  const title      = earning.tournament_id?.title ?? "Unknown Tournament";
-
-  return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5 hover:border-slate-700 transition-colors">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="min-w-0">
-          <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold truncate mb-1.5">{title}</p>
-          <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${typeMeta.bg}`}>
-            <TypeIcon className={`w-3 h-3 ${typeMeta.color}`} />
-            <span className={typeMeta.color}>{typeMeta.label}</span>
-          </span>
-        </div>
-        <span className={`shrink-0 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${statusMeta.cls}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dot}`} />{statusMeta.label}
-        </span>
-      </div>
-
-      <div className="mb-3">
-        <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">Net Payout</p>
-        <p className="font-display text-2xl font-bold text-white">{fmtGhs(earning.net_amount)}</p>
-      </div>
-
-      <div className="rounded-xl bg-slate-800/40 border border-slate-700/50 divide-y divide-slate-700/40 mb-4 text-xs">
-        <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-slate-500">Gross</span>
-          <span className="text-slate-300">{fmtGhs(earning.gross_amount)}</span>
-        </div>
-        <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-slate-500">Platform fee</span>
-          <span className="text-slate-400">− {fmtGhs(earning.platform_fee)}</span>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-slate-600">{fmtDate(earning.created_at)}</p>
-        {earning.status === "pending_claim" && (
-          <button onClick={onClaim}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-bold hover:bg-orange-500/25 hover:border-orange-500/50 transition-all">
-            <Banknote className="w-3.5 h-3.5" /> Claim
-          </button>
-        )}
-        {earning.status === "paid" && (
-          <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Paid {fmtDate(earning.payout_completed_at)}
-          </span>
-        )}
-        {(earning.status === "claimed" || earning.status === "processing") && (
-          <span className="flex items-center gap-1.5 text-xs text-slate-400">
-            <Clock3 className="w-3.5 h-3.5" /> Pending admin review
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 type Tab = "payouts" | "earnings";
 
 export default function OrganizerFinancePage() {
-  const [tab, setTab] = useState<Tab>("payouts");
+  const [tab, setTab]             = useState<Tab>("payouts");
   const [statsOpen, setStatsOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-  // ── Payouts state ────────────────────────────────────────────────────────────
-  const [requests, setRequests] = useState<PayoutRequest[]>([]);
-  const [wallet, setWallet]     = useState<WalletBalance | null>(null);
+  // Payouts
+  const [requests, setRequests]   = useState<PayoutRequest[]>([]);
+  const [wallet, setWallet]       = useState<WalletBalance | null>(null);
   const [payLoading, setPayLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
-  const [page, setPage]         = useState(1);
-  const [showForm, setShowForm] = useState(false);
-  const [amount, setAmount]     = useState("");
-  const [momoNumber, setMomoNumber] = useState("");
-  const [momoError, setMomoError]   = useState<string | null>(null);
-  const [network, setNetwork]   = useState<typeof MOMO_NETWORKS[number]>("MTN");
-  const [accountName, setAccountName] = useState("");
-  const [notes, setNotes]       = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [payPage, setPayPage]     = useState(1);
 
-  // ── Earnings state ───────────────────────────────────────────────────────────
-  const [earnings, setEarnings]     = useState<Earning[]>([]);
+  // Earnings
+  const [earnings, setEarnings]   = useState<Earning[]>([]);
   const [earnLoading, setEarnLoading] = useState(true);
-  const [claimingEarn, setClaimingEarn] = useState<Earning | null>(null);
+  const [claimTarget, setClaimTarget] = useState<Earning | null>(null);
+  const [earnPage, setEarnPage]   = useState(1);
 
-  // ── Loaders ──────────────────────────────────────────────────────────────────
   const loadPayouts = useCallback(async () => {
     setPayLoading(true);
     try {
@@ -314,12 +394,8 @@ export default function OrganizerFinancePage() {
       ]);
       setRequests(reqs);
       setWallet(bal);
-    } catch {
-      setRequests([]);
-      showError("Failed to load payout data.");
-    } finally {
-      setPayLoading(false);
-    }
+    } catch { setRequests([]); }
+    finally { setPayLoading(false); }
   }, []);
 
   const loadEarnings = useCallback(async () => {
@@ -334,140 +410,116 @@ export default function OrganizerFinancePage() {
     finally { setEarnLoading(false); }
   }, []);
 
+  const refresh = () => { void loadPayouts(); void loadEarnings(); };
   useEffect(() => { void loadPayouts(); void loadEarnings(); }, [loadPayouts, loadEarnings]);
-
-  // ── Payout submit ────────────────────────────────────────────────────────────
-  const submitPayout = async () => {
-    const amt = parseFloat(amount);
-    if (!amt || amt < 1) { showError("Enter a valid amount (min GHS 1)."); return; }
-    const momoErr = validateMomo(momoNumber);
-    if (momoErr) { setMomoError(momoErr); return; }
-    if (!accountName.trim()) { showError("Enter account holder name."); return; }
-    setMomoError(null);
-    setSubmitting(true);
-    try {
-      await organizerService.requestPayout({
-        amountGhs: amt,
-        requestType: "wallet_withdrawal",
-        momoNumber: momoNumber.trim(),
-        network,
-        accountName: accountName.trim(),
-        notes: notes.trim() || undefined,
-      });
-      showSuccess("Payout request submitted. Processing typically takes 1–3 business days.");
-      setShowForm(false);
-      setAmount(""); setMomoNumber(""); setAccountName(""); setNotes(""); setMomoError(null);
-      void loadPayouts();
-    } catch (e) {
-      showError(e instanceof Error ? e.message : "Request failed.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const cancelPayout = async (id: string) => {
     setCancelling(id);
     try {
       await organizerService.cancelPayoutRequest(id);
-      showSuccess("Request cancelled.");
+      showSuccess("Request cancelled — balance refunded.");
       void loadPayouts();
-    } catch (e) {
-      showError(e instanceof Error ? e.message : "Failed to cancel.");
-    } finally {
-      setCancelling(null);
-    }
+    } catch (e) { showError(e instanceof Error ? e.message : "Could not cancel."); }
+    finally { setCancelling(null); }
   };
 
-  // ── Derived ──────────────────────────────────────────────────────────────────
-  const totalPaid    = requests.filter(r => r.status === "completed").reduce((s, r) => s + r.amountGhs, 0);
-  const totalPending = requests.filter(r => r.status === "pending" || r.status === "approved").reduce((s, r) => s + r.amountGhs, 0);
-  const totalPages   = Math.max(1, Math.ceil(requests.length / PAGE_SIZE));
-  const pageRequests = requests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const TERMINAL = new Set(["completed", "rejected", "cancelled"]);
+  const availableGhs  = (wallet?.availableBalance ?? 0) / 100;
+  const totalPaid     = requests.filter(r => r.status === "completed").reduce((s, r) => s + r.amountGhs, 0);
+  const totalPending  = requests.filter(r => !TERMINAL.has(r.status)).reduce((s, r) => s + r.amountGhs, 0);
   const earnUnclaimed = earnings.filter(e => e.status === "pending_claim").length;
+  const earnPaidTotal = earnings.filter(e => e.status === "paid").reduce((s, e) => s + (e.gross_amount - e.platform_fee), 0);
   const earnPending   = earnings.filter(e => e.status === "claimed" || e.status === "processing").length;
-  const earnPaidTotal = earnings.filter(e => e.status === "paid").reduce((s, e) => s + e.net_amount, 0);
 
-  // ── Stats per tab ────────────────────────────────────────────────────────────
-  const payoutStats = [
-    { icon: DollarSign,   iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Available",  value: payLoading ? "—" : (wallet ? `GHS ${(wallet.availableBalance / 100).toFixed(2)}` : "—") },
-    { icon: Send,         iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",   label: "Requests",   value: payLoading ? "—" : String(requests.length) },
-    { icon: CheckCircle2, iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15", label: "Total Paid", value: payLoading ? "—" : (totalPaid > 0 ? `GHS ${totalPaid.toFixed(2)}` : "—") },
-    { icon: Clock3,       iconColor: "text-amber-400",   bg: "from-amber-500/15 to-orange-500/15", label: "Pending",    value: payLoading ? "—" : (totalPending > 0 ? `GHS ${totalPending.toFixed(2)}` : "—") },
+  const paySlice  = requests.slice((payPage - 1)  * PAGE_SIZE, payPage  * PAGE_SIZE);
+  const earnSlice = earnings.slice((earnPage - 1) * PAGE_SIZE, earnPage * PAGE_SIZE);
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  const payStats = [
+    { icon: DollarSign,   color: "text-orange-400",  bg: "from-orange-500/25 to-amber-500/20",   label: "Available",   value: payLoading  ? "—" : `GHS ${availableGhs.toFixed(2)}` },
+    { icon: ArrowDownToLine, color: "text-cyan-400", bg: "from-cyan-500/25 to-indigo-500/20",    label: "Requests",    value: payLoading  ? "—" : String(requests.length)           },
+    { icon: CheckCircle2, color: "text-emerald-400", bg: "from-emerald-500/25 to-teal-500/20",   label: "Total Paid",  value: payLoading  ? "—" : `GHS ${totalPaid.toFixed(2)}`     },
+    { icon: Clock3,       color: "text-amber-400",   bg: "from-amber-500/25 to-orange-500/20",   label: "Pending",     value: payLoading  ? "—" : `GHS ${totalPending.toFixed(2)}`  },
   ];
 
-  const earningStats = [
-    { icon: TrendingUp,   iconColor: "text-orange-400", bg: "from-orange-500/15 to-amber-500/15",  label: "Total",     value: earnLoading ? "—" : String(earnings.length) },
-    { icon: Banknote,     iconColor: "text-amber-400",  bg: "from-amber-500/15 to-yellow-500/15",  label: "Unclaimed", value: earnLoading ? "—" : String(earnUnclaimed)    },
-    { icon: Clock3,       iconColor: "text-indigo-400", bg: "from-indigo-500/15 to-violet-500/15", label: "Pending",   value: earnLoading ? "—" : String(earnPending)      },
-    { icon: CheckCircle2, iconColor: "text-emerald-400",bg: "from-emerald-500/15 to-teal-500/15",  label: "Paid Out",  value: earnLoading ? "—" : fmtGhs(earnPaidTotal)    },
+  const earnStats = [
+    { icon: TrendingUp,   color: "text-orange-400",  bg: "from-orange-500/25 to-amber-500/20",   label: "Total",       value: earnLoading ? "—" : String(earnings.length)           },
+    { icon: Banknote,     color: "text-amber-400",   bg: "from-amber-500/25 to-yellow-500/20",   label: "Unclaimed",   value: earnLoading ? "—" : String(earnUnclaimed)              },
+    { icon: Clock3,       color: "text-indigo-400",  bg: "from-indigo-500/25 to-violet-500/20",  label: "Pending",     value: earnLoading ? "—" : String(earnPending)                },
+    { icon: CheckCircle2, color: "text-emerald-400", bg: "from-emerald-500/25 to-teal-500/20",   label: "Paid Out",    value: earnLoading ? "—" : fmtGhs(earnPaidTotal)        },
   ];
 
-  const statItems = tab === "payouts" ? payoutStats : earningStats;
+  const statItems = tab === "payouts" ? payStats : earnStats;
 
   return (
     <div className="min-h-screen">
 
-      {/* ── Hero ────────────────────────────────────────────────────────────── */}
-      <div className="border-b border-slate-800/60 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 py-6 sm:py-8 space-y-4">
+      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
+      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
+        <div className="absolute -top-40 right-0 w-150 h-100 rounded-full bg-orange-500/6 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
 
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 pt-10 pb-7">
           {/* Title row */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-                <DollarSign className="w-4 h-4 text-orange-400" />
-              </div>
-              <h1 className="font-display text-xl sm:text-2xl font-bold text-white">Finance</h1>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Finance</h1>
+              <p className="text-sm sm:text-base text-slate-400 mt-2 sm:mt-3">
+                {tab === "payouts" ? "Request and track your wallet withdrawals." : "Your organizer earnings from entry fees and prize pool refunds."}
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Mobile stats toggle */}
-              <button onClick={() => setStatsOpen(v => !v)}
-                className="sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-colors">
-                Stats
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
-              </button>
+            <div className="flex items-center gap-2 shrink-0">
               {tab === "payouts" && (
-                <button onClick={() => setShowForm(v => !v)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all shrink-0">
-                  <Send className="w-3.5 h-3.5" />
+                <button onClick={() => setShowModal(true)} disabled={availableGhs <= 0 && !payLoading}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-40 transition-all"
+                >
+                  <Send className="w-4 h-4" />
                   <span className="hidden sm:inline">New Request</span>
-                  <span className="sm:hidden">New</span>
                 </button>
               )}
+              <button onClick={refresh} disabled={payLoading && earnLoading}
+                className="p-2 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 disabled:opacity-50 transition-colors">
+                <RefreshCw className={`w-4 h-4 ${payLoading || earnLoading ? "animate-spin" : ""}`} />
+              </button>
             </div>
           </div>
-          <p className="text-sm text-slate-500 -mt-2">
-            {tab === "payouts" ? "Request and track your withdrawals." : "Your organizer earnings from entry fees and prize pool refunds."}
-          </p>
 
-          {/* Stats — mobile dropdown */}
-          {statsOpen && (
-            <div className="sm:hidden grid grid-cols-2 gap-2">
-              {statItems.map((s) => (
-                <div key={s.label} className="flex items-center gap-2.5 bg-slate-800/50 border border-slate-700/60 rounded-xl px-3 py-3">
-                  <div className={`w-7 h-7 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
-                    <s.icon className={`w-3.5 h-3.5 ${s.iconColor}`} />
+          {/* Stats — mobile toggle */}
+          <div className="sm:hidden mt-4">
+            <button onClick={() => setStatsOpen(o => !o)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs font-semibold text-slate-400 uppercase tracking-widest">
+              <span>Stats</span>
+              <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
+            </button>
+            {statsOpen && (
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                {statItems.map(s => (
+                  <div key={s.label} className="flex items-center gap-2.5 bg-slate-800/50 border border-slate-700/60 rounded-xl px-3 py-3">
+                    <div className={`w-8 h-8 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                      <s.icon className={`w-3.5 h-3.5 ${s.color}`} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">{s.label}</p>
+                      <p className={`font-display text-base font-bold tabular-nums leading-tight ${s.color}`}>{s.value}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-display text-sm font-bold tabular-nums text-white leading-none truncate">{s.value}</p>
-                    <p className="text-[9px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Stats — desktop */}
-          <div className="hidden sm:grid grid-cols-4 gap-3">
-            {statItems.map((s) => (
-              <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
-                <div className={`w-8 h-8 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
-                  <s.icon className={`w-4 h-4 ${s.iconColor}`} />
+          <div className="hidden sm:grid sm:grid-cols-4 gap-3 mt-6">
+            {statItems.map(s => (
+              <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3 hover:border-slate-600/60 transition-colors">
+                <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                  <s.icon className={`w-5 h-5 ${s.color}`} />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-display text-base font-bold tabular-nums text-white leading-none truncate">{s.value}</p>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{s.label}</p>
+                  <p className={`font-display text-xl font-bold tabular-nums leading-tight ${s.color}`}>{s.value}</p>
                 </div>
               </div>
             ))}
@@ -475,20 +527,20 @@ export default function OrganizerFinancePage() {
         </div>
       </div>
 
-      {/* ── Tabs ────────────────────────────────────────────────────────────── */}
-      <div className="border-b border-slate-800/60 bg-slate-950/80">
-        <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 flex gap-1">
-          {(["payouts", "earnings"] as Tab[]).map((t) => (
-            <button key={t} onClick={() => { setTab(t); setStatsOpen(false); setShowForm(false); }}
+      {/* ── Tabs ──────────────────────────────────────────────────────────────── */}
+      <div className="border-b border-slate-800/60 bg-slate-950/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex gap-1">
+          {([
+            { id: "payouts" as Tab,  label: "Payouts",  icon: Send },
+            { id: "earnings" as Tab, label: "Earnings", icon: TrendingUp },
+          ]).map(({ id, label, icon: Icon }) => (
+            <button key={id} onClick={() => { setTab(id); setStatsOpen(false); }}
               className={`flex items-center gap-2 px-4 py-3.5 text-sm font-semibold border-b-2 transition-colors ${
-                tab === t
-                  ? "border-orange-400 text-orange-300"
-                  : "border-transparent text-slate-500 hover:text-slate-300"
-              }`}
-            >
-              {t === "payouts" ? <Send className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
-              {t === "payouts" ? "Payouts" : "Earnings"}
-              {t === "earnings" && earnUnclaimed > 0 && (
+                tab === id ? "border-orange-400 text-orange-300" : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}>
+              <Icon className="w-4 h-4" />
+              {label}
+              {id === "earnings" && earnUnclaimed > 0 && (
                 <span className="min-w-4 h-4 rounded-full bg-orange-500 text-slate-950 text-[9px] font-bold flex items-center justify-center px-1">
                   {earnUnclaimed}
                 </span>
@@ -498,249 +550,210 @@ export default function OrganizerFinancePage() {
         </div>
       </div>
 
-      {/* ── Content ─────────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 py-4 sm:py-6 space-y-6">
+      {/* ── Content ───────────────────────────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
 
-        {/* ── PAYOUTS TAB ─────────────────────────────────────────────────── */}
+        {/* PAYOUTS TAB */}
         {tab === "payouts" && (
-          <>
-            {/* New request form */}
-            {showForm && (
-              <div className="rounded-2xl border border-orange-500/20 bg-slate-900 overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <ArrowDownToLine className="w-4 h-4 text-orange-400" />
-                    <h2 className="font-display text-xl font-bold text-white">New Payout Request</h2>
-                  </div>
-                  <button onClick={() => setShowForm(false)}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors">
-                    <X className="w-4 h-4" />
-                  </button>
+          payLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-5 rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800 shrink-0" />
+                  <div className="flex-1 space-y-2"><div className="h-4 w-28 bg-slate-800 rounded" /><div className="h-3 w-40 bg-slate-800 rounded" /></div>
+                  <div className="h-6 w-20 bg-slate-800 rounded-full" />
                 </div>
-                <div className="p-6 space-y-4">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide block mb-2">
-                        Amount (GHS) <span className="text-orange-400 normal-case font-normal tracking-normal">*</span>
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">₵</span>
-                        <input type="number" min="1" value={amount} onChange={e => setAmount(e.target.value)}
-                          placeholder="0.00" className={`${inputCls} pl-8`} />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide block mb-2">Network <span className="text-orange-400">*</span></label>
-                      <select value={network} onChange={e => setNetwork(e.target.value as typeof MOMO_NETWORKS[number])} className={selectCls}>
-                        {MOMO_NETWORKS.map(n => <option key={n}>{n}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide block mb-2">MoMo Number <span className="text-orange-400">*</span></label>
-                      <input value={momoNumber}
-                        onChange={e => { setMomoNumber(e.target.value); if (momoError) setMomoError(null); }}
-                        onBlur={() => setMomoError(validateMomo(momoNumber))}
-                        placeholder="e.g. 0241234567"
-                        className={`${inputCls} ${momoError ? "border-red-500/60" : ""}`}
-                      />
-                      {momoError && (
-                        <p className="flex items-center gap-1.5 mt-1.5 text-xs text-red-400">
-                          <AlertCircle className="w-3 h-3 shrink-0" />{momoError}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide block mb-2">Account Name <span className="text-orange-400">*</span></label>
-                      <input value={accountName} onChange={e => setAccountName(e.target.value)}
-                        placeholder="Full name on MoMo" className={inputCls} />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide block mb-2">
-                      Notes <span className="text-slate-600 font-normal normal-case tracking-normal">optional</span>
-                    </label>
-                    <input value={notes} onChange={e => setNotes(e.target.value)}
-                      placeholder="Any notes for this request" className={inputCls} />
-                  </div>
-                  <button onClick={() => void submitPayout()} disabled={submitting}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 disabled:opacity-60 transition-all mt-2">
-                    {submitting ? <><Loader2 className="w-4 h-4 animate-spin" />Submitting…</> : <><Send className="w-4 h-4" />Submit Request</>}
-                  </button>
-                </div>
+              ))}
+            </div>
+          ) : requests.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+              <div className="w-16 h-16 rounded-3xl bg-slate-800/60 border border-slate-700/40 flex items-center justify-center">
+                <Banknote className="w-7 h-7 text-slate-600" />
               </div>
-            )}
-
-            {/* History */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-                <h2 className="font-display text-xl font-bold text-white">Request History</h2>
-                {requests.length > 0 && (
-                  <span className="text-xs text-slate-500">{requests.length} request{requests.length !== 1 ? "s" : ""}</span>
-                )}
+              <div>
+                <p className="font-display text-lg font-semibold text-slate-300">No withdrawal requests yet</p>
+                <p className="text-sm text-slate-500 mt-1">Submit a request to withdraw funds from your wallet to Mobile Money.</p>
               </div>
-
-              {payLoading ? (
-                <div className="flex justify-center py-14">
-                  <div className="flex flex-col items-center gap-3 text-slate-500">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span className="text-xs">Loading…</span>
-                  </div>
-                </div>
-              ) : requests.length === 0 ? (
-                <div className="flex flex-col items-center py-16 text-center gap-3">
-                  <div className="w-14 h-14 rounded-full border border-dashed border-slate-700 flex items-center justify-center">
-                    <Banknote className="w-7 h-7 text-slate-600" />
-                  </div>
-                  <p className="font-display text-base font-semibold text-slate-500">No payout requests yet</p>
-                  <p className="text-xs text-slate-600 max-w-xs">Submit a request to withdraw your earnings to your mobile money account.</p>
-                  <button onClick={() => setShowForm(true)}
-                    className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-400 to-amber-400 text-slate-950 text-sm font-bold">
-                    <Send className="w-4 h-4" /> New Request
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="divide-y divide-slate-800/60">
-                    {pageRequests.map(req => {
-                      const meta = PAYOUT_STATUS_META[req.status] ?? PAYOUT_STATUS_META.cancelled;
-                      const netColor = NETWORK_COLORS[req.network] ?? "bg-slate-700/40 text-slate-400 border-slate-700";
-                      return (
-                        <div key={req.id} className="px-6 py-5 flex items-start gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center justify-center shrink-0 mt-0.5">
-                            <ArrowDownToLine className="w-4 h-4 text-slate-400" />
-                          </div>
-                          <div className="flex-1 min-w-0 space-y-1.5">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-display text-lg font-bold text-white">GHS {req.amountGhs.toFixed(2)}</span>
-                              <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${meta.bg} ${meta.text}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />{meta.label}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${netColor}`}>{req.network}</span>
-                              <span className="text-xs text-slate-500">{req.momoNumber}</span>
-                              <span className="text-slate-700">·</span>
-                              <span className="text-xs text-slate-500">{req.accountName}</span>
-                            </div>
-                            {req.notes && <p className="text-xs text-slate-500 italic">"{req.notes}"</p>}
-                            {req.rejectionReason && (
-                              <div className="flex items-center gap-1.5 text-xs text-red-400">
-                                <AlertCircle className="w-3 h-3 shrink-0" />{req.rejectionReason}
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right shrink-0 space-y-1.5">
-                            <p className="text-xs text-slate-500">{fmtDate(req.createdAt)}</p>
-                            {req.status === "completed" && (
-                              <p className="text-[10px] text-emerald-400 flex items-center gap-1 justify-end">
-                                <CheckCircle2 className="w-3 h-3" /> Paid
-                              </p>
-                            )}
-                            {(req.status === "pending" || req.status === "approved") && (
-                              <>
-                                <p className="text-[10px] text-amber-400 flex items-center gap-1 justify-end">
-                                  <Clock3 className="w-3 h-3" /> Processing
-                                </p>
-                                <button onClick={() => void cancelPayout(req.id)} disabled={cancelling === req.id}
-                                  className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-red-400 transition-colors ml-auto disabled:opacity-50">
-                                  {cancelling === req.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                                  Cancel
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {totalPages > 1 && (
-                    <div className="px-6 py-4 border-t border-slate-800 flex items-center justify-between">
-                      <span className="text-xs text-slate-500">Page {page} of {totalPages} · {requests.length} requests</span>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                          className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                          className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
+              {availableGhs > 0 && (
+                <button onClick={() => setShowModal(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 text-sm font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all">
+                  <Send className="w-4 h-4" />New Request
+                </button>
               )}
             </div>
-          </>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-slate-500">{requests.length} request{requests.length !== 1 ? "s" : ""}</p>
+                <p className="text-xs text-slate-600">Page {payPage} of {Math.max(1, Math.ceil(requests.length / PAGE_SIZE))}</p>
+              </div>
+              {paySlice.map(req => {
+                const s = PAYOUT_STATUS[req.status] ?? PAYOUT_STATUS.cancelled;
+                const netStyle = NETWORK_STYLE[req.network] ?? "bg-slate-700/30 text-slate-400 border-slate-700";
+                const canCancel = req.status === "pending" || req.status === "under_review";
+                return (
+                  <div key={req.id} className={`rounded-2xl border bg-slate-900/60 overflow-hidden transition-colors hover:bg-slate-900 ${
+                    TERMINAL.has(req.status) ? "border-slate-800/60" : "border-slate-700/60"
+                  }`}>
+                    <div className="flex items-center gap-4 px-5 py-4">
+                      {/* Icon */}
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        req.status === "completed" ? "bg-emerald-500/15 border border-emerald-500/25" :
+                        req.status === "rejected" || req.status === "cancelled" ? "bg-slate-800 border border-slate-700" :
+                        "bg-orange-500/15 border border-orange-500/20"
+                      }`}>
+                        {req.status === "completed" ? <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400" /> :
+                         req.status === "rejected" ? <XCircle className="w-4.5 h-4.5 text-red-400" /> :
+                         req.status === "cancelled" ? <XCircle className="w-4.5 h-4.5 text-slate-500" /> :
+                         <ArrowDownToLine className="w-4.5 h-4.5 text-orange-400" />}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-display text-base font-bold text-white">GHS {req.amountGhs.toFixed(2)}</span>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${s.cls}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />{s.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500">
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${netStyle}`}>{req.network}</span>
+                          <span className="truncate">{req.momoNumber}</span>
+                          {req.accountName && <><span className="text-slate-700">·</span><span className="truncate">{req.accountName}</span></>}
+                        </div>
+                        {req.rejectionReason && (
+                          <p className="text-xs text-red-400/80 mt-1 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 shrink-0" />{req.rejectionReason}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Right */}
+                      <div className="text-right shrink-0 space-y-1.5">
+                        <p className="text-xs text-slate-500">{fmtDate(req.createdAt)}</p>
+                        {canCancel && (
+                          <button onClick={() => void cancelPayout(req.id)} disabled={cancelling === req.id}
+                            className="flex items-center gap-1 text-[10px] font-semibold text-red-400 border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 px-2 py-1 rounded-lg ml-auto disabled:opacity-50 transition-colors">
+                            {cancelling === req.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <Pagination page={payPage} total={requests.length} onPage={p => { setPayPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+            </div>
+          )
         )}
 
-        {/* ── EARNINGS TAB ────────────────────────────────────────────────── */}
+        {/* EARNINGS TAB */}
         {tab === "earnings" && (
           earnLoading ? (
-            <div className="flex justify-center py-24"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="p-5 rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse space-y-3">
+                  <div className="flex items-center justify-between"><div className="h-4 w-32 bg-slate-800 rounded" /><div className="h-5 w-20 bg-slate-800 rounded-full" /></div>
+                  <div className="h-6 w-24 bg-slate-800 rounded" />
+                </div>
+              ))}
+            </div>
           ) : earnings.length === 0 ? (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/30 py-24 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto mb-5">
+            <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+              <div className="w-16 h-16 rounded-3xl bg-slate-800/60 border border-slate-700/40 flex items-center justify-center">
                 <TrendingUp className="w-7 h-7 text-slate-600" />
               </div>
-              <p className="font-display text-lg font-semibold text-slate-300">No earnings yet</p>
-              <p className="text-sm text-slate-500 mt-2">Earnings appear here when a <span className="text-slate-300 font-medium">paid tournament</span> you hosted completes — you receive 90% of all entry fees collected. Free tournaments generate no earnings.</p>
+              <div>
+                <p className="font-display text-lg font-semibold text-slate-300">No earnings yet</p>
+                <p className="text-sm text-slate-500 mt-1 max-w-sm">Earnings appear here when a <span className="text-slate-300 font-medium">paid tournament</span> you hosted completes — you receive 90% of all entry fees. Free tournaments generate no earnings.</p>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Entry Fee Share column */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
-                    <TrendingUp className="w-3.5 h-3.5 text-orange-400" />
-                  </div>
-                  <h3 className="font-display text-sm font-bold text-white uppercase tracking-wide">Entry Fee Share</h3>
-                  <span className="ml-auto text-xs text-slate-500">
-                    {earnings.filter(e => e.earning_type === "entry_fee_share").length} record{earnings.filter(e => e.earning_type === "entry_fee_share").length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                {earnings.filter(e => e.earning_type === "entry_fee_share").length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-800 py-10 text-center">
-                    <p className="text-sm text-slate-600">No entry fee earnings yet</p>
-                  </div>
-                ) : (
-                  earnings.filter(e => e.earning_type === "entry_fee_share").map((e) => (
-                    <EarningCard key={e._id} earning={e} onClaim={() => setClaimingEarn(e)} />
-                  ))
-                )}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-slate-500">{earnings.length} earning{earnings.length !== 1 ? "s" : ""}</p>
+                <p className="text-xs text-slate-600">Page {earnPage} of {Math.max(1, Math.ceil(earnings.length / PAGE_SIZE))}</p>
               </div>
+              {earnSlice.map(e => {
+                const netPayout = e.gross_amount - e.platform_fee;
+                const st  = EARNING_STATUS[e.status] ?? EARNING_STATUS.pending_claim;
+                const title = e.tournament_id?.title ?? "Tournament";
+                const isEntry = e.earning_type === "entry_fee_share";
+                const canClaim = e.status === "pending_claim";
+                return (
+                  <div key={e._id} className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden hover:border-slate-700 transition-colors">
+                    <div className="px-5 py-4 flex items-center gap-4">
+                      {/* Icon */}
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                        isEntry ? "bg-orange-500/15 border-orange-500/25" : "bg-cyan-500/15 border-cyan-500/25"
+                      }`}>
+                        {isEntry ? <TrendingUp className="w-4.5 h-4.5 text-orange-400" /> : <RotateCcw className="w-4.5 h-4.5 text-cyan-400" />}
+                      </div>
 
-              {/* Prize Pool Refund column */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center">
-                    <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-display text-base font-bold text-white">{fmtGhs(netPayout)}</span>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${st.cls}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />{st.label}
+                          </span>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                            isEntry ? "bg-orange-500/10 text-orange-300 border-orange-500/20" : "bg-cyan-500/10 text-cyan-300 border-cyan-500/20"
+                          }`}>{isEntry ? "Entry Fee Share" : "Prize Pool Refund"}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 truncate">{title}</p>
+                        <div className="flex items-center gap-3 text-[10px] text-slate-600 mt-0.5">
+                          <span>Gross: {fmtGhs(e.gross_amount)}</span>
+                          <span>·</span>
+                          <span>Platform: {fmtGhs(e.platform_fee)}</span>
+                          <span>·</span>
+                          <span>{fmtDate(e.created_at)}</span>
+                        </div>
+                      </div>
+
+                      {/* Action */}
+                      <div className="shrink-0">
+                        {canClaim && (
+                          <button onClick={() => setClaimTarget(e)}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-linear-to-r from-orange-500/20 to-amber-400/20 border border-orange-500/30 text-orange-300 text-xs font-bold hover:from-orange-500/30 hover:to-amber-400/30 transition-all">
+                            <Banknote className="w-3.5 h-3.5" />Claim
+                          </button>
+                        )}
+                        {e.status === "paid" && (
+                          <p className="text-[10px] text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />Paid {fmtDate(e.payout_completed_at)}
+                          </p>
+                        )}
+                        {(e.status === "claimed" || e.status === "processing") && (
+                          <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />Pending review
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="font-display text-sm font-bold text-white uppercase tracking-wide">Prize Pool Refund</h3>
-                  <span className="ml-auto text-xs text-slate-500">
-                    {earnings.filter(e => e.earning_type === "prize_pool_refund").length} record{earnings.filter(e => e.earning_type === "prize_pool_refund").length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                {earnings.filter(e => e.earning_type === "prize_pool_refund").length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-800 py-10 text-center">
-                    <p className="text-sm text-slate-600">No prize pool refunds yet</p>
-                  </div>
-                ) : (
-                  earnings.filter(e => e.earning_type === "prize_pool_refund").map((e) => (
-                    <EarningCard key={e._id} earning={e} onClaim={() => setClaimingEarn(e)} />
-                  ))
-                )}
-              </div>
+                );
+              })}
+              <Pagination page={earnPage} total={earnings.length} onPage={p => { setEarnPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
             </div>
           )
         )}
       </div>
 
-      {claimingEarn && (
-        <EarningClaimModal
-          earning={claimingEarn}
-          onClose={() => setClaimingEarn(null)}
-          onClaimed={() => { setClaimingEarn(null); void loadEarnings(); }}
+      {/* Modals */}
+      {showModal && (
+        <WithdrawalModal
+          availableGhs={availableGhs}
+          onClose={() => setShowModal(false)}
+          onSuccess={() => { setShowModal(false); void loadPayouts(); }}
+        />
+      )}
+      {claimTarget && (
+        <ClaimModal
+          earning={claimTarget}
+          onClose={() => setClaimTarget(null)}
+          onClaimed={() => { setClaimTarget(null); void loadEarnings(); }}
         />
       )}
     </div>
