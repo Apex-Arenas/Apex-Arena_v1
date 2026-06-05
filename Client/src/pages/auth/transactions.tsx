@@ -228,17 +228,51 @@ function WithdrawModal({
 
 // ─── Transactions Tab ─────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 10;
+
+function Pagination({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 pt-4">
+      <button
+        onClick={() => onPage(page - 1)} disabled={page === 1}
+        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-slate-800 bg-slate-900/60 hover:border-slate-700 hover:text-white disabled:opacity-40 transition-colors"
+      >← Prev</button>
+      <div className="flex items-center gap-1">
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+          <button key={p} onClick={() => onPage(p)}
+            className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
+              p === page
+                ? "bg-orange-500/20 border border-orange-500/40 text-orange-300"
+                : "text-slate-500 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >{p}</button>
+        ))}
+      </div>
+      <button
+        onClick={() => onPage(page + 1)} disabled={page === totalPages}
+        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-slate-800 bg-slate-900/60 hover:border-slate-700 hover:text-white disabled:opacity-40 transition-colors"
+      >Next →</button>
+    </div>
+  );
+}
+
 function TransactionsTab({ refresh }: { refresh: number }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
-  const load = useCallback(async () => {
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const load = useCallback(async (p: number) => {
     setLoading(true);
     try {
-      const res = await apiGet(`${FINANCE_ENDPOINTS.TRANSACTIONS}?limit=50`);
+      const res = await apiGet(`${FINANCE_ENDPOINTS.TRANSACTIONS}?limit=${PAGE_SIZE}&page=${p}`);
       if (res.success) {
         const raw = res.data as Record<string, unknown>;
         const list = (Array.isArray(raw) ? raw : Array.isArray(raw.transactions) ? raw.transactions : []) as Record<string, unknown>[];
+        setTotal(Number(raw.total ?? list.length));
         setTransactions(list.map(t => ({
           id: String(t._id ?? t.id ?? ""),
           type: String(t.type ?? ""),
@@ -253,7 +287,8 @@ function TransactionsTab({ refresh }: { refresh: number }) {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { void load(); }, [load, refresh]);
+  useEffect(() => { setPage(1); }, [refresh]);
+  useEffect(() => { void load(page); }, [load, page, refresh]);
 
   if (loading) return (
     <div className="space-y-2">
@@ -279,6 +314,10 @@ function TransactionsTab({ refresh }: { refresh: number }) {
 
   return (
     <div className="space-y-2">
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-xs text-slate-500">{total} transaction{total !== 1 ? "s" : ""}</p>
+        <p className="text-xs text-slate-600">Page {page} of {totalPages}</p>
+      </div>
       {transactions.map((tx, i) => {
         const meta = TX_META[tx.type] ?? {
           label: tx.type.replace(/_/g, " "),
@@ -291,11 +330,11 @@ function TransactionsTab({ refresh }: { refresh: number }) {
           tx.status === "failed" || tx.status === "cancelled" ? "text-red-400" :
           "text-amber-400";
         return (
-          <div key={tx.id || i} className="flex items-center gap-3 px-5 py-4 rounded-2xl border border-slate-800 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-900 transition-colors">
+          <div key={tx.id || i} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-slate-800 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-900 transition-colors">
             <div className={`w-10 h-10 rounded-xl ${meta.iconBg} flex items-center justify-center shrink-0`}>
               {tx.direction === "credit"
-                ? <ArrowDownLeft className={`w-4.5 h-4.5 ${meta.iconColor}`} />
-                : <ArrowUpRight className={`w-4.5 h-4.5 ${meta.iconColor}`} />}
+                ? <ArrowDownLeft className={`w-4 h-4 ${meta.iconColor}`} />
+                : <ArrowUpRight className={`w-4 h-4 ${meta.iconColor}`} />}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white capitalize">{meta.label}</p>
@@ -308,6 +347,7 @@ function TransactionsTab({ refresh }: { refresh: number }) {
           </div>
         );
       })}
+      <Pagination page={page} totalPages={totalPages} onPage={p => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
     </div>
   );
 }
@@ -322,18 +362,19 @@ function WithdrawalsTab({
   refresh: number;
   onBalanceChange: () => void;
 }) {
-  const [requests, setRequests] = useState<PayoutRequest[]>([]);
+  const [allRequests, setAllRequests] = useState<PayoutRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { setRequests(await organizerService.getMyPayoutRequests()); }
-    catch { setRequests([]); }
+    try { setAllRequests(await organizerService.getMyPayoutRequests()); }
+    catch { setAllRequests([]); }
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { void load(); }, [load, refresh]);
+  useEffect(() => { void load(); setPage(1); }, [load, refresh]);
 
   const handleCancel = async (id: string) => {
     setCancelling(id);
@@ -348,19 +389,28 @@ function WithdrawalsTab({
   };
 
   if (loading) return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="p-5 rounded-2xl border border-slate-800 bg-slate-900/50 animate-pulse space-y-3">
-          <div className="h-3 w-28 bg-slate-800 rounded" /><div className="h-4 w-20 bg-slate-800 rounded" />
+          <div className="flex items-center justify-between">
+            <div className="h-4 w-24 bg-slate-800 rounded" />
+            <div className="h-5 w-20 bg-slate-800 rounded-full" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="h-3 w-full bg-slate-800 rounded" />
+            <div className="h-3 w-full bg-slate-800 rounded" />
+          </div>
         </div>
       ))}
     </div>
   );
 
-  const active = requests.filter(r => !["completed", "rejected", "cancelled"].includes(r.status));
-  const history = requests.filter(r => ["completed", "rejected", "cancelled"].includes(r.status));
+  const active = allRequests.filter(r => !["completed", "rejected", "cancelled"].includes(r.status));
+  const history = allRequests.filter(r => ["completed", "rejected", "cancelled"].includes(r.status));
+  const totalPages = Math.max(1, Math.ceil(history.length / PAGE_SIZE));
+  const historyPage = history.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  if (requests.length === 0) return (
+  if (allRequests.length === 0) return (
     <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
       <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-2">
         <Banknote className="w-7 h-7 text-slate-600" />
@@ -372,43 +422,50 @@ function WithdrawalsTab({
 
   return (
     <div className="space-y-6">
+      {/* Active */}
       {active.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">In Progress</p>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">In Progress</p>
           {active.map(req => {
             const m = PAYOUT_STATUS[req.status] ?? { label: req.status, cls: "bg-slate-700/50 text-slate-400 border-slate-600/25", dot: "bg-slate-500" };
             const canCancel = ["pending", "under_review"].includes(req.status);
             return (
-              <div key={req.id} className="rounded-2xl border border-slate-700/80 bg-slate-900 overflow-hidden">
-                <div className="flex items-center justify-between gap-3 px-5 py-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <p className="text-base font-bold text-white">{fmtGhs(req.amountGhs * 100)}</p>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${m.cls}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />{m.label}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 truncate">{req.network} · {req.momoNumber} · {fmtDate(req.createdAt)}</p>
-                  </div>
-                  {canCancel && (
-                    <button onClick={() => void handleCancel(req.id)} disabled={cancelling === req.id}
-                      className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-red-400 border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 disabled:opacity-50 transition-colors"
-                    >
-                      {cancelling === req.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
-                      Cancel
-                    </button>
-                  )}
+              <div key={req.id} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-slate-700/60 bg-slate-900">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                  <Send className="w-4 h-4 text-indigo-400" />
                 </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <p className="text-sm font-bold text-white">{fmtGhs(req.amountGhs * 100)}</p>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${m.cls}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />{m.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 truncate">{req.network} · {req.momoNumber} · {req.accountName}</p>
+                  <p className="text-[10px] text-slate-600">{fmtDate(req.createdAt)}</p>
+                </div>
+                {canCancel && (
+                  <button onClick={() => void handleCancel(req.id)} disabled={cancelling === req.id}
+                    className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-red-400 border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 disabled:opacity-50 transition-colors"
+                  >
+                    {cancelling === req.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                    Cancel
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
+      {/* History — paginated */}
       {history.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">History</p>
-          {history.map(req => {
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">History</p>
+            <p className="text-[10px] text-slate-600">{history.length} total</p>
+          </div>
+          {historyPage.map(req => {
             const m = PAYOUT_STATUS[req.status] ?? { label: req.status, cls: "bg-slate-700/50 text-slate-400 border-slate-600/25", dot: "bg-slate-500" };
             const icon = req.status === "completed"
               ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -416,19 +473,21 @@ function WithdrawalsTab({
                 ? <XCircle className="w-4 h-4 text-red-400" />
                 : <Clock className="w-4 h-4 text-slate-500" />;
             return (
-              <div key={req.id} className="flex items-center gap-3 px-5 py-3.5 rounded-2xl border border-slate-800 bg-slate-900/50 hover:border-slate-700 transition-colors">
-                <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">{icon}</div>
+              <div key={req.id} className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-slate-800 bg-slate-900/50 hover:border-slate-700 transition-colors">
+                <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">{icon}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-300">{fmtGhs(req.amountGhs * 100)}</p>
-                  <p className="text-xs text-slate-600 truncate">{req.network} · {fmtDate(req.createdAt)}</p>
-                  {req.rejectionReason && <p className="text-xs text-red-400/80 mt-0.5">{req.rejectionReason}</p>}
+                  <p className="text-xs text-slate-500 truncate">{req.network} · {req.momoNumber} · {req.accountName}</p>
+                  {req.rejectionReason && <p className="text-xs text-red-400/80 truncate mt-0.5">{req.rejectionReason}</p>}
+                  <p className="text-[10px] text-slate-600">{fmtDate(req.createdAt)}</p>
                 </div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${m.cls}`}>
+                <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${m.cls}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />{m.label}
                 </span>
               </div>
             );
           })}
+          <Pagination page={page} totalPages={totalPages} onPage={setPage} />
         </div>
       )}
     </div>
@@ -511,7 +570,7 @@ const WalletPage = () => {
             </div>
           </div>
 
-          {/* Stats — mobile toggle */}
+          {/* Stats — mobile dropdown */}
           <div className="sm:hidden mt-4">
             <button onClick={() => setStatsOpen(o => !o)}
               className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs font-semibold text-slate-400 uppercase tracking-widest"
@@ -524,8 +583,8 @@ const WalletPage = () => {
                 {balanceLoading
                   ? Array.from({ length: 4 }).map((_, i) => (
                       <div key={i} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3 animate-pulse">
-                        <div className="w-8 h-8 rounded-lg bg-slate-700" />
-                        <div className="space-y-1.5"><div className="h-2.5 w-12 bg-slate-700 rounded" /><div className="h-4 w-20 bg-slate-700 rounded" /></div>
+                        <div className="w-8 h-8 rounded-lg bg-slate-700 shrink-0" />
+                        <div className="space-y-1.5"><div className="h-2.5 w-12 bg-slate-700 rounded" /><div className="h-4 w-16 bg-slate-700 rounded" /></div>
                       </div>
                     ))
                   : balanceStats.map(s => (
@@ -535,7 +594,7 @@ const WalletPage = () => {
                         </div>
                         <div className="min-w-0">
                           <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">{s.label}</p>
-                          <p className={`font-display text-base font-bold leading-tight ${s.iconColor}`}>{s.value}</p>
+                          <p className={`font-display text-base font-bold tabular-nums leading-tight ${s.iconColor}`}>{s.value}</p>
                         </div>
                       </div>
                     ))
@@ -544,7 +603,7 @@ const WalletPage = () => {
             )}
           </div>
 
-          {/* Stats — desktop always visible */}
+          {/* Stats — desktop grid of 4 */}
           <div className="hidden sm:grid sm:grid-cols-4 gap-3 mt-6">
             {balanceLoading
               ? Array.from({ length: 4 }).map((_, i) => (
@@ -553,24 +612,17 @@ const WalletPage = () => {
                     <div className="space-y-2"><div className="h-2.5 w-16 bg-slate-700 rounded" /><div className="h-5 w-24 bg-slate-700 rounded" /></div>
                   </div>
                 ))
-              : balanceStats.length > 0
-                ? balanceStats.map(s => (
-                    <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3 hover:border-slate-600/60 transition-colors">
-                      <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
-                        <s.icon className={`w-5 h-5 ${s.iconColor}`} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{s.label}</p>
-                        <p className={`font-display text-xl font-bold tabular-nums leading-tight ${s.iconColor}`}>{s.value}</p>
-                      </div>
+              : balanceStats.map(s => (
+                  <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3 hover:border-slate-600/60 transition-colors">
+                    <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
+                      <s.icon className={`w-5 h-5 ${s.iconColor}`} />
                     </div>
-                  ))
-                : (
-                  <div className="col-span-4 flex items-center gap-3 bg-slate-800/30 border border-slate-800 rounded-xl px-5 py-4">
-                    <Wallet className="w-5 h-5 text-slate-600 shrink-0" />
-                    <p className="text-sm text-slate-500">No balance yet. Win tournaments to earn prizes.</p>
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{s.label}</p>
+                      <p className={`font-display text-xl font-bold tabular-nums leading-tight ${s.iconColor}`}>{s.value}</p>
+                    </div>
                   </div>
-                )
+                ))
             }
           </div>
 

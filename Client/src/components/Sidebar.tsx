@@ -24,6 +24,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../lib/auth-context";
 import { useNotifications } from "../lib/notification-context";
 import { organizerService } from "../services/organizer.service";
+import { apiGet } from "../utils/api.utils";
+import { TOURNAMENT_ENDPOINTS } from "../config/api.config";
 
 const playerNavItems = [
   { to: "/auth",                        icon: Home,       label: "Home",         end: true },
@@ -59,6 +61,7 @@ interface SidebarProps {
 const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [pendingDisputeCount, setPendingDisputeCount] = useState(0);
+  const [unclaimedPrizeCount, setUnclaimedPrizeCount] = useState(0);
   const { logout, user } = useAuth();
   const { unreadCount } = useNotifications();
   const navigate = useNavigate();
@@ -74,6 +77,29 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [isOrganizer]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.allSettled([
+      apiGet(TOURNAMENT_ENDPOINTS.WINNINGS),
+      apiGet(TOURNAMENT_ENDPOINTS.REFUNDS),
+    ]).then(([wRes, rRes]) => {
+      if (cancelled) return;
+      let count = 0;
+      if (wRes.status === "fulfilled" && wRes.value.success) {
+        const d = wRes.value.data as Record<string, unknown>;
+        const list = (Array.isArray(wRes.value.data) ? wRes.value.data : (d.winnings ?? [])) as { status: string }[];
+        count += list.filter(w => w.status === "allocated").length;
+      }
+      if (rRes.status === "fulfilled" && rRes.value.success) {
+        const d = rRes.value.data as Record<string, unknown>;
+        const list = (Array.isArray(rRes.value.data) ? rRes.value.data : (d.refunds ?? [])) as { status: string }[];
+        count += list.filter(r => r.status === "pending_claim").length;
+      }
+      setUnclaimedPrizeCount(count);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const navItems = isOrganizer ? organizerNavItems : playerNavItems;
 
@@ -185,6 +211,11 @@ const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
                 {"badge" in rest && rest.badge === "disputes" && pendingDisputeCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[9px] font-bold flex items-center justify-center px-1 leading-none">
                     {pendingDisputeCount > 99 ? "99+" : pendingDisputeCount}
+                  </span>
+                )}
+                {to === "/auth/prizes" && unclaimedPrizeCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[9px] font-bold flex items-center justify-center px-1 leading-none">
+                    {unclaimedPrizeCount > 99 ? "99+" : unclaimedPrizeCount}
                   </span>
                 )}
               </div>

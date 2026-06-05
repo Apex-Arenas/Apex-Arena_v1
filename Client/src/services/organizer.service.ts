@@ -1082,19 +1082,22 @@ export const organizerService = {
       ? (data as Record<string, unknown>[])
       : ((data.requests ?? data.payouts ?? data.data ?? []) as Record<string, unknown>[]);
 
-    return list.map((raw) => ({
-      id: String(raw._id ?? raw.id ?? ''),
-      amountGhs: Number(raw.amount_ghs ?? (Number(raw.amount ?? 0) / 100)),
-      requestType: String(raw.request_type ?? ''),
-      momoNumber: String(raw.momo_number ?? ''),
-      network: String(raw.network ?? ''),
-      accountName: String(raw.account_name ?? ''),
-      status: String(raw.status ?? ''),
-      notes: raw.notes as string | undefined,
-      createdAt: String(raw.created_at ?? raw.createdAt ?? ''),
-      reviewedAt: raw.reviewed_at as string | undefined,
-      rejectionReason: raw.rejection_reason as string | undefined,
-    }));
+    return list.map((raw) => {
+      const pd = (raw.payout_details ?? {}) as Record<string, unknown>;
+      return {
+        id: String(raw._id ?? raw.id ?? ''),
+        amountGhs: Number(raw.amount_ghs ?? (Number(raw.amount ?? 0) / 100)),
+        requestType: String(raw.request_type ?? ''),
+        momoNumber: String(pd.momo_number ?? raw.momo_number ?? ''),
+        network: String(pd.network ?? raw.network ?? ''),
+        accountName: String(pd.account_name ?? raw.account_name ?? ''),
+        status: String(raw.status ?? ''),
+        notes: raw.notes as string | undefined,
+        createdAt: String(raw.created_at ?? raw.createdAt ?? ''),
+        reviewedAt: raw.reviewed_at as string | undefined,
+        rejectionReason: raw.rejection_reason as string | undefined,
+      };
+    });
   },
 
   async cancelPayoutRequest(id: string): Promise<void> {
