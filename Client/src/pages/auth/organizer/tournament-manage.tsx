@@ -1510,7 +1510,7 @@ const TournamentManage = () => {
               {/* Utility icons */}
               <button
                 onClick={() => {
-                  const url = `${window.location.origin}/tournaments/${tournament.id}`;
+                  const url = `${window.location.origin}/auth/tournaments/${tournament.id}`;
                   if (navigator.share) { void navigator.share({ title: tournament.title, url }); }
                   else { void navigator.clipboard.writeText(url); showSuccess("Link copied!"); }
                 }}
