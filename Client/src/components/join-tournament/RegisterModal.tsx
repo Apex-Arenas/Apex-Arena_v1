@@ -27,9 +27,7 @@ export function RegisterModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inGameId, setInGameId] = useState("");
-  const [showInGameIdInput, setShowInGameIdInput] = useState(
-    () => Boolean(tournament.requiresInGameId),
-  );
+  const [showInGameIdInput, setShowInGameIdInput] = useState(false);
 
   useEffect(() => {
     let active = true;
