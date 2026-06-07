@@ -1,18 +1,28 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { AlertCircle, CreditCard, Gamepad2, Loader2, X } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AlertCircle, CreditCard, Loader2, X } from "lucide-react";
 import {
   tournamentService,
   type Tournament,
 } from "../../services/tournament.service";
 import { formatFee } from "./utils";
-import { apiPost } from "../../utils/api.utils";
-import { FINANCE_ENDPOINTS } from "../../config/api.config";
+import { apiGet, apiPost, apiPut } from "../../utils/api.utils";
+import { FINANCE_ENDPOINTS, TOURNAMENT_ENDPOINTS } from "../../config/api.config";
 
 interface RegisterModalProps {
   tournament: Tournament;
   onClose: () => void;
   onSuccess: () => void;
 }
+
+interface GameOption {
+  id: string;
+  name: string;
+}
+
+const SKILL_LEVELS = ["beginner", "intermediate", "advanced", "pro"] as const;
+
+const inputCls =
+  "w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 transition-colors";
 
 export function RegisterModal({
   tournament,
@@ -21,61 +31,91 @@ export function RegisterModal({
 }: RegisterModalProps) {
   const [isCheckingEligibility, setIsCheckingEligibility] = useState(true);
   const [canJoin, setCanJoin] = useState(true);
-  const [eligibilityReason, setEligibilityReason] = useState<string | null>(
-    null,
-  );
+  const [eligibilityReason, setEligibilityReason] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // In-game ID / game profile form
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [availableGames, setAvailableGames] = useState<GameOption[]>([]);
+  const [selectedGameId, setSelectedGameId] = useState(tournament.game?.id ?? "");
   const [inGameId, setInGameId] = useState("");
-  const [showInGameIdInput, setShowInGameIdInput] = useState(false);
+  const [skillLevel, setSkillLevel] = useState<string>("beginner");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const gamesFetched = useRef(false);
 
   useEffect(() => {
     let active = true;
-
     const checkEligibility = async () => {
       setIsCheckingEligibility(true);
       try {
         const result = await tournamentService.canRegister(tournament.id);
         if (!active) return;
-
         setCanJoin(result.canRegister);
         setEligibilityReason(
-          result.canRegister
-            ? null
-            : (result.reason ??
-                "You are not eligible to join this tournament yet."),
+          result.canRegister ? null : (result.reason ?? "You are not eligible to join this tournament yet."),
         );
       } catch {
         if (!active) return;
         setCanJoin(false);
-        setEligibilityReason(
-          "Unable to verify registration eligibility right now.",
-        );
+        setEligibilityReason("Unable to verify registration eligibility right now.");
       } finally {
         if (active) setIsCheckingEligibility(false);
       }
     };
-
     void checkEligibility();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [tournament.id]);
 
-  const inGameIdProvided = inGameId.trim().length > 0;
+  // Fetch available games when profile form is shown
+  useEffect(() => {
+    if (!showProfileForm || gamesFetched.current) return;
+    gamesFetched.current = true;
+    apiGet(TOURNAMENT_ENDPOINTS.GAMES_LIST, { skipAuth: false }).then((res) => {
+      if (!res.success) return;
+      const raw = (Array.isArray(res.data) ? res.data : (res.data as Record<string, unknown>)?.games ?? []) as Record<string, unknown>[];
+      setAvailableGames(raw.map((g) => ({ id: String(g._id ?? g.id ?? ""), name: String(g.name ?? "") })).filter((g) => g.id));
+    }).catch(() => {});
+  }, [showProfileForm]);
+
+  const handleSaveProfile = async () => {
+    if (!selectedGameId || !inGameId.trim()) {
+      setError("Select a game and enter an in-game ID before saving.");
+      return;
+    }
+    setIsSavingProfile(true);
+    setError(null);
+    try {
+      const response = await apiPost(TOURNAMENT_ENDPOINTS.GAME_PROFILES, {
+        game_id: selectedGameId,
+        in_game_id: inGameId.trim(),
+        skill_level: skillLevel,
+      });
+      if (!response.success) {
+        // Try PUT in case profile already exists
+        const putRes = await apiPut(
+          `${TOURNAMENT_ENDPOINTS.GAME_PROFILE_DETAIL}/${encodeURIComponent(selectedGameId)}`,
+          { in_game_id: inGameId.trim(), skill_level: skillLevel },
+        );
+        if (!putRes.success) {
+          setError(putRes.error?.message ?? "Failed to save game profile.");
+          return;
+        }
+      }
+      setProfileSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save game profile.");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (showInGameIdInput && !inGameIdProvided) {
-      setError("Please enter your in-game ID to continue.");
-      return;
-    }
-
     if (!canJoin) {
-      setError(
-        eligibilityReason ?? "You are not eligible to join this tournament.",
-      );
+      setError(eligibilityReason ?? "You are not eligible to join this tournament.");
       return;
     }
 
@@ -87,8 +127,6 @@ export function RegisterModal({
       });
 
       if (result.status === "pending_payment") {
-        // Resolve the registration ID. The server should return it directly, but
-        // older deployed builds may omit it — fall back to fetching registrations.
         let registrationId = result.registrationId;
         if (!registrationId) {
           const myRegs = await tournamentService.getMyRegistrations();
@@ -110,8 +148,7 @@ export function RegisterModal({
         if (!payRes.success) {
           const err = (payRes as { error?: string | { message?: string } }).error;
           throw new Error(
-            (typeof err === 'string' ? err : err?.message) ??
-            "Could not initiate payment. Please try again."
+            (typeof err === "string" ? err : err?.message) ?? "Could not initiate payment. Please try again."
           );
         }
         const payData = payRes.data as { authorization_url?: string };
@@ -125,10 +162,9 @@ export function RegisterModal({
       onSuccess();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed.";
-      // If server says in-game ID is missing, reveal the input field
       if (msg.toLowerCase().includes("in-game id") || msg.toLowerCase().includes("in_game_id")) {
-        setShowInGameIdInput(true);
-        setError("This tournament requires an in-game ID. Please enter it below and try again.");
+        setShowProfileForm(true);
+        setError("This tournament requires an in-game ID. Please save your game profile below.");
       } else {
         setError(msg);
       }
@@ -137,17 +173,19 @@ export function RegisterModal({
     }
   };
 
+  const canSubmit =
+    !isSubmitting &&
+    !isCheckingEligibility &&
+    canJoin &&
+    (!showProfileForm || profileSaved);
+
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-xl">
         <div className="flex items-start justify-between p-5 border-b border-slate-800">
           <div>
-            <h2 className="font-display text-lg font-bold text-white">
-              Join Tournament
-            </h2>
-            <p className="text-sm text-slate-400 mt-0.5 line-clamp-1">
-              {tournament.title}
-            </p>
+            <h2 className="font-display text-lg font-bold text-white">Join Tournament</h2>
+            <p className="text-sm text-slate-400 mt-0.5 line-clamp-1">{tournament.title}</p>
           </div>
           <button
             onClick={onClose}
@@ -162,18 +200,12 @@ export function RegisterModal({
             <div className="bg-slate-800/60 rounded-lg px-3 py-2">
               <p className="text-slate-400 text-xs">Entry Fee</p>
               <p className="font-semibold text-white mt-0.5">
-                {formatFee(
-                  tournament.isFree,
-                  tournament.entryFee,
-                  tournament.currency,
-                )}
+                {formatFee(tournament.isFree, tournament.entryFee, tournament.currency)}
               </p>
             </div>
             <div className="bg-slate-800/60 rounded-lg px-3 py-2">
               <p className="text-slate-400 text-xs">Format</p>
-              <p className="font-semibold text-white mt-0.5 capitalize">
-                {tournament.format ?? "Solo"}
-              </p>
+              <p className="font-semibold text-white mt-0.5 capitalize">{tournament.format ?? "Solo"}</p>
             </div>
           </div>
 
@@ -182,13 +214,7 @@ export function RegisterModal({
               <CreditCard className="w-4 h-4 mt-0.5 shrink-0" />
               <span>
                 You'll be redirected to pay{" "}
-                <strong>
-                  {formatFee(
-                    tournament.isFree,
-                    tournament.entryFee,
-                    tournament.currency,
-                  )}
-                </strong>{" "}
+                <strong>{formatFee(tournament.isFree, tournament.entryFee, tournament.currency)}</strong>{" "}
                 via Mobile Money or card.
               </span>
             </div>
@@ -201,27 +227,61 @@ export function RegisterModal({
             </div>
           )}
 
-          {showInGameIdInput && (
-            <div>
-              <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
-                <Gamepad2 className="w-3.5 h-3.5" />
-                In-Game ID
-                <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={inGameId}
-                onChange={(e) => { setInGameId(e.target.value); setError(null); }}
-                placeholder="Enter team and/or player name"
-                className="w-full px-3 py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
-              />
-            </div>
-          )}
-
           {!isCheckingEligibility && !canJoin && eligibilityReason && (
             <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2.5 text-sm text-amber-300">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               {eligibilityReason}
+            </div>
+          )}
+
+          {showProfileForm && (
+            <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-4 space-y-3">
+              <p className="text-xs font-medium text-slate-400">Game Profile</p>
+
+              <select
+                value={selectedGameId}
+                onChange={(e) => setSelectedGameId(e.target.value)}
+                disabled={profileSaved}
+                className={inputCls}
+              >
+                <option value="">Select game</option>
+                {availableGames.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+
+              <input
+                type="text"
+                value={inGameId}
+                onChange={(e) => { setInGameId(e.target.value); setError(null); }}
+                placeholder="In-game ID"
+                disabled={profileSaved}
+                className={inputCls}
+              />
+
+              <select
+                value={skillLevel}
+                onChange={(e) => setSkillLevel(e.target.value)}
+                disabled={profileSaved}
+                className={inputCls}
+              >
+                {SKILL_LEVELS.map((s) => (
+                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                ))}
+              </select>
+
+              {profileSaved ? (
+                <p className="text-xs text-emerald-400 font-medium">Game profile saved. You can now join.</p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void handleSaveProfile()}
+                  disabled={isSavingProfile || !selectedGameId || !inGameId.trim()}
+                  className="w-full py-2.5 rounded-lg bg-cyan-500 text-slate-950 text-sm font-semibold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
+                >
+                  {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Save"}
+                </button>
+              )}
             </div>
           )}
 
@@ -242,7 +302,7 @@ export function RegisterModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || isCheckingEligibility || !canJoin || (showInGameIdInput && !inGameIdProvided)}
+              disabled={!canSubmit}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-500 text-slate-950 text-sm font-semibold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
