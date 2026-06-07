@@ -27,6 +27,9 @@ export function RegisterModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inGameId, setInGameId] = useState("");
+  const [showInGameIdInput, setShowInGameIdInput] = useState(
+    () => Boolean(tournament.requiresInGameId),
+  );
 
   useEffect(() => {
     let active = true;
@@ -61,25 +64,17 @@ export function RegisterModal({
     };
   }, [tournament.id]);
 
-  const needsInGameId =
-    tournament.requiresInGameId ||
-    eligibilityReason?.toLowerCase().includes("in-game id") === true;
-
-  // If the only block is a missing in-game ID and the user has now typed one, let them proceed
   const inGameIdProvided = inGameId.trim().length > 0;
-  const effectiveCanJoin =
-    canJoin || (needsInGameId && inGameIdProvided && !canJoin &&
-      eligibilityReason?.toLowerCase().includes("in-game id") === true);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (needsInGameId && !inGameIdProvided) {
+    if (showInGameIdInput && !inGameIdProvided) {
       setError("Please enter your in-game ID to continue.");
       return;
     }
 
-    if (!effectiveCanJoin) {
+    if (!canJoin) {
       setError(
         eligibilityReason ?? "You are not eligible to join this tournament.",
       );
@@ -131,7 +126,14 @@ export function RegisterModal({
 
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed.");
+      const msg = err instanceof Error ? err.message : "Registration failed.";
+      // If server says in-game ID is missing, reveal the input field
+      if (msg.toLowerCase().includes("in-game id") || msg.toLowerCase().includes("in_game_id")) {
+        setShowInGameIdInput(true);
+        setError("This tournament requires an in-game ID. Please enter it below and try again.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -201,7 +203,7 @@ export function RegisterModal({
             </div>
           )}
 
-          {needsInGameId && (
+          {showInGameIdInput && (
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
                 <Gamepad2 className="w-3.5 h-3.5" />
@@ -211,14 +213,14 @@ export function RegisterModal({
               <input
                 type="text"
                 value={inGameId}
-                onChange={(e) => setInGameId(e.target.value)}
+                onChange={(e) => { setInGameId(e.target.value); setError(null); }}
                 placeholder="Enter team and/or player name"
                 className="w-full px-3 py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
               />
             </div>
           )}
 
-          {!isCheckingEligibility && !canJoin && eligibilityReason && !needsInGameId && (
+          {!isCheckingEligibility && !canJoin && eligibilityReason && (
             <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2.5 text-sm text-amber-300">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               {eligibilityReason}
@@ -242,7 +244,7 @@ export function RegisterModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || isCheckingEligibility || !effectiveCanJoin || (needsInGameId && !inGameIdProvided)}
+              disabled={isSubmitting || isCheckingEligibility || !canJoin || (showInGameIdInput && !inGameIdProvided)}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-500 text-slate-950 text-sm font-semibold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
