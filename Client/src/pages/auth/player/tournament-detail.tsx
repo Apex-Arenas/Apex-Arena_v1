@@ -19,6 +19,7 @@ import {
   Swords,
   LogOut,
   Share2,
+  CreditCard,
 } from "lucide-react";
 import {
   tournamentService,
@@ -26,7 +27,7 @@ import {
   type Tournament,
 } from "../../../services/tournament.service";
 import { apiGet, apiPost } from "../../../utils/api.utils";
-import { TOURNAMENT_ENDPOINTS } from "../../../config/api.config";
+import { TOURNAMENT_ENDPOINTS, FINANCE_ENDPOINTS } from "../../../config/api.config";
 import { useAuth } from "../../../lib/auth-context";
 import { FadeImage } from "../../../components/ui/FadeImage";
 import {
@@ -202,6 +203,7 @@ const TournamentDetail = () => {
   const [isLoadingBracket, setIsLoadingBracket] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [isCompletingPayment, setIsCompletingPayment] = useState(false);
   const [withdrawReason, setWithdrawReason] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
@@ -335,6 +337,32 @@ const TournamentDetail = () => {
       setErrorMsg(err instanceof Error ? err.message : "Check-in failed.");
     } finally {
       setIsCheckingIn(false);
+    }
+  };
+
+  const handleCompletePayment = async () => {
+    if (!myRegistration?.registrationId) return;
+    setIsCompletingPayment(true);
+    setErrorMsg(null);
+    try {
+      const payRes = await apiPost(FINANCE_ENDPOINTS.TOURNAMENT_PAYMENT_INITIATE, {
+        registration_id: myRegistration.registrationId,
+        callback_url: `${window.location.origin}/payment-callback.html?type=entry`,
+      });
+      if (!payRes.success) {
+        const err = (payRes as { error?: string | { message?: string } }).error;
+        throw new Error((typeof err === "string" ? err : err?.message) ?? "Could not initiate payment.");
+      }
+      const payData = payRes.data as { authorization_url?: string };
+      if (payData.authorization_url) {
+        window.location.href = payData.authorization_url;
+        return;
+      }
+      throw new Error("No payment URL returned. Please try again.");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Payment initiation failed.");
+    } finally {
+      setIsCompletingPayment(false);
     }
   };
 
@@ -1034,6 +1062,22 @@ const TournamentDetail = () => {
                         )}
                       </div>
                     </div>
+
+                    {/* Complete Payment button */}
+                    {myRegistration.status === "pending_payment" && (
+                      <button
+                        onClick={() => void handleCompletePayment()}
+                        disabled={isCompletingPayment}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-500 text-slate-950 text-sm font-bold hover:bg-amber-400 disabled:opacity-60 transition-colors"
+                      >
+                        {isCompletingPayment ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <CreditCard className="w-4 h-4" />
+                        )}
+                        {isCompletingPayment ? "Redirecting…" : "Complete Payment"}
+                      </button>
+                    )}
 
                     {/* Check-in button */}
                     {checkInOpen &&
