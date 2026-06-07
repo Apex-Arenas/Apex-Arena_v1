@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AlertCircle, CreditCard, Loader2, X } from "lucide-react";
+import { AlertCircle, CreditCard, Gamepad2, Loader2, X } from "lucide-react";
 import {
   tournamentService,
   type Tournament,
@@ -26,6 +26,7 @@ export function RegisterModal({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inGameId, setInGameId] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -60,9 +61,25 @@ export function RegisterModal({
     };
   }, [tournament.id]);
 
+  const needsInGameId =
+    tournament.requiresInGameId ||
+    eligibilityReason?.toLowerCase().includes("in-game id") === true;
+
+  // If the only block is a missing in-game ID and the user has now typed one, let them proceed
+  const inGameIdProvided = inGameId.trim().length > 0;
+  const effectiveCanJoin =
+    canJoin || (needsInGameId && inGameIdProvided && !canJoin &&
+      eligibilityReason?.toLowerCase().includes("in-game id") === true);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!canJoin) {
+
+    if (needsInGameId && !inGameIdProvided) {
+      setError("Please enter your in-game ID to continue.");
+      return;
+    }
+
+    if (!effectiveCanJoin) {
       setError(
         eligibilityReason ?? "You are not eligible to join this tournament.",
       );
@@ -72,7 +89,9 @@ export function RegisterModal({
     setIsSubmitting(true);
     setError(null);
     try {
-      const result = await tournamentService.register(tournament.id);
+      const result = await tournamentService.register(tournament.id, {
+        inGameId: inGameId.trim() || undefined,
+      });
 
       if (result.status === "pending_payment") {
         // Resolve the registration ID. The server should return it directly, but
@@ -182,7 +201,24 @@ export function RegisterModal({
             </div>
           )}
 
-          {!isCheckingEligibility && !canJoin && eligibilityReason && (
+          {needsInGameId && (
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-1.5">
+                <Gamepad2 className="w-3.5 h-3.5" />
+                In-Game ID
+                <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={inGameId}
+                onChange={(e) => setInGameId(e.target.value)}
+                placeholder="Enter team and/or player name"
+                className="w-full px-3 py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+              />
+            </div>
+          )}
+
+          {!isCheckingEligibility && !canJoin && eligibilityReason && !needsInGameId && (
             <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2.5 text-sm text-amber-300">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               {eligibilityReason}
@@ -206,7 +242,7 @@ export function RegisterModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || isCheckingEligibility || !canJoin}
+              disabled={isSubmitting || isCheckingEligibility || !effectiveCanJoin || (needsInGameId && !inGameIdProvided)}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-cyan-500 text-slate-950 text-sm font-semibold hover:bg-cyan-400 disabled:opacity-60 transition-colors"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}

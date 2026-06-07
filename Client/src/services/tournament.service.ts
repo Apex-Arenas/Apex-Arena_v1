@@ -59,6 +59,7 @@ export interface Tournament {
   thumbnailUrl?: string;
   bannerUrl?: string;
   rules?: string;
+  requiresInGameId?: boolean;
   region?: string;
   visibility: string;
   isRegistered?: boolean;
@@ -378,6 +379,7 @@ export function mapTournament(
     thumbnailUrl: raw.thumbnail_url as string | undefined,
     bannerUrl: raw.banner_url as string | undefined,
     rules: (raw.rules as Record<string, unknown>)?.description as string | undefined,
+    requiresInGameId: Boolean((raw.rules as Record<string, unknown>)?.in_game_id_required ?? false),
     region: raw.region as string | undefined,
     visibility: String(raw.visibility ?? 'public'),
     leagueSettings: raw.league_settings
