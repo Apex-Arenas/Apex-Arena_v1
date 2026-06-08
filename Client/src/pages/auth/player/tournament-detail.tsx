@@ -211,13 +211,13 @@ const TournamentDetail = () => {
 
   const hasFetched = useRef(false);
 
-  // Auto-withdraw countdown when payment is pending
+  // Auto-withdraw countdown when payment is pending (12 hours)
   useEffect(() => {
     if (myRegistration?.status !== "pending_payment") {
       setPaymentCountdown(null);
       return;
     }
-    setPaymentCountdown(5);
+    setPaymentCountdown(12 * 60 * 60);
     const interval = setInterval(() => {
       setPaymentCountdown((prev) => {
         if (prev === null || prev <= 1) {
@@ -1096,12 +1096,16 @@ const TournamentDetail = () => {
                     {/* Complete Payment button + countdown */}
                     {myRegistration.status === "pending_payment" && (
                       <div className="space-y-2">
-                        {paymentCountdown !== null && paymentCountdown > 0 && (
-                          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3 text-xs text-amber-300">
-                            <Clock className="w-3.5 h-3.5 shrink-0" />
-                            <span>
-                              Complete payment or you'll be auto-withdrawn in{" "}
-                              <span className="font-bold text-amber-200">{paymentCountdown}s</span>
+                        {paymentCountdown !== null && (
+                          <div className="flex items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3">
+                            <div className="flex items-center gap-2 text-xs text-amber-300">
+                              <Clock className="w-3.5 h-3.5 shrink-0" />
+                              <span>Auto-withdraw in</span>
+                            </div>
+                            <span className="font-mono font-bold text-sm text-amber-200 tabular-nums">
+                              {String(Math.floor(paymentCountdown / 3600)).padStart(2, "0")}:
+                              {String(Math.floor((paymentCountdown % 3600) / 60)).padStart(2, "0")}:
+                              {String(paymentCountdown % 60).padStart(2, "0")}
                             </span>
                           </div>
                         )}
