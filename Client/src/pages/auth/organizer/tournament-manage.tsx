@@ -568,6 +568,9 @@ const TournamentManage = () => {
   const [winnerDropdownSearch, setWinnerDropdownSearch] = useState("");
   const [emptyWinnerIndices, setEmptyWinnerIndices] = useState<Set<number>>(new Set());
 
+  const [removeCoOrgTarget, setRemoveCoOrgTarget] = useState<{ userId: string; name: string } | null>(null);
+  const [isRemovingCoOrg, setIsRemovingCoOrg] = useState(false);
+
   // Co-organizer state
   interface CoOrganizerEntry {
     user_id: { _id?: string; username?: string; email?: string; profile?: { first_name?: string; last_name?: string; avatar_url?: string } } | string;
@@ -891,22 +894,29 @@ const TournamentManage = () => {
     }
   };
 
-  const handleRemoveCoOrg = async (targetUserId: string, name: string) => {
-    if (!tournamentId) return;
-    if (!window.confirm(`Remove ${name} as co-organizer?`)) return;
+  const handleRemoveCoOrg = (targetUserId: string, name: string) => {
+    setRemoveCoOrgTarget({ userId: targetUserId, name });
+  };
+
+  const confirmRemoveCoOrg = async () => {
+    if (!tournamentId || !removeCoOrgTarget) return;
+    setIsRemovingCoOrg(true);
     try {
-      const res = await apiDelete(`${TOURNAMENT_ENDPOINTS.CO_ORGANIZER_REMOVE}/${tournamentId}/${targetUserId}`);
+      const res = await apiDelete(`${TOURNAMENT_ENDPOINTS.CO_ORGANIZER_REMOVE}/${tournamentId}/${removeCoOrgTarget.userId}`);
       if (!res.success) {
         const err = (res as { error?: string | { message?: string } }).error;
         throw new Error(typeof err === "string" ? err : (err as any)?.message ?? "Remove failed.");
       }
-      showSuccess(`${name} removed as co-organizer.`);
+      showSuccess(`${removeCoOrgTarget.name} removed as co-organizer.`);
       setCoOrganizers((prev) => prev.filter((co) => {
         const id = typeof co.user_id === "string" ? co.user_id : (co.user_id as any)?._id ?? co.user_id;
-        return String(id) !== targetUserId;
+        return String(id) !== removeCoOrgTarget.userId;
       }));
+      setRemoveCoOrgTarget(null);
     } catch (err) {
       showError(err instanceof Error ? err.message : "Remove failed.");
+    } finally {
+      setIsRemovingCoOrg(false);
     }
   };
 
@@ -3224,6 +3234,45 @@ const TournamentManage = () => {
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : null}
                 {isRemoving ? "Removing…" : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Co-organizer Confirm Modal */}
+      {removeCoOrgTarget && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl shadow-black/60">
+            <div className="px-6 pt-6 pb-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                  <UserPlus className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-bold text-white">Remove Co-organizer?</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">This can be undone by re-inviting them</p>
+                </div>
+              </div>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                <span className="font-semibold text-white">{removeCoOrgTarget.name}</span> will lose access to co-manage this tournament.
+              </p>
+            </div>
+            <div className="px-6 pb-6 flex gap-2.5">
+              <button
+                onClick={() => setRemoveCoOrgTarget(null)}
+                disabled={isRemovingCoOrg}
+                className="flex-1 py-2.5 rounded-xl border border-slate-700 text-sm font-semibold text-slate-300 hover:border-slate-600 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRemoveCoOrg}
+                disabled={isRemovingCoOrg}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isRemovingCoOrg ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Remove
               </button>
             </div>
           </div>

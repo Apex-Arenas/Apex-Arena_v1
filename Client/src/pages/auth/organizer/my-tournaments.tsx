@@ -611,22 +611,6 @@ const MyTournaments = () => {
         </section>
       )}
 
-      {/* ── Co-organizing ────────────────────────────────────── */}
-      {!isLoading && managing.length > 0 && (
-        <section>
-          <div className="flex items-center gap-3 mb-4">
-            <UserPlus className="w-5 h-5 text-violet-400" />
-            <h2 className="font-display text-xl font-bold text-white">Co-organizing</h2>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/20">
-              {managing.length}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {managing.map((t) => <CoManagingCard key={String(t.id)} t={t} />)}
-          </div>
-        </section>
-      )}
-
       {/* ── Loading ─────────────────────────────────────────── */}
       {isLoading && (
         <div className="flex items-center justify-center py-24">
@@ -703,6 +687,22 @@ const MyTournaments = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Co-organizing ────────────────────────────────────── */}
+      {!isLoading && managing.length > 0 && (
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <UserPlus className="w-5 h-5 text-violet-400" />
+            <h2 className="font-display text-xl font-bold text-white">Co-organizing</h2>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/20">
+              {managing.length}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {managing.map((t) => <CoManagingCard key={String(t.id)} t={t} />)}
+          </div>
+        </section>
       )}
       </div>
     </div>
