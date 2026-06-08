@@ -28,7 +28,6 @@ import {
   Share2,
   Pencil,
   UserPlus,
-  Mail,
 } from "lucide-react";
 import {
   organizerService,
@@ -585,7 +584,6 @@ const TournamentManage = () => {
   }
   const [coOrganizers, setCoOrganizers] = useState<CoOrganizerEntry[]>([]);
   const [isLoadingCoOrgs, setIsLoadingCoOrgs] = useState(false);
-  const [coOrgSearchQuery, setCoOrgSearchQuery] = useState("");
   const [coOrgSearchResults, setCoOrgSearchResults] = useState<OrganizerSearchResult[]>([]);
   const [isSearchingCoOrg, setIsSearchingCoOrg] = useState(false);
   const [isInvitingCoOrg, setIsInvitingCoOrg] = useState(false);
@@ -851,7 +849,6 @@ const TournamentManage = () => {
   };
 
   const handleCoOrgSearch = (q: string) => {
-    setCoOrgSearchQuery(q);
     setCoOrgError(null);
     if (coOrgSearchTimer.current) clearTimeout(coOrgSearchTimer.current);
     if (!q.trim() || q.trim().length < 2) { setCoOrgSearchResults([]); return; }
@@ -885,7 +882,6 @@ const TournamentManage = () => {
       }
       showSuccess("Invite sent successfully.");
       setInviteIdentifier("");
-      setCoOrgSearchQuery("");
       setCoOrgSearchResults([]);
       await loadCoOrganizers();
     } catch (err) {
@@ -2394,7 +2390,7 @@ const TournamentManage = () => {
                         <button
                           key={r.user_id}
                           type="button"
-                          onClick={() => { setInviteIdentifier(r.email); setCoOrgSearchQuery(r.email); setCoOrgSearchResults([]); }}
+                          onClick={() => { setInviteIdentifier(r.email); setCoOrgSearchResults([]); }}
                           className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700/60 transition-colors text-left"
                         >
                           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-slate-600 flex items-center justify-center shrink-0 text-[10px] font-bold text-violet-300">
