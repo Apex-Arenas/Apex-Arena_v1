@@ -2314,133 +2314,6 @@ const TournamentManage = () => {
             )}
           </div>
 
-        {/* ── Co-organizers section ── */}
-        {tournament && user && tournament.organizerId === user.id && (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5 border-b border-slate-800/60 bg-slate-950/20">
-              <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center shrink-0">
-                <UserPlus className="w-4 h-4 text-violet-400" />
-              </div>
-              <div>
-                <h2 className="font-display text-sm font-bold text-white">Co-organizers</h2>
-                <p className="text-[11px] text-slate-500 mt-0.5">Invite other organizers to help manage this tournament</p>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-5 space-y-4">
-              {/* Invite form */}
-              <div className="space-y-2">
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Invite by email or username</label>
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <input
-                      type="text"
-                      value={inviteIdentifier}
-                      onChange={(e) => { setInviteIdentifier(e.target.value); setCoOrgError(null); handleCoOrgSearch(e.target.value); }}
-                      placeholder="email or @username"
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-violet-500/60 transition-colors"
-                    />
-                    {/* Search results dropdown */}
-                    {coOrgSearchResults.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-xl border border-slate-700 bg-slate-800 shadow-xl overflow-hidden">
-                        {coOrgSearchResults.map((r) => (
-                          <button
-                            key={r.user_id}
-                            type="button"
-                            onClick={() => { setInviteIdentifier(r.email); setCoOrgSearchQuery(r.email); setCoOrgSearchResults([]); }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-700/60 transition-colors text-left"
-                          >
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-slate-600 flex items-center justify-center shrink-0 text-xs font-bold text-violet-300">
-                              {(r.name || r.username).charAt(0).toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold text-white truncate">{r.name || r.username}</p>
-                              <p className="text-[10px] text-slate-400 truncate">@{r.username} · {r.email}</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {isSearchingCoOrg && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" />
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleInviteCoOrg()}
-                    disabled={isInvitingCoOrg || !inviteIdentifier.trim()}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-500 text-white text-sm font-semibold hover:bg-violet-400 disabled:opacity-60 transition-colors shrink-0"
-                  >
-                    {isInvitingCoOrg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                    Invite
-                  </button>
-                </div>
-                {coOrgError && (
-                  <div className="flex items-center gap-1.5 text-xs text-red-400">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    {coOrgError}
-                  </div>
-                )}
-              </div>
-
-              {/* Co-organizer list */}
-              {isLoadingCoOrgs ? (
-                <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Loading co-organizers...
-                </div>
-              ) : coOrganizers.length === 0 ? (
-                <p className="text-xs text-slate-600 italic py-1">No co-organizers yet. Send an invite above.</p>
-              ) : (
-                <div className="space-y-2">
-                  {coOrganizers.map((co, idx) => {
-                    const u = typeof co.user_id === "object" && co.user_id !== null ? co.user_id as Record<string, any> : null;
-                    const coUserId = u?._id ?? (typeof co.user_id === "string" ? co.user_id : "");
-                    const coName = u ? (`${u.profile?.first_name ?? ""} ${u.profile?.last_name ?? ""}`.trim() || u.username || "Organizer") : "Organizer";
-                    const coUsername = u?.username ?? "";
-                    const coAvatarUrl = u?.profile?.avatar_url ?? "";
-                    const statusColor = co.status === "accepted"
-                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
-                      : co.status === "declined"
-                      ? "bg-red-500/15 text-red-300 border-red-500/25"
-                      : "bg-amber-500/15 text-amber-300 border-amber-500/25";
-
-                    return (
-                      <div key={coUserId || idx} className="flex items-center gap-2.5 bg-slate-800/40 border border-slate-700/50 rounded-xl px-3 py-2.5">
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-slate-600 flex items-center justify-center shrink-0 text-xs font-bold text-violet-300 overflow-hidden">
-                          {coAvatarUrl ? (
-                            <img src={coAvatarUrl} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            coName.charAt(0).toUpperCase()
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-white truncate">{coName}</p>
-                          {coUsername && <p className="text-[10px] text-slate-500">@{coUsername}</p>}
-                        </div>
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${statusColor}`}>
-                          {co.status}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => void handleRemoveCoOrg(String(coUserId), coName)}
-                          title="Remove co-organizer"
-                          className="p-1 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         </div>{/* end main column */}
 
         {/* ── SIDEBAR ── */}
@@ -2476,6 +2349,124 @@ const TournamentManage = () => {
 
             </div>
           </div>
+
+          {/* ── Co-organizers ── */}
+          {tournament && user && tournament.organizerId === user.id && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+              <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-slate-800/60 bg-slate-950/20">
+                <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center shrink-0">
+                  <UserPlus className="w-4 h-4 text-violet-400" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="font-display text-sm font-bold text-white">Co-organizers</h2>
+                  <p className="text-[10px] text-slate-500 mt-0.5 truncate">Invite others to help manage</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 space-y-3">
+                {/* Invite input row */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={inviteIdentifier}
+                    onChange={(e) => { setInviteIdentifier(e.target.value); setCoOrgError(null); handleCoOrgSearch(e.target.value); }}
+                    placeholder="Email or username"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-3 pr-16 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-violet-500/60 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleInviteCoOrg()}
+                    disabled={isInvitingCoOrg || !inviteIdentifier.trim()}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-violet-500 text-white text-[11px] font-semibold hover:bg-violet-400 disabled:opacity-60 transition-colors"
+                  >
+                    {isInvitingCoOrg ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                    Invite
+                  </button>
+                  {isSearchingCoOrg && (
+                    <div className="absolute right-16 top-1/2 -translate-y-1/2">
+                      <Loader2 className="w-3 h-3 animate-spin text-slate-500" />
+                    </div>
+                  )}
+                  {/* Dropdown */}
+                  {coOrgSearchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-xl border border-slate-700 bg-slate-800 shadow-xl overflow-hidden">
+                      {coOrgSearchResults.map((r) => (
+                        <button
+                          key={r.user_id}
+                          type="button"
+                          onClick={() => { setInviteIdentifier(r.email); setCoOrgSearchQuery(r.email); setCoOrgSearchResults([]); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700/60 transition-colors text-left"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-slate-600 flex items-center justify-center shrink-0 text-[10px] font-bold text-violet-300">
+                            {(r.name || r.username).charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-white truncate">{r.name || r.username}</p>
+                            <p className="text-[10px] text-slate-400 truncate">@{r.username}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {coOrgError && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-red-400">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {coOrgError}
+                  </div>
+                )}
+
+                {/* List */}
+                {isLoadingCoOrgs ? (
+                  <div className="flex items-center gap-2 text-xs text-slate-500 py-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Loading…
+                  </div>
+                ) : coOrganizers.length === 0 ? (
+                  <p className="text-[11px] text-slate-600 italic">No co-organizers yet.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {coOrganizers.map((co, idx) => {
+                      const u = typeof co.user_id === "object" && co.user_id !== null ? co.user_id as Record<string, any> : null;
+                      const coUserId = u?._id ?? (typeof co.user_id === "string" ? co.user_id : "");
+                      const coName = u ? (`${u.profile?.first_name ?? ""} ${u.profile?.last_name ?? ""}`.trim() || u.username || "Organizer") : "Organizer";
+                      const coUsername = u?.username ?? "";
+                      const coAvatarUrl = u?.profile?.avatar_url ?? "";
+                      const statusColor = co.status === "accepted"
+                        ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                        : co.status === "declined"
+                        ? "bg-red-500/15 text-red-300 border-red-500/25"
+                        : "bg-amber-500/15 text-amber-300 border-amber-500/25";
+
+                      return (
+                        <div key={String(coUserId) || String(idx)} className="flex items-center gap-2 bg-slate-800/40 border border-slate-700/50 rounded-xl px-2.5 py-2">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-slate-600 flex items-center justify-center shrink-0 text-[10px] font-bold text-violet-300 overflow-hidden">
+                            {coAvatarUrl ? <img src={coAvatarUrl} alt="" className="w-full h-full object-cover" /> : coName.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-white truncate">{coName}</p>
+                            {coUsername && <p className="text-[10px] text-slate-500 truncate">@{coUsername}</p>}
+                          </div>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border capitalize shrink-0 ${statusColor}`}>
+                            {co.status}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => void handleRemoveCoOrg(String(coUserId), coName)}
+                            title="Remove"
+                            className="p-0.5 rounded-md text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ── Results ── */}
           {(() => {
