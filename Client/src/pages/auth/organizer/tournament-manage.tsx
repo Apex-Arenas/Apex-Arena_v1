@@ -27,6 +27,8 @@ import {
   List,
   Share2,
   Pencil,
+  UserPlus,
+  Mail,
 } from "lucide-react";
 import {
   organizerService,
@@ -40,7 +42,7 @@ import {
   type Tournament,
 } from "../../../services/tournament.service";
 import { LeagueView } from "../../../components/league/LeagueView";
-import { apiGet, apiPost } from "../../../utils/api.utils";
+import { apiDelete, apiGet, apiPost } from "../../../utils/api.utils";
 import { TOURNAMENT_ENDPOINTS, FINANCE_ENDPOINTS } from "../../../config/api.config";
 import { showSuccess, showError } from "../../../utils/toast.utils";
 import { DateTimePicker } from "../../../components/ui/DateTimePicker";
@@ -567,6 +569,30 @@ const TournamentManage = () => {
   const [winnerDropdownSearch, setWinnerDropdownSearch] = useState("");
   const [emptyWinnerIndices, setEmptyWinnerIndices] = useState<Set<number>>(new Set());
 
+  // Co-organizer state
+  interface CoOrganizerEntry {
+    user_id: { _id?: string; username?: string; email?: string; profile?: { first_name?: string; last_name?: string; avatar_url?: string } } | string;
+    status: "pending" | "accepted" | "declined";
+    invited_at: string;
+    accepted_at?: string;
+  }
+  interface OrganizerSearchResult {
+    user_id: string;
+    username: string;
+    email: string;
+    name: string;
+    avatar_url?: string;
+  }
+  const [coOrganizers, setCoOrganizers] = useState<CoOrganizerEntry[]>([]);
+  const [isLoadingCoOrgs, setIsLoadingCoOrgs] = useState(false);
+  const [coOrgSearchQuery, setCoOrgSearchQuery] = useState("");
+  const [coOrgSearchResults, setCoOrgSearchResults] = useState<OrganizerSearchResult[]>([]);
+  const [isSearchingCoOrg, setIsSearchingCoOrg] = useState(false);
+  const [isInvitingCoOrg, setIsInvitingCoOrg] = useState(false);
+  const [inviteIdentifier, setInviteIdentifier] = useState("");
+  const [coOrgError, setCoOrgError] = useState<string | null>(null);
+  const coOrgSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const hasFetched = useRef(false);
 
   const showToast = (type: "success" | "error", msg: string) => {
@@ -690,6 +716,12 @@ const TournamentManage = () => {
   }, [loadData]);
 
   useEffect(() => {
+    if (!tournamentId || !tournament) return;
+    void loadCoOrganizers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tournamentId, tournament?.id]);
+
+  useEffect(() => {
     if (!tournamentId || !tournament || tournament.isFree) return;
 
     // If escrow is missing (ESCROW_NOT_FOUND), avoid polling repeatedly.
@@ -802,6 +834,83 @@ const TournamentManage = () => {
     } finally {
       setIsRemoving(false);
       setRemoveTarget(null);
+    }
+  };
+
+  const loadCoOrganizers = async () => {
+    if (!tournamentId) return;
+    setIsLoadingCoOrgs(true);
+    try {
+      const res = await apiGet(`${TOURNAMENT_ENDPOINTS.CO_ORGANIZER_LIST}/${tournamentId}`);
+      if (res.success) setCoOrganizers((res.data as CoOrganizerEntry[]) ?? []);
+    } catch {
+      // silently fail
+    } finally {
+      setIsLoadingCoOrgs(false);
+    }
+  };
+
+  const handleCoOrgSearch = (q: string) => {
+    setCoOrgSearchQuery(q);
+    setCoOrgError(null);
+    if (coOrgSearchTimer.current) clearTimeout(coOrgSearchTimer.current);
+    if (!q.trim() || q.trim().length < 2) { setCoOrgSearchResults([]); return; }
+    coOrgSearchTimer.current = setTimeout(async () => {
+      setIsSearchingCoOrg(true);
+      try {
+        const res = await apiGet(`${TOURNAMENT_ENDPOINTS.CO_ORGANIZER_SEARCH}?q=${encodeURIComponent(q.trim())}`);
+        if (res.success) setCoOrgSearchResults((res.data as OrganizerSearchResult[]) ?? []);
+      } catch {
+        setCoOrgSearchResults([]);
+      } finally {
+        setIsSearchingCoOrg(false);
+      }
+    }, 350);
+  };
+
+  const handleInviteCoOrg = async () => {
+    if (!tournamentId || !inviteIdentifier.trim()) {
+      setCoOrgError("Enter an email or username to invite.");
+      return;
+    }
+    setIsInvitingCoOrg(true);
+    setCoOrgError(null);
+    try {
+      const res = await apiPost(`${TOURNAMENT_ENDPOINTS.CO_ORGANIZER_INVITE}/${tournamentId}/invite`, {
+        identifier: inviteIdentifier.trim(),
+      });
+      if (!res.success) {
+        const err = (res as { error?: string | { message?: string } }).error;
+        throw new Error(typeof err === "string" ? err : (err as any)?.message ?? "Invite failed.");
+      }
+      showSuccess("Invite sent successfully.");
+      setInviteIdentifier("");
+      setCoOrgSearchQuery("");
+      setCoOrgSearchResults([]);
+      await loadCoOrganizers();
+    } catch (err) {
+      setCoOrgError(err instanceof Error ? err.message : "Invite failed.");
+    } finally {
+      setIsInvitingCoOrg(false);
+    }
+  };
+
+  const handleRemoveCoOrg = async (targetUserId: string, name: string) => {
+    if (!tournamentId) return;
+    if (!window.confirm(`Remove ${name} as co-organizer?`)) return;
+    try {
+      const res = await apiDelete(`${TOURNAMENT_ENDPOINTS.CO_ORGANIZER_REMOVE}/${tournamentId}/${targetUserId}`);
+      if (!res.success) {
+        const err = (res as { error?: string | { message?: string } }).error;
+        throw new Error(typeof err === "string" ? err : (err as any)?.message ?? "Remove failed.");
+      }
+      showSuccess(`${name} removed as co-organizer.`);
+      setCoOrganizers((prev) => prev.filter((co) => {
+        const id = typeof co.user_id === "string" ? co.user_id : (co.user_id as any)?._id ?? co.user_id;
+        return String(id) !== targetUserId;
+      }));
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Remove failed.");
     }
   };
 
@@ -2204,6 +2313,133 @@ const TournamentManage = () => {
               </>
             )}
           </div>
+
+        {/* ── Co-organizers section ── */}
+        {tournament && user && tournament.organizerId === user.id && (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-4 py-3.5 sm:px-5 border-b border-slate-800/60 bg-slate-950/20">
+              <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center shrink-0">
+                <UserPlus className="w-4 h-4 text-violet-400" />
+              </div>
+              <div>
+                <h2 className="font-display text-sm font-bold text-white">Co-organizers</h2>
+                <p className="text-[11px] text-slate-500 mt-0.5">Invite other organizers to help manage this tournament</p>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 space-y-4">
+              {/* Invite form */}
+              <div className="space-y-2">
+                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Invite by email or username</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={inviteIdentifier}
+                      onChange={(e) => { setInviteIdentifier(e.target.value); setCoOrgError(null); handleCoOrgSearch(e.target.value); }}
+                      placeholder="email or @username"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-violet-500/60 transition-colors"
+                    />
+                    {/* Search results dropdown */}
+                    {coOrgSearchResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-xl border border-slate-700 bg-slate-800 shadow-xl overflow-hidden">
+                        {coOrgSearchResults.map((r) => (
+                          <button
+                            key={r.user_id}
+                            type="button"
+                            onClick={() => { setInviteIdentifier(r.email); setCoOrgSearchQuery(r.email); setCoOrgSearchResults([]); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-700/60 transition-colors text-left"
+                          >
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-slate-600 flex items-center justify-center shrink-0 text-xs font-bold text-violet-300">
+                              {(r.name || r.username).charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-white truncate">{r.name || r.username}</p>
+                              <p className="text-[10px] text-slate-400 truncate">@{r.username} · {r.email}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {isSearchingCoOrg && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" />
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleInviteCoOrg()}
+                    disabled={isInvitingCoOrg || !inviteIdentifier.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-500 text-white text-sm font-semibold hover:bg-violet-400 disabled:opacity-60 transition-colors shrink-0"
+                  >
+                    {isInvitingCoOrg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                    Invite
+                  </button>
+                </div>
+                {coOrgError && (
+                  <div className="flex items-center gap-1.5 text-xs text-red-400">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {coOrgError}
+                  </div>
+                )}
+              </div>
+
+              {/* Co-organizer list */}
+              {isLoadingCoOrgs ? (
+                <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Loading co-organizers...
+                </div>
+              ) : coOrganizers.length === 0 ? (
+                <p className="text-xs text-slate-600 italic py-1">No co-organizers yet. Send an invite above.</p>
+              ) : (
+                <div className="space-y-2">
+                  {coOrganizers.map((co, idx) => {
+                    const u = typeof co.user_id === "object" && co.user_id !== null ? co.user_id as Record<string, any> : null;
+                    const coUserId = u?._id ?? (typeof co.user_id === "string" ? co.user_id : "");
+                    const coName = u ? (`${u.profile?.first_name ?? ""} ${u.profile?.last_name ?? ""}`.trim() || u.username || "Organizer") : "Organizer";
+                    const coUsername = u?.username ?? "";
+                    const coAvatarUrl = u?.profile?.avatar_url ?? "";
+                    const statusColor = co.status === "accepted"
+                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/25"
+                      : co.status === "declined"
+                      ? "bg-red-500/15 text-red-300 border-red-500/25"
+                      : "bg-amber-500/15 text-amber-300 border-amber-500/25";
+
+                    return (
+                      <div key={coUserId || idx} className="flex items-center gap-2.5 bg-slate-800/40 border border-slate-700/50 rounded-xl px-3 py-2.5">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-slate-600 flex items-center justify-center shrink-0 text-xs font-bold text-violet-300 overflow-hidden">
+                          {coAvatarUrl ? (
+                            <img src={coAvatarUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            coName.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-white truncate">{coName}</p>
+                          {coUsername && <p className="text-[10px] text-slate-500">@{coUsername}</p>}
+                        </div>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${statusColor}`}>
+                          {co.status}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void handleRemoveCoOrg(String(coUserId), coName)}
+                          title="Remove co-organizer"
+                          className="p-1 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         </div>{/* end main column */}
 

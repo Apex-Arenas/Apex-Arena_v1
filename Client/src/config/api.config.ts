@@ -219,6 +219,15 @@ export const TOURNAMENT_ENDPOINTS = {
   // Organizer Earnings
   ORGANIZER_EARNINGS: `${API_BASE_URLS.TOURNAMENT}/organizer-earnings`,       // GET
   ORGANIZER_EARNINGS_CLAIM: `${API_BASE_URLS.TOURNAMENT}/organizer-earnings`, // POST + /:earning_id/claim
+
+  // Co-organizers
+  CO_ORGANIZER_SEARCH: `${API_BASE_URLS.TOURNAMENT}/co-organizers/search`,       // GET ?q=
+  CO_ORGANIZER_INVITES: `${API_BASE_URLS.TOURNAMENT}/co-organizers/invites`,     // GET my pending invites
+  CO_ORGANIZER_LIST: `${API_BASE_URLS.TOURNAMENT}/co-organizers`,                // GET /:tournamentId
+  CO_ORGANIZER_INVITE: `${API_BASE_URLS.TOURNAMENT}/co-organizers`,              // POST /:tournamentId/invite
+  CO_ORGANIZER_ACCEPT: `${API_BASE_URLS.TOURNAMENT}/co-organizers`,              // POST /:tournamentId/accept
+  CO_ORGANIZER_DECLINE: `${API_BASE_URLS.TOURNAMENT}/co-organizers`,             // POST /:tournamentId/decline
+  CO_ORGANIZER_REMOVE: `${API_BASE_URLS.TOURNAMENT}/co-organizers`,              // DELETE /:tournamentId/:userId
 } as const;
 
 

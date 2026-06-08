@@ -11,10 +11,15 @@ import {
   Ticket,
   CalendarDays,
   ChevronDown,
+  UserPlus,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { organizerService } from "../../../services/organizer.service";
 import type { Tournament } from "../../../services/tournament.service";
-import { showError } from "../../../utils/toast.utils";
+import { showError, showSuccess } from "../../../utils/toast.utils";
+import { apiGet, apiPost } from "../../../utils/api.utils";
+import { TOURNAMENT_ENDPOINTS } from "../../../config/api.config";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -278,17 +283,33 @@ function Section({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+interface CoInvite {
+  tournament_id: string;
+  tournament_title: string;
+  tournament_status: string;
+  thumbnail_url?: string;
+  invited_at?: string;
+  invited_by?: { username?: string; profile?: { first_name?: string; last_name?: string } };
+}
+
 const MyTournaments = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statsOpen, setStatsOpen] = useState(false);
   const [pastOpen, setPastOpen] = useState(false);
+  const [invites, setInvites] = useState<CoInvite[]>([]);
+  const [respondingInvite, setRespondingInvite] = useState<string | null>(null);
   const hasFetched = useRef(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      setTournaments(await organizerService.getMyTournaments());
+      const [tourns, invRes] = await Promise.all([
+        organizerService.getMyTournaments(),
+        apiGet(TOURNAMENT_ENDPOINTS.CO_ORGANIZER_INVITES),
+      ]);
+      setTournaments(tourns);
+      if (invRes.success) setInvites((invRes.data as CoInvite[]) ?? []);
     } catch {
       setTournaments([]);
       showError("Failed to load tournaments. Please refresh.");
@@ -296,6 +317,24 @@ const MyTournaments = () => {
       setIsLoading(false);
     }
   }, []);
+
+  const handleInviteRespond = async (tournamentId: string, action: "accept" | "decline") => {
+    setRespondingInvite(tournamentId + action);
+    try {
+      const url = `${TOURNAMENT_ENDPOINTS.CO_ORGANIZER_LIST}/${tournamentId}/${action}`;
+      const res = await apiPost(url, {});
+      if (!res.success) {
+        const err = (res as { error?: string | { message?: string } }).error;
+        throw new Error(typeof err === "string" ? err : (err as any)?.message ?? `${action} failed.`);
+      }
+      showSuccess(action === "accept" ? "You're now a co-organizer!" : "Invite declined.");
+      setInvites((prev) => prev.filter((i) => i.tournament_id !== tournamentId));
+    } catch (err) {
+      showError(err instanceof Error ? err.message : `Failed to ${action} invite.`);
+    } finally {
+      setRespondingInvite(null);
+    }
+  };
 
   useEffect(() => {
     if (hasFetched.current) return;
@@ -393,6 +432,58 @@ const MyTournaments = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-8 sm:px-14 lg:px-20 py-4 sm:py-6 space-y-8">
+
+      {/* ── Co-organizer invitations ──────────────────────────── */}
+      {!isLoading && invites.length > 0 && (
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <UserPlus className="w-5 h-5 text-violet-400" />
+            <h2 className="font-display text-xl font-bold text-white">Invitations</h2>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/20">
+              {invites.length}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {invites.map((invite) => {
+              const inviterName = invite.invited_by
+                ? (`${invite.invited_by.profile?.first_name ?? ""} ${invite.invited_by.profile?.last_name ?? ""}`.trim() || invite.invited_by.username || "An organizer")
+                : "An organizer";
+              const isAccepting = respondingInvite === invite.tournament_id + "accept";
+              const isDeclining = respondingInvite === invite.tournament_id + "decline";
+
+              return (
+                <div key={invite.tournament_id} className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-slate-700/60 bg-slate-800/40 px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{invite.tournament_title}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Invited by {inviterName}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      disabled={!!respondingInvite}
+                      onClick={() => void handleInviteRespond(invite.tournament_id, "accept")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/25 disabled:opacity-60 transition-colors"
+                    >
+                      {isAccepting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!!respondingInvite}
+                      onClick={() => void handleInviteRespond(invite.tournament_id, "decline")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700/60 border border-slate-600 text-slate-400 text-xs font-semibold hover:text-red-300 hover:border-red-500/30 hover:bg-red-500/10 disabled:opacity-60 transition-colors"
+                    >
+                      {isDeclining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* ── Loading ─────────────────────────────────────────── */}
       {isLoading && (
         <div className="flex items-center justify-center py-24">
