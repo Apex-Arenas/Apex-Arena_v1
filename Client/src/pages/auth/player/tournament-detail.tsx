@@ -217,7 +217,7 @@ const TournamentDetail = () => {
       setPaymentCountdown(null);
       return;
     }
-    setPaymentCountdown(12 * 60 * 60);
+    setPaymentCountdown(3 * 60 * 60);
     const interval = setInterval(() => {
       setPaymentCountdown((prev) => {
         if (prev === null || prev <= 1) {
