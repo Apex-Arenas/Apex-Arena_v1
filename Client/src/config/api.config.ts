@@ -228,6 +228,7 @@ export const TOURNAMENT_ENDPOINTS = {
   CO_ORGANIZER_ACCEPT: `${API_BASE_URLS.TOURNAMENT}/co-organizers`,              // POST /:tournamentId/accept
   CO_ORGANIZER_DECLINE: `${API_BASE_URLS.TOURNAMENT}/co-organizers`,             // POST /:tournamentId/decline
   CO_ORGANIZER_REMOVE: `${API_BASE_URLS.TOURNAMENT}/co-organizers`,              // DELETE /:tournamentId/:userId
+  CO_ORGANIZER_MANAGING: `${API_BASE_URLS.TOURNAMENT}/co-organizers/managing`,   // GET — tournaments I'm co-organizing
 } as const;
 
 

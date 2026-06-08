@@ -281,6 +281,130 @@ function Section({
   );
 }
 
+// ─── Co-managing card ─────────────────────────────────────────────────────────
+
+interface CoManagingTournament {
+  id: string;
+  title: string;
+  status: string;
+  thumbnail_url?: string;
+  tournament_type?: string;
+  format?: string;
+  region?: string;
+  entry_fee?: number;
+  funding_type?: string;
+  current_count: number;
+  max_participants: number;
+  schedule: { tournament_start?: string; registration_end?: string };
+  prize_pool: number;
+  game: { name: string; logo_url?: string } | null;
+}
+
+function CoManagingCard({ t }: { t: CoManagingTournament }) {
+  const meta = STATUS_META[t.status] ?? {
+    label: t.status.replace(/_/g, " "),
+    dot: "bg-slate-500",
+    text: "text-slate-300",
+  };
+  const isLive = ["open", "started", "ongoing", "in_progress"].includes(t.status);
+  const prizeGhs = t.prize_pool > 0
+    ? `GHS ${(t.prize_pool / 100).toLocaleString("en-GH", { minimumFractionDigits: 0 })}`
+    : null;
+  const entryFee = !t.entry_fee || t.entry_fee === 0
+    ? "Free"
+    : `GHS ${(t.entry_fee / 100).toLocaleString("en-GH", { minimumFractionDigits: 0 })}`;
+
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-600 hover:shadow-xl hover:shadow-black/40 transition-all">
+      <Link to={`/auth/organizer/tournaments/${t.id}`} className="relative aspect-4/3 overflow-hidden bg-slate-800 shrink-0 block">
+        {t.thumbnail_url ? (
+          <img src={t.thumbnail_url} alt={t.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-slate-800 to-slate-900">
+            {t.game?.logo_url ? (
+              <img src={t.game.logo_url} alt="" className="w-20 h-20 object-contain opacity-25" />
+            ) : (
+              <Gamepad2 className="w-14 h-14 text-slate-700" />
+            )}
+          </div>
+        )}
+        <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-slate-900/20 to-transparent" />
+        <div className="absolute top-2.5 right-2.5">
+          <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-sm border border-white/10 ${meta.text}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${meta.dot} ${isLive ? "animate-pulse" : ""}`} />
+            {meta.label}
+          </span>
+        </div>
+        <div className="absolute top-2.5 left-2.5">
+          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full bg-violet-500/20 backdrop-blur-sm border border-violet-500/30 text-violet-300">
+            <UserPlus className="w-2.5 h-2.5" />
+            Co-org
+          </span>
+        </div>
+        {t.game?.logo_url && (
+          <div className="absolute bottom-2.5 left-2.5">
+            <img src={t.game.logo_url} alt={t.game.name} className="w-7 h-7 rounded-md object-cover border border-white/15 shadow-md" />
+          </div>
+        )}
+        {prizeGhs && (
+          <div className="absolute bottom-2.5 right-2.5">
+            <span className="text-[11px] font-bold text-amber-300 bg-slate-950/80 backdrop-blur-sm px-2 py-0.5 rounded-full border border-amber-400/20">{prizeGhs}</span>
+          </div>
+        )}
+      </Link>
+
+      <div className="px-4 pt-3 pb-4 flex flex-col gap-3 flex-1">
+        <Link to={`/auth/organizer/tournaments/${t.id}`}>
+          <h3 className="font-display text-sm font-bold text-white leading-tight truncate group-hover:text-orange-300 transition-colors">{t.title}</h3>
+          <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+            {t.game?.name ?? "Unknown Game"} · {t.format ?? "Solo"}
+            {t.region ? ` · ${t.region === "GLOBAL" ? "Global" : t.region}` : ""}
+          </p>
+        </Link>
+
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+          <div>
+            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5 flex items-center gap-1">
+              <CalendarDays className="w-2.5 h-2.5" /> Starts
+            </p>
+            <p className="text-[11px] font-medium text-slate-300">{formatDate(t.schedule.tournament_start)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5 flex items-center gap-1">
+              <Users className="w-2.5 h-2.5" /> Players
+            </p>
+            <p className="text-[11px] font-medium text-slate-300">{t.current_count} / {t.max_participants}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5 flex items-center gap-1">
+              <Ticket className="w-2.5 h-2.5" /> Entry
+            </p>
+            <p className={`text-[11px] font-medium ${entryFee === "Free" ? "text-emerald-400" : "text-slate-300"}`}>{entryFee}</p>
+          </div>
+        </div>
+
+        {prizeGhs && (
+          <div className="flex items-center gap-1.5 pt-1 border-t border-slate-800">
+            <Trophy className="w-3 h-3 text-amber-400 shrink-0" />
+            <span className="text-[11px] font-semibold text-amber-400">{prizeGhs} prize pool</span>
+          </div>
+        )}
+
+        <Link
+          to={`/auth/organizer/tournaments/${t.id}`}
+          className={`mt-auto w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+            isLive
+              ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 hover:shadow-lg hover:shadow-orange-500/25"
+              : "border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 hover:text-white"
+          }`}
+        >
+          {isLive ? "Manage Live" : "Manage"}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 interface CoInvite {
@@ -298,18 +422,21 @@ const MyTournaments = () => {
   const [statsOpen, setStatsOpen] = useState(false);
   const [pastOpen, setPastOpen] = useState(false);
   const [invites, setInvites] = useState<CoInvite[]>([]);
+  const [managing, setManaging] = useState<CoManagingTournament[]>([]);
   const [respondingInvite, setRespondingInvite] = useState<string | null>(null);
   const hasFetched = useRef(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [tourns, invRes] = await Promise.all([
+      const [tourns, invRes, managingRes] = await Promise.all([
         organizerService.getMyTournaments(),
         apiGet(TOURNAMENT_ENDPOINTS.CO_ORGANIZER_INVITES),
+        apiGet(TOURNAMENT_ENDPOINTS.CO_ORGANIZER_MANAGING),
       ]);
       setTournaments(tourns);
       if (invRes.success) setInvites((invRes.data as CoInvite[]) ?? []);
+      if (managingRes.success) setManaging((managingRes.data as CoManagingTournament[]) ?? []);
     } catch {
       setTournaments([]);
       showError("Failed to load tournaments. Please refresh.");
@@ -480,6 +607,22 @@ const MyTournaments = () => {
                 </div>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {/* ── Co-organizing ────────────────────────────────────── */}
+      {!isLoading && managing.length > 0 && (
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <UserPlus className="w-5 h-5 text-violet-400" />
+            <h2 className="font-display text-xl font-bold text-white">Co-organizing</h2>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-400 border border-violet-500/20">
+              {managing.length}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {managing.map((t) => <CoManagingCard key={String(t.id)} t={t} />)}
           </div>
         </section>
       )}
