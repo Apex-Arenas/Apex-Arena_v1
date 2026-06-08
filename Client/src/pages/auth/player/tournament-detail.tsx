@@ -207,8 +207,38 @@ const TournamentDetail = () => {
   const [withdrawReason, setWithdrawReason] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
+  const [paymentCountdown, setPaymentCountdown] = useState<number | null>(null);
 
   const hasFetched = useRef(false);
+
+  // Auto-withdraw countdown when payment is pending
+  useEffect(() => {
+    if (myRegistration?.status !== "pending_payment") {
+      setPaymentCountdown(null);
+      return;
+    }
+    setPaymentCountdown(5);
+    const interval = setInterval(() => {
+      setPaymentCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [myRegistration?.status]);
+
+  // Trigger auto-withdraw when countdown hits 0
+  useEffect(() => {
+    if (paymentCountdown !== 0 || !tournamentId || !myRegistration) return;
+    tournamentService.unregister(tournamentId, "Payment not completed").then(() => {
+      setMyRegistration(null);
+      setSuccessMsg("Registration cancelled — payment was not completed.");
+      setTimeout(() => setSuccessMsg(null), 6000);
+    }).catch(() => {});
+  }, [paymentCountdown, tournamentId, myRegistration]);
 
   const loadRegistration = useCallback(async (tid: string) => {
     try {
@@ -1063,20 +1093,31 @@ const TournamentDetail = () => {
                       </div>
                     </div>
 
-                    {/* Complete Payment button */}
+                    {/* Complete Payment button + countdown */}
                     {myRegistration.status === "pending_payment" && (
-                      <button
-                        onClick={() => void handleCompletePayment()}
-                        disabled={isCompletingPayment}
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-500 text-slate-950 text-sm font-bold hover:bg-amber-400 disabled:opacity-60 transition-colors"
-                      >
-                        {isCompletingPayment ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <CreditCard className="w-4 h-4" />
+                      <div className="space-y-2">
+                        {paymentCountdown !== null && paymentCountdown > 0 && (
+                          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3 text-xs text-amber-300">
+                            <Clock className="w-3.5 h-3.5 shrink-0" />
+                            <span>
+                              Complete payment or you'll be auto-withdrawn in{" "}
+                              <span className="font-bold text-amber-200">{paymentCountdown}s</span>
+                            </span>
+                          </div>
                         )}
-                        {isCompletingPayment ? "Redirecting…" : "Complete Payment"}
-                      </button>
+                        <button
+                          onClick={() => { setPaymentCountdown(null); void handleCompletePayment(); }}
+                          disabled={isCompletingPayment}
+                          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-500 text-slate-950 text-sm font-bold hover:bg-amber-400 disabled:opacity-60 transition-colors"
+                        >
+                          {isCompletingPayment ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CreditCard className="w-4 h-4" />
+                          )}
+                          {isCompletingPayment ? "Redirecting…" : "Complete Payment"}
+                        </button>
+                      </div>
                     )}
 
                     {/* Check-in button */}
