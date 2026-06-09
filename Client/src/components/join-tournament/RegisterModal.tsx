@@ -47,15 +47,36 @@ export function RegisterModal({
 
   useEffect(() => {
     let active = true;
-    const checkEligibility = async () => {
+    const init = async () => {
       setIsCheckingEligibility(true);
       try {
-        const result = await tournamentService.canRegister(tournament.id);
+        const [eligibility, profileRes] = await Promise.all([
+          tournamentService.canRegister(tournament.id),
+          tournament.game?.id
+            ? apiGet(`${TOURNAMENT_ENDPOINTS.GAME_PROFILE_DETAIL}/${encodeURIComponent(tournament.game.id)}`)
+            : Promise.resolve(null),
+        ]);
         if (!active) return;
-        setCanJoin(result.canRegister);
+
+        setCanJoin(eligibility.canRegister);
         setEligibilityReason(
-          result.canRegister ? null : (result.reason ?? "You are not eligible to join this tournament yet."),
+          eligibility.canRegister ? null : (eligibility.reason ?? "You are not eligible to join this tournament yet."),
         );
+
+        if (profileRes && profileRes.success && profileRes.data) {
+          const p = profileRes.data as Record<string, unknown>;
+          const existingId = String(p.in_game_id ?? p.inGameId ?? "");
+          if (existingId) {
+            setInGameId(existingId);
+            setSkillLevel(String(p.skill_level ?? p.skillLevel ?? "beginner"));
+            setProfileSaved(true);
+          } else {
+            setShowProfileForm(true);
+          }
+        } else if (tournament.game?.id) {
+          // No profile found for this game — show form immediately
+          setShowProfileForm(true);
+        }
       } catch {
         if (!active) return;
         setCanJoin(false);
@@ -64,9 +85,9 @@ export function RegisterModal({
         if (active) setIsCheckingEligibility(false);
       }
     };
-    void checkEligibility();
+    void init();
     return () => { active = false; };
-  }, [tournament.id]);
+  }, [tournament.id, tournament.game?.id]);
 
   // Fetch available games when profile form is shown
   useEffect(() => {
@@ -76,8 +97,12 @@ export function RegisterModal({
       if (!res.success) return;
       const raw = (Array.isArray(res.data) ? res.data : (res.data as Record<string, unknown>)?.games ?? []) as Record<string, unknown>[];
       setAvailableGames(raw.map((g) => ({ id: String(g._id ?? g.id ?? ""), name: String(g.name ?? "") })).filter((g) => g.id));
+      // Auto-select the tournament's game if not already set
+      if (!selectedGameId && tournament.game?.id) {
+        setSelectedGameId(tournament.game.id);
+      }
     }).catch(() => {});
-  }, [showProfileForm]);
+  }, [showProfileForm, selectedGameId, tournament.game?.id]);
 
   const handleSaveProfile = async () => {
     if (!selectedGameId || !inGameId.trim()) {
