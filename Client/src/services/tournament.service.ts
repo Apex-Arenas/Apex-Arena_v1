@@ -408,6 +408,7 @@ function mapLeagueMatches(list: Record<string, unknown>[]): LeagueMatch[] {
   return list.map((m) => {
     const parts = (Array.isArray(m.participants) ? m.participants : []) as Record<string, unknown>[];
     const p1 = (parts[0] ?? {}) as Record<string, unknown>;
+    const isBye = parts.length === 1;
     const p2 = (parts[1] ?? {}) as Record<string, unknown>;
     const scheduledTime =
       (m.schedule as Record<string, unknown> | undefined)?.scheduled_time ??
@@ -418,12 +419,12 @@ function mapLeagueMatches(list: Record<string, unknown>[]): LeagueMatch[] {
       player1Id: String(p1.user_id ?? p1.team_id ?? p1._id ?? ''),
       player1Name: String(p1.in_game_id ?? p1.display_name ?? p1.username ?? ''),
       player1Avatar: p1.avatar_url as string | undefined,
-      player2Id: String(p2.user_id ?? p2.team_id ?? p2._id ?? ''),
-      player2Name: String(p2.in_game_id ?? p2.display_name ?? p2.username ?? ''),
+      player2Id: isBye ? '' : String(p2.user_id ?? p2.team_id ?? p2._id ?? ''),
+      player2Name: isBye ? 'BYE' : String(p2.in_game_id ?? p2.display_name ?? p2.username ?? ''),
       player2Avatar: p2.avatar_url as string | undefined,
       status: String(m.status ?? 'scheduled'),
       score1: p1.score !== undefined ? Number(p1.score) : undefined,
-      score2: p2.score !== undefined ? Number(p2.score) : undefined,
+      score2: isBye ? 0 : (p2.score !== undefined ? Number(p2.score) : undefined),
       winnerId: m.winner_id as string | undefined,
       scheduledAt: scheduledTime as string | undefined,
       playDeadline: m.play_deadline as string | undefined,
