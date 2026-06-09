@@ -62,6 +62,8 @@ export interface Tournament {
   requiresInGameId?: boolean;
   region?: string;
   visibility: string;
+  platform?: string;
+  gameMode?: string;
   isRegistered?: boolean;
   leagueSettings?: LeagueSettings;
 }
@@ -382,6 +384,8 @@ export function mapTournament(
     requiresInGameId: Boolean((raw.rules as Record<string, unknown>)?.in_game_id_required ?? false),
     region: raw.region as string | undefined,
     visibility: String(raw.visibility ?? 'public'),
+    platform: raw.platform as string | undefined,
+    gameMode: (raw.game_mode ?? raw.gameMode) as string | undefined,
     leagueSettings: raw.league_settings
       ? (() => {
           const ls = raw.league_settings as Record<string, unknown>;

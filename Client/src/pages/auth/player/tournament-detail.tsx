@@ -160,7 +160,7 @@ function ExpandableText({ text }: { text: string }) {
   }, [text]);
 
   return (
-    <div>
+    <div className="flex flex-col">
       <p
         ref={ref}
         style={expanded ? undefined : { WebkitLineClamp: COLLAPSE_LINES, display: "-webkit-box", WebkitBoxOrient: "vertical", overflow: "hidden" }}
@@ -171,7 +171,7 @@ function ExpandableText({ text }: { text: string }) {
       {(overflows || expanded) && (
         <button
           onClick={() => setExpanded(v => !v)}
-          className="mt-2 flex items-center gap-1 text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors"
+          className="mt-2 flex items-center gap-1 text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors ml-auto"
         >
           <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
           {expanded ? "Show less" : "Show more"}
@@ -998,69 +998,6 @@ const TournamentDetail = () => {
               </section>
             )}
 
-            {/* Details */}
-            <section className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-                  <Globe className="w-3.5 h-3.5 text-orange-400" />
-                </div>
-                <h2 className="font-display text-base font-bold text-white">
-                  Details
-                </h2>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-slate-800/40">
-                {[
-                  {
-                    icon: <Swords className="w-4 h-4 text-orange-400" />,
-                    label: "Format",
-                    value: tournament.format,
-                  },
-                  {
-                    icon: <Trophy className="w-4 h-4 text-amber-400" />,
-                    label: "Type",
-                    value: tournament.tournamentType,
-                  },
-                  {
-                    icon: <Globe className="w-4 h-4 text-cyan-400" />,
-                    label: "Region",
-                    value:
-                      tournament.region === "GLOBAL"
-                        ? "Global"
-                        : tournament.region,
-                  },
-                  {
-                    icon: <Users className="w-4 h-4 text-orange-400" />,
-                    label: "Min Players",
-                    value:
-                      tournament.minParticipants > 0
-                        ? String(tournament.minParticipants)
-                        : null,
-                  },
-                  {
-                    icon: <Shield className="w-4 h-4 text-violet-400" />,
-                    label: "Visibility",
-                    value: tournament.visibility
-                      ? tournament.visibility.charAt(0).toUpperCase() +
-                        tournament.visibility.slice(1)
-                      : null,
-                  },
-                ]
-                  .filter((r) => Boolean(r.value))
-                  .map((r) => (
-                    <div key={r.label} className="bg-slate-900 px-4 py-4">
-                      <div className="flex items-center gap-1.5 mb-2">
-                        {r.icon}
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest">
-                          {r.label}
-                        </p>
-                      </div>
-                      <p className="text-sm font-bold text-white capitalize">
-                        {r.value}
-                      </p>
-                    </div>
-                  ))}
-              </div>
-            </section>
           </div>
 
           {/* ── Right sidebar ────────────────────────────────────────────────── */}
@@ -1319,6 +1256,9 @@ const TournamentDetail = () => {
                   ...(tournament.minParticipants > 0
                     ? [{ label: "Min Players", value: String(tournament.minParticipants) }]
                     : []),
+                  ...(tournament.visibility
+                    ? [{ label: "Visibility", value: tournament.visibility.charAt(0).toUpperCase() + tournament.visibility.slice(1) }]
+                    : []),
                 ].map((r) => (
                   <div
                     key={r.label}
@@ -1330,6 +1270,30 @@ const TournamentDetail = () => {
                     </span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Details */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-slate-800">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  Details
+                </p>
+              </div>
+              <div className="divide-y divide-slate-800/60">
+                {[
+                  { label: "Game", value: tournament.game?.name },
+                  { label: "Platform", value: tournament.platform },
+                  { label: "Mode", value: tournament.gameMode },
+                  { label: "Max Players", value: tournament.maxParticipants > 0 ? String(tournament.maxParticipants) : null },
+                ]
+                  .filter((r) => Boolean(r.value))
+                  .map((r) => (
+                    <div key={r.label} className="flex items-center justify-between px-5 py-3">
+                      <span className="text-xs text-slate-500">{r.label}</span>
+                      <span className="text-xs font-bold text-white capitalize">{r.value}</span>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
