@@ -66,7 +66,7 @@ function formatDateTime(iso?: string) {
 }
 
 function formatFee(isFree: boolean, fee: number, currency: string) {
-  if (isFree) return "Free";
+  if (isFree || fee === 0) return "Free";
   return `${currency} ${(fee / 100).toFixed(2)}`;
 }
 
@@ -1190,7 +1190,7 @@ const TournamentDetail = () => {
                         />
                       </div>
                     </div>
-                    {!tournament.isFree && (
+                    {!tournament.isFree && tournament.entryFee > 0 && (
                       <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/60 border border-slate-700/60 rounded-xl px-3 py-2.5">
                         <Globe className="w-3.5 h-3.5 text-orange-400 shrink-0" />
                         You'll be redirected to pay via Mobile Money or card
