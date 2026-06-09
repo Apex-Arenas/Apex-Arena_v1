@@ -506,9 +506,18 @@ const TournamentDetail = () => {
   const isLeague = tournament.tournamentType === "league";
   const showBracketSection =
     !isLeague && BRACKET_VISIBLE_STATUSES.has(tournament.status);
-  const canRegister = tournament.status === "open" && !isRegistered;
-  const registrationClosed =
-    !["open"].includes(tournament.status) && !isRegistered;
+
+  const regStart = tournament.schedule.registrationStart;
+  const regEnd = tournament.schedule.registrationEnd;
+  const regWindowOpen =
+    (!regStart || now >= new Date(regStart).getTime()) &&
+    (!regEnd || now <= new Date(regEnd).getTime());
+
+  const canRegister =
+    (tournament.status === "open" ||
+      (tournament.status === "published" && regWindowOpen)) &&
+    !isRegistered;
+  const registrationClosed = !canRegister && !isRegistered;
 
   const currentUserId = user?.id;
   const myInGameId = myRegistration?.inGameId;
@@ -1210,6 +1219,9 @@ const TournamentDetail = () => {
                   const startTime = startIso
                     ? new Date(startIso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
                     : null;
+                  const regOpenTime = regStart
+                    ? new Date(regStart).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                    : null;
 
                   let msg: string;
                   let isAmber = false;
@@ -1218,6 +1230,13 @@ const TournamentDetail = () => {
                     msg = startPassed
                       ? "Registration closed — awaiting tournament start"
                       : `Registration closed · Starts ${startTime ?? "soon"}`;
+                  } else if (tournament.status === "published") {
+                    if (regStart && Date.now() < new Date(regStart).getTime()) {
+                      isAmber = true;
+                      msg = `Registration opens ${regOpenTime ?? "soon"}`;
+                    } else {
+                      msg = "Registration has closed";
+                    }
                   } else if (["started", "ongoing", "in_progress"].includes(tournament.status)) {
                     msg = "Tournament is in progress";
                   } else if (tournament.status === "completed") {
