@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bell, BellOff, Check, CheckCheck, Trash2, Trophy, Swords,
   Wallet, ShieldAlert, UserCheck, Users, Star, Zap, Info,
@@ -6,6 +7,11 @@ import {
 } from "lucide-react";
 import { useNotifications } from "../../lib/notification-context";
 import type { NotificationItem } from "../../services/notification.service";
+
+function resolveNotifUrl(url: string): string {
+  if (url.startsWith("/auth") || url.startsWith("http")) return url;
+  return `/auth${url}`;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,17 +92,21 @@ function NotifRow({
   notif,
   onMarkRead,
   onDelete,
+  onNavigate,
 }: {
   notif: NotificationItem;
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
+  onNavigate?: () => void;
 }) {
   const { icon: Icon, color, bar, bg } = getTypeMeta(notif.type);
 
   return (
     <div
+      onClick={onNavigate}
       className={`relative flex items-start gap-4 px-6 py-4 border-b border-slate-800 transition-colors group
-        ${notif.isRead ? "hover:bg-slate-800/20" : "bg-cyan-500/4 hover:bg-cyan-500/7"}`}
+        ${notif.isRead ? "hover:bg-slate-800/20" : "bg-cyan-500/4 hover:bg-cyan-500/7"}
+        ${onNavigate ? "cursor-pointer" : ""}`}
     >
       {/* Left accent bar — always shown, bright for unread, subtle for read */}
       <span className={`absolute left-0 inset-y-0 w-0.75 ${bar} rounded-r-full transition-opacity ${notif.isRead ? "opacity-20" : "opacity-100"}`} />
@@ -124,7 +134,7 @@ function NotifRow({
         <div className="flex items-center gap-2 mt-3">
           {!notif.isRead && (
             <button
-              onClick={() => onMarkRead(notif.id)}
+              onClick={(e) => { e.stopPropagation(); onMarkRead(notif.id); }}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs font-medium text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-colors"
             >
               <Check className="w-3 h-3" />
@@ -132,7 +142,7 @@ function NotifRow({
             </button>
           )}
           <button
-            onClick={() => onDelete(notif.id)}
+            onClick={(e) => { e.stopPropagation(); onDelete(notif.id); }}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-transparent text-xs font-medium text-slate-600 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/8 transition-colors opacity-0 group-hover:opacity-100"
           >
             <Trash2 className="w-3 h-3" />
@@ -149,6 +159,7 @@ function NotifRow({
 type Tab = "all" | "unread";
 
 export default function NotificationsPage() {
+  const navigate = useNavigate();
   const {
     notifications,
     unreadCount,
@@ -338,6 +349,7 @@ export default function NotificationsPage() {
                   notif={n}
                   onMarkRead={markRead}
                   onDelete={deleteNotification}
+                  onNavigate={n.actionUrl ? () => { markRead(n.id); navigate(resolveNotifUrl(n.actionUrl!)); } : undefined}
                 />
               ))}
 
