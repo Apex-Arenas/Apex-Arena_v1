@@ -261,7 +261,7 @@ function mapRegistrant(raw: Record<string, unknown>): TournamentRegistrant {
 
   const firstName = String(user.first_name ?? '');
   const lastName = String(user.last_name ?? '');
-  const displayName = `${firstName} ${lastName}`.trim() || String(user.username ?? '');
+  const displayName = `${firstName} ${lastName}`.trim() || String(raw.in_game_id ?? '') || String(user.username ?? '');
 
   return {
     registrationId: String(raw._id ?? ''),
