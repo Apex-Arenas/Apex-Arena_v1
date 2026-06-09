@@ -63,19 +63,43 @@ export function RegisterModal({
           eligibility.canRegister ? null : (eligibility.reason ?? "You are not eligible to join this tournament yet."),
         );
 
-        if (profileRes && profileRes.success && profileRes.data) {
-          const p = profileRes.data as Record<string, unknown>;
-          const existingId = String(p.in_game_id ?? p.inGameId ?? "");
-          if (existingId) {
-            setInGameId(existingId);
-            setSkillLevel(String(p.skill_level ?? p.skillLevel ?? "beginner"));
-            setProfileSaved(true);
+        if (tournament.game?.id) {
+          let profile: Record<string, unknown> | null = null;
+
+          if (profileRes?.success && profileRes.data) {
+            profile = profileRes.data as Record<string, unknown>;
+          } else {
+            // Single-profile fetch failed — try the full list as fallback
+            try {
+              const listRes = await apiGet(TOURNAMENT_ENDPOINTS.GAME_PROFILES);
+              if (listRes?.success) {
+                const raw = listRes.data as Record<string, unknown>;
+                const list = (Array.isArray(listRes.data)
+                  ? listRes.data
+                  : (raw.game_profiles ?? raw.gameProfiles ?? raw.data ?? [])) as Record<string, unknown>[];
+                const match = list.find((p) => {
+                  const gid = p.game_id as Record<string, unknown> | string | undefined;
+                  if (!gid) return false;
+                  const id = typeof gid === "object" ? String(gid._id ?? "") : String(gid);
+                  return id === tournament.game!.id;
+                });
+                if (match) profile = match;
+              }
+            } catch { /* ignore, will show form */ }
+          }
+
+          if (profile) {
+            const existingId = String(profile.in_game_id ?? profile.inGameId ?? "");
+            if (existingId) {
+              setInGameId(existingId);
+              setSkillLevel(String(profile.skill_level ?? profile.skillLevel ?? "beginner"));
+              setProfileSaved(true);
+            } else {
+              setShowProfileForm(true);
+            }
           } else {
             setShowProfileForm(true);
           }
-        } else if (tournament.game?.id) {
-          // No profile found for this game — show form immediately
-          setShowProfileForm(true);
         }
       } catch {
         if (!active) return;
