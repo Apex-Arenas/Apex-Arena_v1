@@ -419,11 +419,17 @@ function RegistrantRow({
   onRemove: (userId: string, displayName: string) => void;
   isActionLoading: boolean;
 }) {
-  const statusColor =
-    STATUS_COLORS[registrant.status] ?? "bg-slate-700/50 text-slate-400";
+  const statusColor = STATUS_COLORS[registrant.status] ?? "bg-slate-700/50 text-slate-400";
+
+  const statusIcon =
+    registrant.status === "checked_in" ? <CheckCircle2 className="w-3 h-3" /> :
+    registrant.status === "pending_payment" ? <Wallet className="w-3 h-3" /> :
+    registrant.status === "waitlist" ? <Circle className="w-3 h-3" /> :
+    (registrant.status === "disqualified" || registrant.status === "withdrawn") ? <XCircle className="w-3 h-3" /> :
+    null;
 
   return (
-    <tr className="border-b border-slate-800/60 hover:bg-slate-800/20 transition-colors group">
+    <tr className="border-b border-slate-800/50 hover:bg-slate-800/25 transition-colors group">
       {/* Player */}
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-3">
@@ -431,83 +437,85 @@ function RegistrantRow({
             <PlayerAvatar
               src={registrant.avatarUrl}
               name={registrant.displayName}
-              size="sm"
-              ringClass="ring-2 ring-slate-700 group-hover:ring-slate-600 transition-all"
+              size="md"
+              ringClass="ring-2 ring-slate-700/60 group-hover:ring-slate-600 transition-all"
             />
             {registrant.checkedIn && (
-              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-900" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center">
+                <CheckCircle2 className="w-2 h-2 text-slate-900" />
+              </span>
             )}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white truncate leading-tight">
               {registrant.displayName}
             </p>
-            <p className="text-[11px] text-slate-500 truncate">
+            <p className="text-[11px] text-slate-500 truncate mt-0.5">
               @{registrant.username}
             </p>
             {registrant.inGameId && (
-              <span className="inline-block mt-1 text-[10px] font-mono text-slate-400 bg-slate-800/70 px-1.5 py-0.5 rounded border border-slate-700/50 truncate max-w-full">
-                {registrant.inGameId}
+              <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-mono text-cyan-400/80 bg-cyan-500/8 px-2 py-0.5 rounded-md border border-cyan-500/15 max-w-full">
+                <span className="text-cyan-600/60 font-sans not-italic">#</span>
+                <span className="truncate">{registrant.inGameId}</span>
               </span>
             )}
           </div>
         </div>
       </td>
       {/* Status */}
-      <td className="px-5 py-3.5 min-w-36">
-        <span
-          className={`inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full capitalize ${statusColor}`}
-        >
+      <td className="px-4 py-3.5">
+        <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-full capitalize ${statusColor}`}>
+          {statusIcon}
           {registrant.status.replace(/_/g, " ")}
         </span>
       </td>
       {/* Registered */}
-      <td className="px-5 py-3.5 min-w-48">
-        <span className="text-xs text-slate-500">
-          {formatDate(registrant.registeredAt)}
-        </span>
+      <td className="px-4 py-3.5 whitespace-nowrap">
+        <p className="text-xs text-slate-300">
+          {registrant.registeredAt
+            ? new Date(registrant.registeredAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            : "—"}
+        </p>
+        <p className="text-[10px] text-slate-600 mt-0.5">
+          {registrant.registeredAt
+            ? new Date(registrant.registeredAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+            : ""}
+        </p>
       </td>
       {/* Actions */}
-      <td className="px-5 py-3.5">
+      <td className="px-4 py-3.5">
         <div className="flex items-center gap-1.5">
           {registrant.checkedIn ? (
             <button
               onClick={() => onUndoCheckIn(registrant.userId)}
               disabled={isActionLoading}
               title="Undo check-in"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-red-500/15 hover:text-red-300 hover:border-red-500/25 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/20 disabled:opacity-50 transition-colors"
             >
-              <XCircle className="w-3.5 h-3.5" />
+              {isActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
               Undo
             </button>
           ) : (
             <button
               onClick={() => onCheckIn(registrant.userId)}
-              disabled={
-                isActionLoading ||
-                registrant.status === "disqualified" ||
-                registrant.status === "withdrawn"
-              }
+              disabled={isActionLoading || registrant.status === "disqualified" || registrant.status === "withdrawn"}
               title="Check in player"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700/60 hover:bg-emerald-500/15 hover:text-emerald-400 hover:border-emerald-500/25 disabled:opacity-40 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 disabled:opacity-40 transition-colors"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              {isActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
               Check In
             </button>
           )}
-          {registrant.status !== "disqualified" &&
-            registrant.status !== "withdrawn" && (
-              <button
-                onClick={() =>
-                  onRemove(registrant.userId, registrant.displayName)
-                }
-                disabled={isActionLoading}
-                title="Remove player"
-                className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 disabled:opacity-40 transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
+          {registrant.status !== "disqualified" && registrant.status !== "withdrawn" && (
+            <button
+              onClick={() => onRemove(registrant.userId, registrant.displayName)}
+              disabled={isActionLoading}
+              title="Remove player"
+              className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 disabled:opacity-40 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </td>
     </tr>
@@ -1658,8 +1666,8 @@ const TournamentManage = () => {
               </div>
               <div className="flex-1 min-w-0">
                 {/* Title + badge — same line, spread apart */}
-                <div className="flex items-center justify-between gap-2">
-                  <h1 className="font-display text-xl md:text-2xl font-bold text-white leading-tight truncate min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <h1 className="font-display text-xl md:text-2xl font-bold text-white leading-tight break-words min-w-0">
                     {tournament.title}
                   </h1>
                   <span className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide border ${
@@ -2246,55 +2254,65 @@ const TournamentManage = () => {
             ) : (
               <>
                 {/* Mobile card list — visible below md */}
-                <div className="md:hidden divide-y divide-slate-800/50">
+                <div className="md:hidden p-3 space-y-2">
                   {pagedRegistrants.map(r => (
-                    <div key={r.registrationId} className="px-4 py-3 flex items-start gap-3">
-                      <div className="relative shrink-0 mt-0.5">
-                        <PlayerAvatar src={r.avatarUrl} name={r.displayName} size="sm" />
+                    <div key={r.registrationId} className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-3.5 flex items-start gap-3">
+                      <div className="relative shrink-0">
+                        <PlayerAvatar src={r.avatarUrl} name={r.displayName} size="md" />
                         {r.checkedIn && (
-                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center">
+                            <CheckCircle2 className="w-2 h-2 text-slate-900" />
+                          </span>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-white truncate">{r.displayName}</p>
-                        <p className="text-[11px] text-slate-500 truncate">
-                          {r.inGameId ? (
-                            <span className="font-mono">{r.inGameId}</span>
-                          ) : (
-                            <span className="italic">no in-game ID</span>
-                          )}{" · @"}{r.username}
-                        </p>
-                        {/* Status + actions on their own row */}
-                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize shrink-0 ${STATUS_COLORS[r.status] ?? "bg-slate-700/30 text-slate-400 border-slate-700"}`}>
+                        {/* Name + status badge in one row */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-white truncate leading-tight">{r.displayName}</p>
+                            <p className="text-[11px] text-slate-500 truncate mt-0.5">@{r.username}</p>
+                          </div>
+                          <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${STATUS_COLORS[r.status] ?? "bg-slate-700/30 text-slate-400 border-slate-700"}`}>
                             {r.status.replace(/_/g, " ")}
                           </span>
+                        </div>
+                        {/* In-game ID chip */}
+                        {r.inGameId && (
+                          <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-mono text-cyan-400/80 bg-cyan-500/8 px-2 py-0.5 rounded-md border border-cyan-500/15">
+                            <span className="text-cyan-600/60 font-sans not-italic">#</span>
+                            <span className="truncate max-w-[120px]">{r.inGameId}</span>
+                          </span>
+                        )}
+                        {/* Divider + actions */}
+                        <div className="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-slate-700/40">
                           {r.checkedIn ? (
                             <button
                               onClick={() => void handleUndoCheckIn(r.userId)}
                               disabled={actionLoading === r.userId}
-                              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 disabled:opacity-50 transition-colors"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 disabled:opacity-50 transition-colors"
                             >
                               {actionLoading === r.userId ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
-                              Undo
+                              Undo check-in
                             </button>
                           ) : (
                             <button
                               onClick={() => void handleCheckIn(r.userId)}
-                              disabled={actionLoading === r.userId}
-                              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold text-slate-400 bg-slate-800/60 border border-slate-700/50 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 disabled:opacity-50 transition-colors"
+                              disabled={actionLoading === r.userId || r.status === "disqualified" || r.status === "withdrawn"}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 bg-slate-800 border border-slate-700 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 disabled:opacity-40 transition-colors"
                             >
                               {actionLoading === r.userId ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
                               Check In
                             </button>
                           )}
-                          <button
-                            onClick={() => setRemoveTarget({ userId: r.userId, displayName: r.displayName })}
-                            className="p-1 rounded-lg text-slate-600 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                            title="Remove"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {r.status !== "disqualified" && r.status !== "withdrawn" && (
+                            <button
+                              onClick={() => setRemoveTarget({ userId: r.userId, displayName: r.displayName })}
+                              className="ml-auto p-1.5 rounded-lg text-slate-600 border border-transparent hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 transition-colors"
+                              title="Remove"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

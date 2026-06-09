@@ -20,6 +20,7 @@ import {
   LogOut,
   Share2,
   CreditCard,
+  ChevronDown,
 } from "lucide-react";
 import {
   tournamentService,
@@ -142,6 +143,43 @@ const ACTIVE_STATUSES = new Set([
   "pending_payment",
   "waitlist",
 ]);
+
+// ─── ExpandableText ───────────────────────────────────────────────────────────
+
+const COLLAPSE_LINES = 3;
+
+function ExpandableText({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setOverflows(el.scrollHeight > el.clientHeight + 2);
+  }, [text]);
+
+  return (
+    <div>
+      <p
+        ref={ref}
+        style={expanded ? undefined : { WebkitLineClamp: COLLAPSE_LINES, display: "-webkit-box", WebkitBoxOrient: "vertical", overflow: "hidden" }}
+        className="text-sm text-slate-300 leading-relaxed whitespace-pre-line"
+      >
+        {text}
+      </p>
+      {(overflows || expanded) && (
+        <button
+          onClick={() => setExpanded(v => !v)}
+          className="mt-2 flex items-center gap-1 text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors"
+        >
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  );
+}
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
@@ -834,9 +872,7 @@ const TournamentDetail = () => {
                   <Gamepad2 className="w-4 h-4 text-orange-400" />
                   About This Tournament
                 </h2>
-                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-                  {tournament.description}
-                </p>
+                <ExpandableText text={tournament.description} />
               </section>
             )}
 
@@ -958,9 +994,7 @@ const TournamentDetail = () => {
                   <Shield className="w-4 h-4 text-orange-400" />
                   Rules
                 </h2>
-                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
-                  {tournament.rules}
-                </p>
+                <ExpandableText text={tournament.rules} />
               </section>
             )}
 
