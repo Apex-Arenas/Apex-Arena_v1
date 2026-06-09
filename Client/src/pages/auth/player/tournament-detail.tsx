@@ -1205,19 +1205,33 @@ const TournamentDetail = () => {
                     </button>
                   </>
                 ) : registrationClosed ? (() => {
-                  const closedMsg: Record<string, string> = {
-                    locked:      "Registration closed — tournament starting soon",
-                    started:     "Tournament is in progress",
-                    ongoing:     "Tournament is in progress",
-                    in_progress: "Tournament is in progress",
-                    completed:   "Tournament has ended",
-                    cancelled:   "Tournament was cancelled",
-                  };
-                  const isLocked = tournament.status === "locked";
+                  const startIso = tournament.schedule.tournamentStart;
+                  const startPassed = startIso ? Date.now() > new Date(startIso).getTime() : false;
+                  const startTime = startIso
+                    ? new Date(startIso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                    : null;
+
+                  let msg: string;
+                  let isAmber = false;
+                  if (tournament.status === "locked") {
+                    isAmber = !startPassed;
+                    msg = startPassed
+                      ? "Registration closed — awaiting tournament start"
+                      : `Registration closed · Starts ${startTime ?? "soon"}`;
+                  } else if (["started", "ongoing", "in_progress"].includes(tournament.status)) {
+                    msg = "Tournament is in progress";
+                  } else if (tournament.status === "completed") {
+                    msg = "Tournament has ended";
+                  } else if (tournament.status === "cancelled") {
+                    msg = "Tournament was cancelled";
+                  } else {
+                    msg = "Registration is not open";
+                  }
+
                   return (
-                    <div className={`flex items-center gap-2.5 text-sm bg-slate-800/60 border rounded-xl px-4 py-3 ${isLocked ? "border-amber-500/20 text-amber-300" : "border-slate-700 text-slate-400"}`}>
+                    <div className={`flex items-center gap-2.5 text-sm bg-slate-800/60 border rounded-xl px-4 py-3 ${isAmber ? "border-amber-500/20 text-amber-300" : "border-slate-700 text-slate-400"}`}>
                       <Lock className="w-4 h-4 shrink-0" />
-                      <span>{closedMsg[tournament.status] ?? "Registration is not open"}</span>
+                      <span>{msg}</span>
                     </div>
                   );
                 })() : null}
