@@ -1538,7 +1538,7 @@ const TournamentManage = () => {
     ["disputed", "cancelled"].includes(escrowSummary.status);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen w-full overflow-x-hidden">
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <div className="relative border-b border-slate-800/60 bg-slate-950 overflow-hidden">
         {/* Ambient glows */}
@@ -1761,7 +1761,7 @@ const TournamentManage = () => {
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-14 xl:px-20 py-4 md:py-6">
+      <div className="max-w-7xl mx-auto w-full px-4 md:px-8 lg:px-14 xl:px-20 py-4 md:py-6 overflow-x-hidden">
         {/* Registration Shortfall Alert */}
         {registrationShortfall && showRegistrationAlert && (
           <div className="rounded-2xl border border-amber-500/30 bg-linear-to-r from-amber-500/10 to-amber-500/5 p-4 flex gap-3">
@@ -1801,17 +1801,17 @@ const TournamentManage = () => {
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 items-start mt-4 md:mt-5">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 items-start mt-4 md:mt-5 w-full min-w-0">
         {/* ── MAIN column ── */}
-        <div className="flex-1 min-w-0 space-y-5">
+        <div className="flex-1 min-w-0 w-full space-y-5 overflow-x-hidden">
 
         {/* League Section (organizer) */}
         {isLeague &&
           !["draft", "cancelled"].includes(tournament.status) &&
           tournament.id && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden w-full min-w-0">
               {/* Header */}
-              <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4 border-b border-slate-800/60 bg-slate-950/20">
+              <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4 border-b border-slate-800/60 bg-slate-950/20 min-w-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
                     <List className="w-4 h-4 text-indigo-400" />
@@ -1860,7 +1860,7 @@ const TournamentManage = () => {
                   </div>
                 </div>
               ) : (
-                <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
+                <div className="p-4 sm:p-5 space-y-4 sm:space-y-5 w-full min-w-0">
                   <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {[
                       {
@@ -1894,18 +1894,20 @@ const TournamentManage = () => {
                       </div>
                     ))}
                   </div>
-                  <LeagueView
-                    tournamentId={tournament.id}
-                    currentMatchweek={leagueSettings.currentMatchweek}
-                    totalMatchweeks={leagueSettings.totalMatchweeks}
-                    legs={leagueSettings.legs}
-                    highlightUserId={user?.id}
-                    isOrganizer
-                    isFixturesGenerated={leagueSettings.fixturesGenerated}
-                    onGenerateFixtures={canGenerateLeagueFixtures ? () => void handleGenerateLeagueFixtures() : undefined}
-                    isGeneratingFixtures={isGeneratingFixtures}
-                    onActionComplete={() => void loadData()}
-                  />
+                  <div className="w-full overflow-x-auto">
+                    <LeagueView
+                      tournamentId={tournament.id}
+                      currentMatchweek={leagueSettings.currentMatchweek}
+                      totalMatchweeks={leagueSettings.totalMatchweeks}
+                      legs={leagueSettings.legs}
+                      highlightUserId={user?.id}
+                      isOrganizer
+                      isFixturesGenerated={leagueSettings.fixturesGenerated}
+                      onGenerateFixtures={canGenerateLeagueFixtures ? () => void handleGenerateLeagueFixtures() : undefined}
+                      isGeneratingFixtures={isGeneratingFixtures}
+                      onActionComplete={() => void loadData()}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -2246,8 +2248,8 @@ const TournamentManage = () => {
                 {/* Mobile card list — visible below md */}
                 <div className="md:hidden divide-y divide-slate-800/50">
                   {pagedRegistrants.map(r => (
-                    <div key={r.registrationId} className="px-4 py-3 flex items-center gap-3">
-                      <div className="relative shrink-0">
+                    <div key={r.registrationId} className="px-4 py-3 flex items-start gap-3">
+                      <div className="relative shrink-0 mt-0.5">
                         <PlayerAvatar src={r.avatarUrl} name={r.displayName} size="sm" />
                         {r.checkedIn && (
                           <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
@@ -2255,38 +2257,45 @@ const TournamentManage = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-white truncate">{r.displayName}</p>
-                        <p className="text-[11px] text-slate-500 truncate">{r.inGameId || <span className="italic">no in-game ID</span>} · @{r.username}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${STATUS_COLORS[r.status] ?? "bg-slate-700/30 text-slate-400 border-slate-700"}`}>
-                          {r.status.replace(/_/g, " ")}
-                        </span>
-                        {r.checkedIn ? (
+                        <p className="text-[11px] text-slate-500 truncate">
+                          {r.inGameId ? (
+                            <span className="font-mono">{r.inGameId}</span>
+                          ) : (
+                            <span className="italic">no in-game ID</span>
+                          )}{" · @"}{r.username}
+                        </p>
+                        {/* Status + actions on their own row */}
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize shrink-0 ${STATUS_COLORS[r.status] ?? "bg-slate-700/30 text-slate-400 border-slate-700"}`}>
+                            {r.status.replace(/_/g, " ")}
+                          </span>
+                          {r.checkedIn ? (
+                            <button
+                              onClick={() => void handleUndoCheckIn(r.userId)}
+                              disabled={actionLoading === r.userId}
+                              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 disabled:opacity-50 transition-colors"
+                            >
+                              {actionLoading === r.userId ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                              Undo
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => void handleCheckIn(r.userId)}
+                              disabled={actionLoading === r.userId}
+                              className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold text-slate-400 bg-slate-800/60 border border-slate-700/50 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 disabled:opacity-50 transition-colors"
+                            >
+                              {actionLoading === r.userId ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                              Check In
+                            </button>
+                          )}
                           <button
-                            onClick={() => void handleUndoCheckIn(r.userId)}
-                            disabled={actionLoading === r.userId}
-                            className="p-1.5 rounded-lg text-emerald-400 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50 transition-colors"
-                            title="Undo check-in"
+                            onClick={() => setRemoveTarget({ userId: r.userId, displayName: r.displayName })}
+                            className="p-1 rounded-lg text-slate-600 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                            title="Remove"
                           >
-                            {actionLoading === r.userId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
-                        ) : (
-                          <button
-                            onClick={() => void handleCheckIn(r.userId)}
-                            disabled={actionLoading === r.userId}
-                            className="p-1.5 rounded-lg text-slate-500 hover:bg-emerald-500/10 hover:text-emerald-400 disabled:opacity-50 transition-colors"
-                            title="Check in"
-                          >
-                            {actionLoading === r.userId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setRemoveTarget({ userId: r.userId, displayName: r.displayName })}
-                          className="p-1.5 rounded-lg text-slate-600 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                          title="Remove player"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        </div>
                       </div>
                     </div>
                   ))}
