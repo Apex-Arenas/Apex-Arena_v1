@@ -1491,6 +1491,10 @@ const TournamentDetail = () => {
           onSuccess={() => {
             void handleRegisterSuccess();
           }}
+          onAlreadyRegistered={() => {
+            setShowRegisterModal(false);
+            if (tournamentId) void loadRegistration(tournamentId);
+          }}
         />
       )}
 

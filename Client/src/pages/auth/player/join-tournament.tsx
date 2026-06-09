@@ -778,6 +778,11 @@ const JoinTournament = () => {
           tournament={selectedTournament}
           onClose={() => setSelectedTournament(null)}
           onSuccess={handleRegisterSuccess}
+          onAlreadyRegistered={() => {
+            setSelectedTournament(null);
+            void fetchMyRegistrations();
+            setActiveTab("registrations");
+          }}
         />
       )}
     </div>

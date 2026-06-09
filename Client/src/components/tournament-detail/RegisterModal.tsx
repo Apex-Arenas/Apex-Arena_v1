@@ -27,9 +27,10 @@ type RegisterModalProps = {
   tournament: Tournament;
   onClose: () => void;
   onSuccess: () => void;
+  onAlreadyRegistered?: () => void;
 };
 
-export default function RegisterModal({ tournament, onClose, onSuccess }: RegisterModalProps) {
+export default function RegisterModal({ tournament, onClose, onSuccess, onAlreadyRegistered }: RegisterModalProps) {
   const [isCheckingEligibility, setIsCheckingEligibility] = useState(true);
   const [canJoin, setCanJoin] = useState(false);
   const [eligibilityReason, setEligibilityReason] = useState<string | null>(null);
@@ -289,10 +290,26 @@ export default function RegisterModal({ tournament, onClose, onSuccess }: Regist
           )}
 
           {!isCheckingEligibility && !canJoin && eligibilityReason && (
-            <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2.5 text-sm text-amber-300">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              {eligibilityReason}
-            </div>
+            eligibilityReason.toLowerCase().includes("already registered") ? (
+              <div className="flex flex-col gap-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2.5 text-sm text-amber-300">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>You already have a registration for this tournament.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { onAlreadyRegistered?.(); onClose(); }}
+                  className="self-start text-xs text-amber-200 underline hover:text-amber-100 transition-colors"
+                >
+                  View my registration →
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2.5 text-sm text-amber-300">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                {eligibilityReason}
+              </div>
+            )
           )}
 
           {error && (
