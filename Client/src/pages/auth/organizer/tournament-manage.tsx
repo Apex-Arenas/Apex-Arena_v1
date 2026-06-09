@@ -370,6 +370,39 @@ function getEscrowStageVisual(state: EscrowStageState): {
   };
 }
 
+// ─── Shared Avatar ────────────────────────────────────────────────────────────
+
+function PlayerAvatar({
+  src,
+  name,
+  size = "sm",
+  ringClass = "ring-2 ring-slate-700",
+}: {
+  src?: string | null;
+  name?: string;
+  size?: "xs" | "sm" | "md";
+  ringClass?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const initial = name?.[0]?.toUpperCase() ?? "?";
+  const sz = size === "xs" ? "w-6 h-6 text-[9px]" : size === "md" ? "w-10 h-10 text-sm" : "w-8 h-8 text-xs";
+  if (src && !failed) {
+    return (
+      <img
+        src={src}
+        alt=""
+        className={`${sz} rounded-full object-cover ${ringClass} shrink-0`}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    <div className={`${sz} rounded-full bg-gradient-to-br from-cyan-500/30 to-indigo-500/30 border border-slate-700 flex items-center justify-center font-bold text-cyan-300 shrink-0`}>
+      {initial}
+    </div>
+  );
+}
+
 // ─── Registrant Row ───────────────────────────────────────────────────────────
 
 function RegistrantRow({
@@ -385,11 +418,8 @@ function RegistrantRow({
   onRemove: (userId: string, displayName: string) => void;
   isActionLoading: boolean;
 }) {
-  const [imgFailed, setImgFailed] = useState(false);
   const statusColor =
     STATUS_COLORS[registrant.status] ?? "bg-slate-700/50 text-slate-400";
-  const initials = registrant.displayName?.[0]?.toUpperCase() ?? "?";
-  const showImg = Boolean(registrant.avatarUrl) && !imgFailed;
 
   return (
     <tr className="border-b border-slate-800/60 hover:bg-slate-800/20 transition-colors group">
@@ -397,18 +427,12 @@ function RegistrantRow({
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-3">
           <div className="relative shrink-0">
-            {showImg ? (
-              <img
-                src={registrant.avatarUrl}
-                alt=""
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-700 group-hover:ring-slate-600 transition-all"
-                onError={() => setImgFailed(true)}
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-linear-to-br from-cyan-500/30 to-indigo-500/30 border border-slate-700 flex items-center justify-center text-xs font-bold text-cyan-300">
-                {initials}
-              </div>
-            )}
+            <PlayerAvatar
+              src={registrant.avatarUrl}
+              name={registrant.displayName}
+              size="sm"
+              ringClass="ring-2 ring-slate-700 group-hover:ring-slate-600 transition-all"
+            />
             {registrant.checkedIn && (
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-900" />
             )}
@@ -1510,8 +1534,13 @@ const TournamentManage = () => {
   return (
     <div className="min-h-screen">
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <div className="border-b border-slate-800/60 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-14 xl:px-20">
+      <div className="relative border-b border-slate-800/60 bg-slate-950 overflow-hidden">
+        {/* Ambient glows */}
+        <div className="absolute -top-40 right-0 w-[700px] h-[400px] rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-[500px] h-[200px] rounded-full bg-indigo-500/6 blur-3xl pointer-events-none" />
+        {/* Fine grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
+        <div className="relative max-w-7xl mx-auto px-4 md:px-8 lg:px-14 xl:px-20">
 
           {/* ── Top bar: back + actions + utility ── */}
           <div className="flex items-center justify-between gap-3 py-3 border-b border-slate-800/50">
@@ -1723,6 +1752,7 @@ const TournamentManage = () => {
             </div>
           </div>
         </div>
+        </div>{/* end relative inner */}
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
@@ -2211,10 +2241,16 @@ const TournamentManage = () => {
                 {/* Mobile card list — visible below md */}
                 <div className="md:hidden divide-y divide-slate-800/50">
                   {filteredRegistrants.map(r => (
-                    <div key={r.registrationId} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div key={r.registrationId} className="px-4 py-3 flex items-center gap-3">
+                      <div className="relative shrink-0">
+                        <PlayerAvatar src={r.avatarUrl} name={r.displayName} size="sm" />
+                        {r.checkedIn && (
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-white truncate">{r.displayName}</p>
-                        <p className="text-xs text-slate-500 truncate">{r.inGameId} · @{r.username}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{r.inGameId || <span className="italic">no in-game ID</span>} · @{r.username}</p>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize ${STATUS_COLORS[r.status] ?? "bg-slate-700/30 text-slate-400 border-slate-700"}`}>
@@ -2361,9 +2397,13 @@ const TournamentManage = () => {
                           onClick={() => { setInviteIdentifier(r.email); setCoOrgSearchResults([]); }}
                           className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700/60 transition-colors text-left"
                         >
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-slate-600 flex items-center justify-center shrink-0 text-[10px] font-bold text-violet-300">
-                            {(r.name || r.username).charAt(0).toUpperCase()}
-                          </div>
+                          {r.avatar_url ? (
+                            <img src={r.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover shrink-0 border border-slate-600" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-slate-600 flex items-center justify-center shrink-0 text-[10px] font-bold text-violet-300">
+                              {(r.name || r.username).charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <p className="text-xs font-semibold text-white truncate">{r.name || r.username}</p>
                             <p className="text-[10px] text-slate-400 truncate">@{r.username}</p>
@@ -2942,9 +2982,12 @@ const TournamentManage = () => {
                       >
                         {row.inGameId ? (
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-5 h-5 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-[10px] font-bold text-indigo-300 shrink-0">
-                              {registrants.find(r => r.inGameId === row.inGameId)?.displayName?.[0]?.toUpperCase() ?? "?"}
-                            </div>
+                            <PlayerAvatar
+                              src={registrants.find(r => r.inGameId === row.inGameId)?.avatarUrl}
+                              name={registrants.find(r => r.inGameId === row.inGameId)?.displayName}
+                              size="xs"
+                              ringClass=""
+                            />
                             <span className="text-white text-sm font-semibold truncate">
                               {registrants.find(r => r.inGameId === row.inGameId)?.displayName ?? row.inGameId}
                             </span>
@@ -3006,9 +3049,12 @@ const TournamentManage = () => {
                                     }}
                                     className={`w-full px-3 py-2.5 flex items-center gap-2.5 text-left transition-colors ${isUsed ? "opacity-40 cursor-not-allowed" : "hover:bg-slate-800/80"} ${isSelected ? "bg-indigo-500/10" : ""}`}
                                   >
-                                    <div className="w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-[10px] font-bold text-indigo-300 shrink-0">
-                                      {player.displayName?.[0]?.toUpperCase() ?? "?"}
-                                    </div>
+                                    <PlayerAvatar
+                                      src={player.avatarUrl}
+                                      name={player.displayName}
+                                      size="xs"
+                                      ringClass=""
+                                    />
                                     <div className="min-w-0 flex-1">
                                       <p className="text-xs font-semibold text-white truncate leading-tight">
                                         {player.displayName}
