@@ -1282,10 +1282,9 @@ const TournamentDetail = () => {
                         },
                       ]
                     : []),
-                  {
-                    label: "Min Players",
-                    value: String(tournament.minParticipants),
-                  },
+                  ...(tournament.minParticipants > 0
+                    ? [{ label: "Min Players", value: String(tournament.minParticipants) }]
+                    : []),
                 ].map((r) => (
                   <div
                     key={r.label}
