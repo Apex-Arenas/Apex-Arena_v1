@@ -3,6 +3,7 @@ import { useAuth } from "../../../lib/auth-context";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ChevronLeft,
+  ChevronRight,
   ChevronDown,
   Users,
   CheckCircle2,
@@ -525,6 +526,7 @@ const TournamentManage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [registrantsPage, setRegistrantsPage] = useState(1);
 
   const [isPublishing, setIsPublishing] = useState(false);
   const [isGeneratingBracket, setIsGeneratingBracket] = useState(false);
@@ -1386,6 +1388,13 @@ const TournamentManage = () => {
 
   const checkedInCount = activeRegistrants.filter((r) => r.checkedIn).length;
 
+  const REGISTRANTS_PAGE_SIZE = 10;
+  const registrantsTotalPages = Math.max(1, Math.ceil(filteredRegistrants.length / REGISTRANTS_PAGE_SIZE));
+  const pagedRegistrants = filteredRegistrants.slice(
+    (registrantsPage - 1) * REGISTRANTS_PAGE_SIZE,
+    registrantsPage * REGISTRANTS_PAGE_SIZE,
+  );
+
   const totalBracketMatches = bracketMatches.length;
   const completedBracketMatches = bracketMatches.filter(
     (match) => match.status === "completed",
@@ -2215,7 +2224,7 @@ const TournamentManage = () => {
                   <input
                     type="text"
                     value={search}
-                    onChange={e => setSearch(e.target.value)}
+                    onChange={e => { setSearch(e.target.value); setRegistrantsPage(1); }}
                     placeholder="Search players..."
                     className="w-full md:w-44 bg-slate-800/60 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 transition-colors"
                   />
@@ -2229,14 +2238,14 @@ const TournamentManage = () => {
                 </div>
                 <p className="text-sm font-medium text-slate-400">{search ? "No players match your search" : "No players registered yet"}</p>
                 {search && (
-                  <button onClick={() => setSearch("")} className="mt-2 text-xs text-cyan-500 hover:text-cyan-400 transition-colors">Clear search</button>
+                  <button onClick={() => { setSearch(""); setRegistrantsPage(1); }} className="mt-2 text-xs text-cyan-500 hover:text-cyan-400 transition-colors">Clear search</button>
                 )}
               </div>
             ) : (
               <>
                 {/* Mobile card list — visible below md */}
                 <div className="md:hidden divide-y divide-slate-800/50">
-                  {filteredRegistrants.map(r => (
+                  {pagedRegistrants.map(r => (
                     <div key={r.registrationId} className="px-4 py-3 flex items-center gap-3">
                       <div className="relative shrink-0">
                         <PlayerAvatar src={r.avatarUrl} name={r.displayName} size="sm" />
@@ -2293,7 +2302,7 @@ const TournamentManage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredRegistrants.map(r => (
+                      {pagedRegistrants.map(r => (
                         <RegistrantRow
                           key={r.registrationId}
                           registrant={r}
@@ -2306,6 +2315,55 @@ const TournamentManage = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination */}
+                {registrantsTotalPages > 1 && (
+                  <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-slate-800/60 bg-slate-950/10">
+                    <p className="text-[11px] text-slate-500">
+                      {(registrantsPage - 1) * REGISTRANTS_PAGE_SIZE + 1}–{Math.min(registrantsPage * REGISTRANTS_PAGE_SIZE, filteredRegistrants.length)} of {filteredRegistrants.length}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setRegistrantsPage(p => Math.max(1, p - 1))}
+                        disabled={registrantsPage === 1}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/8 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      {Array.from({ length: registrantsTotalPages }, (_, i) => i + 1)
+                        .filter(p => p === 1 || p === registrantsTotalPages || Math.abs(p - registrantsPage) <= 1)
+                        .reduce<(number | "…")[]>((acc, p, idx, arr) => {
+                          if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("…");
+                          acc.push(p);
+                          return acc;
+                        }, [])
+                        .map((item, idx) =>
+                          item === "…" ? (
+                            <span key={`ellipsis-${idx}`} className="px-1 text-xs text-slate-600">…</span>
+                          ) : (
+                            <button
+                              key={item}
+                              onClick={() => setRegistrantsPage(item as number)}
+                              className={`min-w-[28px] h-7 rounded-lg text-xs font-semibold transition-colors ${
+                                registrantsPage === item
+                                  ? "bg-cyan-500 text-slate-950"
+                                  : "text-slate-400 hover:text-white hover:bg-white/8"
+                              }`}
+                            >
+                              {item}
+                            </button>
+                          )
+                        )}
+                      <button
+                        onClick={() => setRegistrantsPage(p => Math.min(registrantsTotalPages, p + 1))}
+                        disabled={registrantsPage === registrantsTotalPages}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/8 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
