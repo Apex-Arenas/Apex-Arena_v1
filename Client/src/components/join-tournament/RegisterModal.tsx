@@ -68,12 +68,10 @@ export function RegisterModal({
         if (tournament.game?.id) {
           let found: Record<string, unknown> | null = null;
 
-          // 1. Try the single-profile endpoint
           if (profileRes?.success && profileRes.data) {
             found = profileRes.data as Record<string, unknown>;
           }
 
-          // 2. Fallback: fetch the full profiles list and match by ID or name
           if (!found) {
             try {
               const listRes = await apiGet(TOURNAMENT_ENDPOINTS.GAME_PROFILES, { skipCache: true });
