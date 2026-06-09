@@ -1204,16 +1204,23 @@ const TournamentDetail = () => {
                       Join Tournament
                     </button>
                   </>
-                ) : registrationClosed ? (
-                  <div className="flex items-center gap-2.5 text-sm text-slate-400 bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-3">
-                    <Lock className="w-4 h-4 shrink-0" />
-                    <span>
-                      {tournament.status === "completed"
-                        ? "Tournament has ended"
-                        : "Registration is not open"}
-                    </span>
-                  </div>
-                ) : null}
+                ) : registrationClosed ? (() => {
+                  const closedMsg: Record<string, string> = {
+                    locked:      "Registration closed — tournament starting soon",
+                    started:     "Tournament is in progress",
+                    ongoing:     "Tournament is in progress",
+                    in_progress: "Tournament is in progress",
+                    completed:   "Tournament has ended",
+                    cancelled:   "Tournament was cancelled",
+                  };
+                  const isLocked = tournament.status === "locked";
+                  return (
+                    <div className={`flex items-center gap-2.5 text-sm bg-slate-800/60 border rounded-xl px-4 py-3 ${isLocked ? "border-amber-500/20 text-amber-300" : "border-slate-700 text-slate-400"}`}>
+                      <Lock className="w-4 h-4 shrink-0" />
+                      <span>{closedMsg[tournament.status] ?? "Registration is not open"}</span>
+                    </div>
+                  );
+                })() : null}
               </div>
             </div>
 
