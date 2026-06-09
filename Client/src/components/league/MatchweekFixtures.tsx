@@ -54,19 +54,28 @@ function needsAction(match: LeagueMatch, userId?: string) {
     (match.status === 'ongoing' || match.status === 'ready_check');
 }
 
-// ── Player row ────────────────────────────────────────────────────────────────
-function PlayerRow({ name, avatar, isMe, isWinner, isLoser, score, showScore, isHome }: {
-  name: string; avatar?: string; isMe: boolean; isWinner: boolean; isLoser: boolean;
-  score?: number; showScore: boolean; isHome: boolean;
+// ── Player cell ───────────────────────────────────────────────────────────────
+function PlayerCell({ name, avatar, isMe, isWinner, isLoser, align }: {
+  name: string; avatar?: string; isMe: boolean; isWinner: boolean; isLoser: boolean; align: 'left' | 'right';
 }) {
   const initials = name.charAt(0).toUpperCase();
+  const nameEl = (
+    <div className={`min-w-0 ${align === 'right' ? 'text-right' : ''}`}>
+      <span className={`text-xs sm:text-sm font-semibold block truncate ${
+        isMe ? 'text-orange-300' : isWinner ? 'text-white' : 'text-slate-300'
+      }`}>
+        {name}
+      </span>
+      {isMe && <span className="text-[10px] text-orange-500 font-bold">(you)</span>}
+    </div>
+  );
   const avatarEl = avatar ? (
     <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full overflow-hidden border border-slate-700 shrink-0 relative bg-slate-800">
       <FadeImage src={avatar} alt={name} className="absolute inset-0 w-full h-full object-cover" />
     </div>
   ) : (
     <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-white text-xs font-bold border border-slate-700 shrink-0 ${
-      isHome
+      align === 'left'
         ? 'bg-linear-to-br from-orange-800 to-amber-800'
         : 'bg-linear-to-br from-violet-800 to-indigo-800'
     }`}>
@@ -75,23 +84,9 @@ function PlayerRow({ name, avatar, isMe, isWinner, isLoser, score, showScore, is
   );
 
   return (
-    <div className={`flex items-center gap-1.5 sm:gap-2.5 ${isLoser ? 'opacity-40' : ''}`}>
+    <div className={`flex items-center gap-1.5 sm:gap-2.5 flex-1 ${isLoser ? 'opacity-40' : ''} ${align === 'right' ? 'flex-row-reverse' : ''}`}>
       {avatarEl}
-      <div className="min-w-0 flex-1">
-        <span className={`text-xs sm:text-sm font-semibold block truncate ${
-          isMe ? 'text-orange-300' : isWinner ? 'text-white' : 'text-slate-300'
-        }`}>
-          {name}
-        </span>
-        {isMe && <span className="text-[10px] text-orange-500 font-bold">(you)</span>}
-      </div>
-      {showScore && (
-        <span className={`text-xl sm:text-2xl font-display font-bold w-6 sm:w-8 text-center tabular-nums shrink-0 ${
-          isWinner ? 'text-white' : 'text-slate-500'
-        }`}>
-          {score}
-        </span>
-      )}
+      {nameEl}
     </div>
   );
 }
@@ -134,47 +129,45 @@ function MatchCard({ match, highlightUserId, onClick }: {
       )}
 
       <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2.5 sm:pb-3">
-        {/* Players (vertical, EPL-style with home/away swap by week) */}
-        <div className="flex flex-col gap-2">
-          {(() => {
-            const showScore = isCompleted && (penParsed || match.score1 !== undefined);
-            const score1 = penParsed ? penParsed.rt1 : match.score1;
-            const score2 = penParsed ? penParsed.rt2 : match.score2;
+        {/* Players row */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <PlayerCell
+            name={match.player1Name} avatar={match.player1Avatar}
+            isMe={involvesMeP1} isWinner={isP1Winner} isLoser={isP2Winner}
+            align="left"
+          />
 
-            const top = (
-              <PlayerRow
-                name={match.player1Name} avatar={match.player1Avatar}
-                isMe={involvesMeP1} isWinner={isP1Winner} isLoser={isP2Winner}
-                score={score1} showScore={!!showScore} isHome={true}
-              />
-            );
-            const bottom = (
-              <PlayerRow
-                name={match.player2Name} avatar={match.player2Avatar}
-                isMe={involvesMeP2} isWinner={isP2Winner} isLoser={isP1Winner}
-                score={score2} showScore={!!showScore} isHome={false}
-              />
-            );
-
-            const swap = match.matchweek % 2 === 0;
-            return (
+          {/* Score / VS */}
+          <div className="shrink-0 flex flex-col items-center gap-0.5">
+            {isCompleted && (penParsed || match.score1 !== undefined) ? (
               <>
-                {swap ? bottom : top}
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-px bg-slate-800" />
-                  {penParsed ? (
-                    <span className="text-[10px] text-slate-500 font-semibold tracking-widest">
-                      VS · Pen {penParsed.pen1}–{penParsed.pen2}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-slate-500 tracking-widest">VS</span>
-                  )}
-                  <div className="flex-1 h-px bg-slate-800" />
+                <div className="flex items-center gap-1">
+                  <span className={`text-xl sm:text-2xl font-display font-bold w-6 sm:w-8 text-center tabular-nums ${isP1Winner ? 'text-white' : 'text-slate-500'}`}>
+                    {penParsed ? penParsed.rt1 : match.score1}
+                  </span>
+                  <span className="text-slate-600 text-sm font-bold">–</span>
+                  <span className={`text-xl sm:text-2xl font-display font-bold w-6 sm:w-8 text-center tabular-nums ${isP2Winner ? 'text-white' : 'text-slate-500'}`}>
+                    {penParsed ? penParsed.rt2 : match.score2}
+                  </span>
                 </div>
-                {swap ? top : bottom}
+                {penParsed && (
+                  <span className="text-[10px] text-slate-500 font-semibold">
+                    Pen: {penParsed.pen1}–{penParsed.pen2}
+                  </span>
+                )}
               </>
-            );
-          })()}
+            ) : (
+              <div className="px-2 sm:px-3 py-1 rounded-lg bg-slate-800/80 border border-slate-700">
+                <span className="text-xs font-bold text-slate-400 tracking-widest">VS</span>
+              </div>
+            )}
+          </div>
+
+          <PlayerCell
+            name={match.player2Name} avatar={match.player2Avatar}
+            isMe={involvesMeP2} isWinner={isP2Winner} isLoser={isP1Winner}
+            align="right"
+          />
         </div>
 
         {/* Footer */}
