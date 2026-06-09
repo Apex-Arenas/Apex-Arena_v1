@@ -444,16 +444,13 @@ function RegistrantRow({
             <p className="text-[11px] text-slate-500 truncate">
               @{registrant.username}
             </p>
+            {registrant.inGameId && (
+              <span className="inline-block mt-1 text-[10px] font-mono text-slate-400 bg-slate-800/70 px-1.5 py-0.5 rounded border border-slate-700/50 truncate max-w-full">
+                {registrant.inGameId}
+              </span>
+            )}
           </div>
         </div>
-      </td>
-      {/* In-Game ID */}
-      <td className="px-5 py-3.5 min-w-36">
-        <span className="text-xs font-mono text-slate-300 bg-slate-800/60 px-2 py-1 rounded-md border border-slate-700/50">
-          {registrant.inGameId || (
-            <span className="text-slate-600 italic">—</span>
-          )}
-        </span>
       </td>
       {/* Status */}
       <td className="px-5 py-3.5 min-w-36">
@@ -2290,7 +2287,7 @@ const TournamentManage = () => {
                   <table className="w-full min-w-160">
                     <thead>
                       <tr className="border-b border-slate-800/60 bg-slate-950/20">
-                        {["Player", "In-Game ID", "Status", "Registered", "Actions"].map(h => (
+                        {["Player", "Status", "Registered", "Actions"].map(h => (
                           <th key={h} className="px-5 py-3 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">{h}</th>
                         ))}
                       </tr>
