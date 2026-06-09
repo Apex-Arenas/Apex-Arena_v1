@@ -64,18 +64,44 @@ export default function RegisterModal({ tournament, onClose, onSuccess }: Regist
           eligibility.canRegister ? null : (eligibility.reason ?? "You are not eligible to join this tournament."),
         );
 
-        if (profileRes && profileRes.success && profileRes.data) {
-          const p = profileRes.data as Record<string, unknown>;
-          const existingId = String(p.in_game_id ?? p.inGameId ?? "");
-          if (existingId) {
-            setInGameId(existingId);
-            setSkillLevel(String(p.skill_level ?? p.skillLevel ?? "beginner"));
+        if (tournament.game?.id) {
+          let found: Record<string, unknown> | null = null;
+
+          // 1. Try the single-profile endpoint
+          if (profileRes?.success && profileRes.data) {
+            found = profileRes.data as Record<string, unknown>;
+          }
+
+          // 2. Fallback: fetch the full profiles list and match by ID or name
+          if (!found) {
+            try {
+              const listRes = await apiGet(TOURNAMENT_ENDPOINTS.GAME_PROFILES, { skipCache: true });
+              if (listRes?.success) {
+                const raw = listRes.data as Record<string, unknown>;
+                const list = (Array.isArray(listRes.data)
+                  ? listRes.data
+                  : (raw.game_profiles ?? raw.data ?? [])) as Record<string, unknown>[];
+                found = list.find((item) => {
+                  const gid = item.game_id as Record<string, unknown> | string | undefined;
+                  if (!gid) return false;
+                  const id = typeof gid === "object" ? String(gid._id ?? "") : String(gid);
+                  if (id === tournament.game!.id) return true;
+                  if (tournament.game?.name && typeof gid === "object") {
+                    return String(gid.name ?? "").toLowerCase() === tournament.game.name.toLowerCase();
+                  }
+                  return false;
+                }) ?? null;
+              }
+            } catch { /* fall through to show form */ }
+          }
+
+          if (found) {
+            setInGameId(String(found.in_game_id ?? found.inGameId ?? ""));
+            setSkillLevel(String(found.skill_level ?? found.skillLevel ?? "beginner"));
             setProfileSaved(true);
           } else {
             setShowProfileForm(true);
           }
-        } else if (tournament.game?.id) {
-          setShowProfileForm(true);
         }
       } catch {
         if (!active) return;

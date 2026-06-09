@@ -12,6 +12,7 @@ interface RegisterModalProps {
   tournament: Tournament;
   onClose: () => void;
   onSuccess: () => void;
+  onAlreadyRegistered?: () => void;
 }
 
 interface GameOption {
@@ -28,6 +29,7 @@ export function RegisterModal({
   tournament,
   onClose,
   onSuccess,
+  onAlreadyRegistered,
 }: RegisterModalProps) {
   const [isCheckingEligibility, setIsCheckingEligibility] = useState(true);
   const [canJoin, setCanJoin] = useState(true);
@@ -63,19 +65,44 @@ export function RegisterModal({
           eligibility.canRegister ? null : (eligibility.reason ?? "You are not eligible to join this tournament yet."),
         );
 
-        if (profileRes && profileRes.success && profileRes.data) {
-          const p = profileRes.data as Record<string, unknown>;
-          const existingId = String(p.in_game_id ?? p.inGameId ?? "");
-          if (existingId) {
-            setInGameId(existingId);
-            setSkillLevel(String(p.skill_level ?? p.skillLevel ?? "beginner"));
+        if (tournament.game?.id) {
+          let found: Record<string, unknown> | null = null;
+
+          // 1. Try the single-profile endpoint
+          if (profileRes?.success && profileRes.data) {
+            found = profileRes.data as Record<string, unknown>;
+          }
+
+          // 2. Fallback: fetch the full profiles list and match by ID or name
+          if (!found) {
+            try {
+              const listRes = await apiGet(TOURNAMENT_ENDPOINTS.GAME_PROFILES, { skipCache: true });
+              if (listRes?.success) {
+                const raw = listRes.data as Record<string, unknown>;
+                const list = (Array.isArray(listRes.data)
+                  ? listRes.data
+                  : (raw.game_profiles ?? raw.data ?? [])) as Record<string, unknown>[];
+                found = list.find((item) => {
+                  const gid = item.game_id as Record<string, unknown> | string | undefined;
+                  if (!gid) return false;
+                  const id = typeof gid === "object" ? String(gid._id ?? "") : String(gid);
+                  if (id === tournament.game!.id) return true;
+                  if (tournament.game?.name && typeof gid === "object") {
+                    return String(gid.name ?? "").toLowerCase() === tournament.game.name.toLowerCase();
+                  }
+                  return false;
+                }) ?? null;
+              }
+            } catch { /* fall through to show form */ }
+          }
+
+          if (found) {
+            setInGameId(String(found.in_game_id ?? found.inGameId ?? ""));
+            setSkillLevel(String(found.skill_level ?? found.skillLevel ?? "beginner"));
             setProfileSaved(true);
           } else {
             setShowProfileForm(true);
           }
-        } else if (tournament.game?.id) {
-          // No profile found for this game — show form immediately
-          setShowProfileForm(true);
         }
       } catch {
         if (!active) return;
@@ -253,10 +280,26 @@ export function RegisterModal({
           )}
 
           {!isCheckingEligibility && !canJoin && eligibilityReason && (
-            <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2.5 text-sm text-amber-300">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              {eligibilityReason}
-            </div>
+            eligibilityReason.toLowerCase().includes("already registered") ? (
+              <div className="flex flex-col gap-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2.5 text-sm text-amber-300">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>You already have a registration for this tournament.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { onAlreadyRegistered?.(); onClose(); }}
+                  className="self-start text-xs text-amber-200 underline hover:text-amber-100 transition-colors"
+                >
+                  View my registration →
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2.5 text-sm text-amber-300">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                {eligibilityReason}
+              </div>
+            )
           )}
 
           {showProfileForm && (
