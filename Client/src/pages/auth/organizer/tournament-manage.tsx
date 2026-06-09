@@ -15,7 +15,6 @@ import {
   CalendarDays,
   UserCheck,
   Search,
-  CheckSquare,
   X,
   Send,
   Trash2,
@@ -781,39 +780,6 @@ const TournamentManage = () => {
       showToast("success", "Check-in undone.");
     } catch (err) {
       showToast("error", err instanceof Error ? err.message : "Undo failed.");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleBulkCheckIn = async () => {
-    if (!tournamentId) return;
-    const eligible = registrants.filter(
-      (r) => !r.checkedIn && r.status === "registered",
-    );
-    if (eligible.length === 0) {
-      showToast("error", "No eligible players to bulk check-in.");
-      return;
-    }
-    setActionLoading("bulk");
-    try {
-      await organizerService.bulkCheckIn(
-        tournamentId,
-        eligible.map((r) => r.userId),
-      );
-      setRegistrants((prev) =>
-        prev.map((r) =>
-          eligible.some((e) => e.userId === r.userId)
-            ? { ...r, checkedIn: true, status: "checked_in" }
-            : r,
-        ),
-      );
-      showToast("success", `${eligible.length} players checked in.`);
-    } catch (err) {
-      showToast(
-        "error",
-        err instanceof Error ? err.message : "Bulk check-in failed.",
-      );
     } finally {
       setActionLoading(null);
     }
@@ -2228,14 +2194,6 @@ const TournamentManage = () => {
                     className="w-full md:w-44 bg-slate-800/60 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/60 transition-colors"
                   />
                 </div>
-                <button
-                  onClick={handleBulkCheckIn}
-                  disabled={actionLoading === "bulk"}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold hover:bg-emerald-500 hover:text-slate-950 hover:border-emerald-500 disabled:opacity-50 transition-colors shrink-0"
-                >
-                  {actionLoading === "bulk" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckSquare className="w-3.5 h-3.5" />}
-                  <span className="hidden md:inline">Bulk </span>Check-In
-                </button>
               </div>
             </div>
             {filteredRegistrants.length === 0 ? (
