@@ -1752,7 +1752,6 @@ const TournamentManage = () => {
             </div>
           </div>
         </div>
-        </div>{/* end relative inner */}
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
