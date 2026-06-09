@@ -4,7 +4,7 @@ import {
   tournamentService,
   type Tournament,
 } from "../../services/tournament.service";
-import { formatFee } from "./utils";
+import { formatFee, isPaid } from "./utils";
 import { apiGet, apiPost, apiPut } from "../../utils/api.utils";
 import { FINANCE_ENDPOINTS, TOURNAMENT_ENDPOINTS } from "../../config/api.config";
 
@@ -209,7 +209,7 @@ export function RegisterModal({
             </div>
           </div>
 
-          {!tournament.isFree && (
+          {isPaid(tournament.isFree, tournament.entryFee) && (
             <div className="flex items-start gap-2 bg-cyan-500/10 border border-cyan-500/25 rounded-lg px-3 py-2.5 text-sm text-cyan-300">
               <CreditCard className="w-4 h-4 mt-0.5 shrink-0" />
               <span>
@@ -307,8 +307,8 @@ export function RegisterModal({
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {isSubmitting
-                ? (tournament.isFree ? "Registering..." : "Redirecting...")
-                : tournament.isFree ? "Confirm & Join" : "Pay & Join"}
+                ? (isPaid(tournament.isFree, tournament.entryFee) ? "Redirecting..." : "Registering...")
+                : isPaid(tournament.isFree, tournament.entryFee) ? "Pay & Join" : "Confirm & Join"}
             </button>
           </div>
         </form>

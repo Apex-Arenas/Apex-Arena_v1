@@ -60,6 +60,10 @@ export function formatDate(iso?: string) {
 }
 
 export function formatFee(isFree: boolean, fee: number, currency: string) {
-  if (isFree) return "Free";
+  if (isFree || fee === 0) return "Free";
   return `${currency} ${(fee / 100).toFixed(2)}`;
+}
+
+export function isPaid(isFree: boolean, fee: number) {
+  return !isFree && fee > 0;
 }

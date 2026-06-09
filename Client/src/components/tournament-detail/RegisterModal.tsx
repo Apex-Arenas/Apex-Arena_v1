@@ -8,8 +8,12 @@ import { apiPost } from "../../utils/api.utils";
 import { FINANCE_ENDPOINTS } from "../../config/api.config";
 
 function formatFee(isFree: boolean, fee: number, currency: string) {
-  if (isFree) return "Free";
+  if (isFree || fee === 0) return "Free";
   return `${currency} ${(fee / 100).toFixed(2)}`;
+}
+
+function isPaid(isFree: boolean, fee: number) {
+  return !isFree && fee > 0;
 }
 
 type RegisterModalProps = {
@@ -138,7 +142,7 @@ export default function RegisterModal({
             </div>
           </div>
 
-          {!tournament.isFree && (
+          {isPaid(tournament.isFree, tournament.entryFee) && (
             <div className="flex items-start gap-2 bg-cyan-500/10 border border-cyan-500/25 rounded-lg px-3 py-2.5 text-sm text-cyan-300">
               <CreditCard className="w-4 h-4 mt-0.5 shrink-0" />
               <span>
@@ -189,8 +193,8 @@ export default function RegisterModal({
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {isSubmitting
-                ? (tournament.isFree ? "Joining..." : "Redirecting...")
-                : tournament.isFree ? "Confirm & Join" : "Pay & Join"}
+                ? (isPaid(tournament.isFree, tournament.entryFee) ? "Redirecting..." : "Joining...")
+                : isPaid(tournament.isFree, tournament.entryFee) ? "Pay & Join" : "Confirm & Join"}
             </button>
           </div>
         </form>
