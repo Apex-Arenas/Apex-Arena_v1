@@ -1,13 +1,22 @@
-import { useState } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
 import { ChevronDown, Crown, Swords } from "lucide-react";
 import { getParticipantLabel } from "./bracket.utils";
 import type { BracketMatch, BracketRound } from "./types";
 
-const BRACKET_CARD_HEIGHT = 96;
-const BRACKET_BASE_UNIT   = 116;
-const BRACKET_CONNECTOR_OUT = 20;
-const BRACKET_CONNECTOR_IN  = 32;
+const BRACKET_CARD_HEIGHT   = 96;   // fallback height, only used before cards are measured
+const BRACKET_CONNECTOR_OUT = 20;   // length of the horizontal stub leaving a card
 const BRACKET_COLUMN_WIDTH  = 240;
+const BRACKET_COLUMN_GAP    = 56;   // horizontal gap between rounds (also the flex gap)
+const BRACKET_BASE_GAP      = 24;   // vertical gap between adjacent round-1 cards
+
+function heightsEqual(a: number[][], b: number[][]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if ((a[i]?.length ?? -1) !== (b[i]?.length ?? -1)) return false;
+    for (let j = 0; j < a[i].length; j++) if (a[i][j] !== b[i][j]) return false;
+  }
+  return true;
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -17,19 +26,6 @@ function formatDateTime(iso?: string) {
     month: "short", day: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
-}
-
-function getRoundLayout(baseMatchCount: number, matchCount: number) {
-  // factor = how many base-round matches collapse into one match of this round.
-  // Derived from actual match counts (not array index) so odd transitions —
-  // e.g. a 1-match round feeding directly into another 1-match round, as
-  // happens when a losers bracket is disabled and WB Finals feeds straight
-  // into Grand Final — stay vertically aligned instead of assuming a halving step.
-  const factor    = matchCount > 0 ? baseMatchCount / matchCount : 1;
-  const topOffset = ((factor - 1) * BRACKET_BASE_UNIT) / 2;
-  const gap       = Math.max(16, factor * BRACKET_BASE_UNIT - BRACKET_CARD_HEIGHT);
-  const height    = topOffset + matchCount * BRACKET_CARD_HEIGHT + Math.max(0, matchCount - 1) * gap;
-  return { topOffset, gap, height };
 }
 
 function toTitleCase(value: string) {
@@ -456,32 +452,91 @@ function BracketColumns({
   currentUserId?: string;
   currentInGameId?: string;
 }) {
-  const baseMatchCount = (rounds[0]?.matches ?? []).length || 1;
-  const layouts    = rounds.map((round) => getRoundLayout(baseMatchCount, (round.matches ?? []).length));
-  const boardHeight = Math.max(...layouts.map((l) => l.height), 0);
+  const cardRefs = useRef<Array<Array<HTMLDivElement | null>>>([]);
+  const [heights, setHeights] = useState<number[][]>([]);
+
+  // Measure the ACTUAL rendered height of every card. Cards vary in height
+  // (bye vs regular rows, optional score/banner content), so connector geometry
+  // and card placement must come from real measurements — a hard-coded card
+  // height made the lines drift further from their cards down each column.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const next = rounds.map((round, ri) =>
+        (round.matches ?? []).map(
+          (_, mi) => cardRefs.current[ri]?.[mi]?.offsetHeight ?? BRACKET_CARD_HEIGHT,
+        ),
+      );
+      setHeights((prev) => (heightsEqual(prev, next) ? prev : next));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [rounds]);
+
+  const measured =
+    heights.length === rounds.length &&
+    rounds.every((r, ri) => (heights[ri]?.length ?? -1) === (r.matches ?? []).length);
+  const cardH = (ri: number, mi: number) =>
+    measured ? heights[ri][mi] : BRACKET_CARD_HEIGHT;
+
+  // Position each card so a round-N card is centered on the midpoint of its two
+  // feeder cards in round N-1. Every column's board shares one coordinate space
+  // (each board starts at the same y, below an equal-height title row), so a
+  // connector drawn in column N lines up exactly with the card in column N+1.
+  const positions: number[][] = [];
+  const centers: number[][] = [];
+  rounds.forEach((round, ri) => {
+    const matches = round.matches ?? [];
+    positions[ri] = [];
+    centers[ri] = [];
+    if (ri === 0) {
+      let y = 0;
+      matches.forEach((_, mi) => {
+        positions[0][mi] = y;
+        centers[0][mi] = y + cardH(0, mi) / 2;
+        y += cardH(0, mi) + BRACKET_BASE_GAP;
+      });
+    } else {
+      let fallbackY = 0; // only used if a feeder is missing (malformed bracket)
+      matches.forEach((_, mi) => {
+        const top = centers[ri - 1]?.[2 * mi];
+        const bot = centers[ri - 1]?.[2 * mi + 1];
+        let mid: number;
+        if (top !== undefined) {
+          mid = bot === undefined ? top : (top + bot) / 2;
+        } else {
+          mid = fallbackY + cardH(ri, mi) / 2; // stack from top as a safe fallback
+        }
+        positions[ri][mi] = mid - cardH(ri, mi) / 2;
+        centers[ri][mi] = mid;
+        fallbackY = positions[ri][mi] + cardH(ri, mi) + BRACKET_BASE_GAP;
+      });
+    }
+  });
+
+  let boardHeight = 0;
+  rounds.forEach((round, ri) =>
+    (round.matches ?? []).forEach((_, mi) => {
+      boardHeight = Math.max(boardHeight, positions[ri][mi] + cardH(ri, mi));
+    }),
+  );
 
   return (
     <div
-      className="relative flex gap-14"
+      className="relative flex"
       style={{
-        minWidth:  `${rounds.length * (BRACKET_COLUMN_WIDTH + 56)}px`,
-        minHeight: `${boardHeight + 48}px`,
+        gap: `${BRACKET_COLUMN_GAP}px`,
+        minWidth: `${rounds.length * (BRACKET_COLUMN_WIDTH + BRACKET_COLUMN_GAP)}px`,
       }}
     >
       {rounds.map((round, ri) => {
-        const layout  = layouts[ri];
         const matches = round.matches ?? [];
         const title   = getRoundTitle(round, ri, rounds.length);
         const style   = getRoundStyle(title, round.bracket);
         const isFinalRound = title.toLowerCase().includes("final") && !title.toLowerCase().includes("semi") && !title.toLowerCase().includes("quarter");
-        const connectorLeft = BRACKET_COLUMN_WIDTH;
 
         return (
-          <div
-            key={ri}
-            className="relative shrink-0"
-            style={{ width: `${BRACKET_COLUMN_WIDTH}px`, minHeight: `${boardHeight}px` }}
-          >
+          <div key={ri} className="relative shrink-0" style={{ width: `${BRACKET_COLUMN_WIDTH}px` }}>
             <div className="flex justify-center mb-5">
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-[0.14em] border ${style.pill} ${style.glow}`}>
                 {isFinalRound && <Crown className="w-3 h-3" />}
@@ -489,14 +544,22 @@ function BracketColumns({
               </span>
             </div>
 
-            <div className="relative" style={{ paddingTop: `${layout.topOffset}px` }}>
-              <div className="flex flex-col" style={{ rowGap: `${layout.gap}px` }}>
-                {matches.map((match, mi) => {
-                  const matchId    = match._id ?? match.id;
-                  const isClickable = Boolean(onMatchClick && matchId);
-                  return (
+            <div className="relative" style={{ height: `${boardHeight}px` }}>
+              {/* Cards — absolutely positioned from measured heights */}
+              {matches.map((match, mi) => {
+                const matchId    = match._id ?? match.id;
+                const isClickable = Boolean(onMatchClick && matchId);
+                return (
+                  <div
+                    key={matchId ?? mi}
+                    ref={(el) => {
+                      if (!cardRefs.current[ri]) cardRefs.current[ri] = [];
+                      cardRefs.current[ri][mi] = el;
+                    }}
+                    className="absolute"
+                    style={{ top: `${positions[ri][mi]}px`, left: 0, width: `${BRACKET_COLUMN_WIDTH}px` }}
+                  >
                     <MatchCard
-                      key={matchId ?? mi}
                       match={match}
                       isClickable={isClickable}
                       onClick={() => isClickable && onMatchClick!(matchId!)}
@@ -504,45 +567,38 @@ function BracketColumns({
                       currentUserId={currentUserId}
                       currentInGameId={currentInGameId}
                     />
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
 
+              {/* Connectors to the next round — drawn from measured card centers */}
               {ri < rounds.length - 1 && matches.length > 0 && (
                 <div className="absolute inset-0 pointer-events-none" style={{ overflow: "visible" }}>
-                  {matches.map((_, mi) => {
-                    const cy = layout.topOffset + mi * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
-                    return (
-                      <div
-                        key={`out-${mi}`}
-                        className="absolute bg-slate-600/60"
-                        style={{ left: `${connectorLeft}px`, top: `${cy}px`, width: `${BRACKET_CONNECTOR_OUT}px`, height: "1.5px" }}
-                      />
-                    );
-                  })}
+                  {matches.map((_, mi) => (
+                    <div
+                      key={`out-${mi}`}
+                      className="absolute bg-slate-600/60"
+                      style={{ left: `${BRACKET_COLUMN_WIDTH}px`, top: `${centers[ri][mi]}px`, width: `${BRACKET_CONNECTOR_OUT}px`, height: "1.5px" }}
+                    />
+                  ))}
                   {Array.from({ length: Math.floor(matches.length / 2) }).map((_, pi) => {
-                    const top = pi * 2;
-                    const bot = top + 1;
-                    const yTop = layout.topOffset + top * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
-                    const yBot = layout.topOffset + bot * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
-                    const yMid = (yTop + yBot) / 2;
-                    const xVert = connectorLeft + BRACKET_CONNECTOR_OUT;
+                    const yTop = centers[ri][2 * pi];
+                    const yBot = centers[ri][2 * pi + 1];
+                    const child = centers[ri + 1]?.[pi] ?? (yTop + yBot) / 2;
+                    const xVert = BRACKET_COLUMN_WIDTH + BRACKET_CONNECTOR_OUT;
                     return (
                       <div key={`pair-${pi}`}>
                         <div className="absolute bg-slate-600/60" style={{ left: `${xVert}px`, top: `${yTop}px`, width: "1.5px", height: `${yBot - yTop}px` }} />
-                        <div className="absolute bg-slate-600/60" style={{ left: `${xVert}px`, top: `${yMid}px`, width: `${BRACKET_CONNECTOR_IN}px`, height: "1.5px" }} />
+                        <div className="absolute bg-slate-600/60" style={{ left: `${xVert}px`, top: `${child}px`, width: `${BRACKET_COLUMN_GAP - BRACKET_CONNECTOR_OUT}px`, height: "1.5px" }} />
                       </div>
                     );
                   })}
                   {matches.length % 2 === 1 && (() => {
-                    // Odd leftover (e.g. a lone WB Finals match feeding straight into
-                    // Grand Final with no losers bracket): no merge needed, just
-                    // continue the line straight across to the next column.
-                    const lastIndex = matches.length - 1;
-                    const y = layout.topOffset + lastIndex * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
-                    const xVert = connectorLeft + BRACKET_CONNECTOR_OUT;
+                    // Odd leftover (lone match feeding straight into the next round):
+                    // run a single straight line across to the next column.
+                    const y = centers[ri][matches.length - 1];
                     return (
-                      <div className="absolute bg-slate-600/60" style={{ left: `${xVert}px`, top: `${y}px`, width: `${BRACKET_CONNECTOR_IN}px`, height: "1.5px" }} />
+                      <div className="absolute bg-slate-600/60" style={{ left: `${BRACKET_COLUMN_WIDTH + BRACKET_CONNECTOR_OUT}px`, top: `${y}px`, width: `${BRACKET_COLUMN_GAP - BRACKET_CONNECTOR_OUT}px`, height: "1.5px" }} />
                     );
                   })()}
                 </div>
