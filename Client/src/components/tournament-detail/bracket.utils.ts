@@ -129,18 +129,28 @@ function buildRoundsFromFlatMatches(matches: BracketMatch[]): BracketRound[] {
     const lbRounds = groupByRound(lbMatches, "lower");
 
     const hasGrandFinalMatch = gfMatches.length > 0;
-    // Simplified 4-player DE: WBR1 → WB Finals → Grand Final
-    //                                  LBR1 (WBR1 losers) → Grand Final
-    // Detected when there's exactly 1 LB round and a separate Grand Final exists.
-    // Label WB rounds: last = Semi Finals, second-to-last = Quarter Finals, earlier = Round N
+    // Two possible shapes here:
+    // - Legacy tournaments (generated before the losers-bracket removal) have a
+    //   separate bolted-on Grand Final match — the WB's own last round is really
+    //   the Semi Finals feeding into it.
+    // - Current tournaments have no separate Grand Final match at all — the WB
+    //   reduces naturally all the way to one match, which IS the Grand Final.
+    // Label accordingly so both old and new data render with correct names.
     const wbTotal = wbRounds.length;
     wbRounds.forEach((r, i) => {
-      const isLast = i === wbTotal - 1;
-      const isSecondToLast = i === wbTotal - 2;
-      if (isLast) r.round_name = "Semi Finals";
-      else if (isSecondToLast) r.round_name = "Quarter Finals";
-      else r.round_name = `Round ${i + 1}`;
+      const fromEnd = wbTotal - 1 - i; // 0 = last round, 1 = second-to-last, etc.
+      if (hasGrandFinalMatch) {
+        if (fromEnd === 0) r.round_name = "Semi Finals";
+        else if (fromEnd === 1) r.round_name = "Quarter Finals";
+        else r.round_name = `Round ${i + 1}`;
+      } else {
+        if (fromEnd === 0) r.round_name = "Grand Final";
+        else if (fromEnd === 1) r.round_name = "Semi Finals";
+        else if (fromEnd === 2) r.round_name = "Quarter Finals";
+        else r.round_name = `Round ${i + 1}`;
+      }
       r.name = r.round_name;
+      r.bracket = !hasGrandFinalMatch && fromEnd === 0 ? "grand_final" : "upper";
     });
 
     // Label LB rounds

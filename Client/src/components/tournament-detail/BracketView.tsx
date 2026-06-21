@@ -19,8 +19,13 @@ function formatDateTime(iso?: string) {
   });
 }
 
-function getRoundLayout(roundIndex: number, matchCount: number) {
-  const factor    = Math.pow(2, roundIndex);
+function getRoundLayout(baseMatchCount: number, matchCount: number) {
+  // factor = how many base-round matches collapse into one match of this round.
+  // Derived from actual match counts (not array index) so odd transitions —
+  // e.g. a 1-match round feeding directly into another 1-match round, as
+  // happens when a losers bracket is disabled and WB Finals feeds straight
+  // into Grand Final — stay vertically aligned instead of assuming a halving step.
+  const factor    = matchCount > 0 ? baseMatchCount / matchCount : 1;
   const topOffset = ((factor - 1) * BRACKET_BASE_UNIT) / 2;
   const gap       = Math.max(16, factor * BRACKET_BASE_UNIT - BRACKET_CARD_HEIGHT);
   const height    = topOffset + matchCount * BRACKET_CARD_HEIGHT + Math.max(0, matchCount - 1) * gap;
@@ -451,7 +456,8 @@ function BracketColumns({
   currentUserId?: string;
   currentInGameId?: string;
 }) {
-  const layouts    = rounds.map((round, i) => getRoundLayout(i, (round.matches ?? []).length));
+  const baseMatchCount = (rounds[0]?.matches ?? []).length || 1;
+  const layouts    = rounds.map((round) => getRoundLayout(baseMatchCount, (round.matches ?? []).length));
   const boardHeight = Math.max(...layouts.map((l) => l.height), 0);
 
   return (
@@ -528,6 +534,17 @@ function BracketColumns({
                       </div>
                     );
                   })}
+                  {matches.length % 2 === 1 && (() => {
+                    // Odd leftover (e.g. a lone WB Finals match feeding straight into
+                    // Grand Final with no losers bracket): no merge needed, just
+                    // continue the line straight across to the next column.
+                    const lastIndex = matches.length - 1;
+                    const y = layout.topOffset + lastIndex * (BRACKET_CARD_HEIGHT + layout.gap) + BRACKET_CARD_HEIGHT / 2;
+                    const xVert = connectorLeft + BRACKET_CONNECTOR_OUT;
+                    return (
+                      <div className="absolute bg-slate-600/60" style={{ left: `${xVert}px`, top: `${y}px`, width: `${BRACKET_CONNECTOR_IN}px`, height: "1.5px" }} />
+                    );
+                  })()}
                 </div>
               )}
             </div>
