@@ -291,6 +291,10 @@ export const NOTIFICATION_ENDPOINTS = {
   BULK_DELETE: `${COMMUNITY_BASE}/notification/bulk`,
 } as const;
 
+export const TOURNAMENT_CHAT_ENDPOINTS = {
+  BASE: `${COMMUNITY_BASE}/tournaments`, // + /:tournamentId/chat/messages, + /:messageId for delete
+} as const;
+
 export const HTTP_METHODS = {
   GET: 'GET',
   POST: 'POST',

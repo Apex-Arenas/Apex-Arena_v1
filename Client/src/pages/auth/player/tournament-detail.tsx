@@ -21,6 +21,7 @@ import {
   Share2,
   CreditCard,
   ChevronDown,
+  MessageCircle,
 } from "lucide-react";
 import {
   tournamentService,
@@ -41,6 +42,7 @@ import {
   WithdrawModal,
   type BracketRound,
 } from "../../../components/tournament-detail";
+import { TournamentChatPanel } from "../../../components/tournament-chat";
 import { LeagueView } from "../../../components/league/LeagueView";
 import { MatchActionModal } from "../../../components/league/MatchActionModal";
 
@@ -246,6 +248,8 @@ const TournamentDetail = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
   const [paymentCountdown, setPaymentCountdown] = useState<number | null>(null);
+  const [showChat, setShowChat] = useState(false);
+  const chatSectionRef = useRef<HTMLDivElement>(null);
 
   const hasFetched = useRef(false);
 
@@ -512,6 +516,7 @@ const TournamentDetail = () => {
     ACTIVE_STATUSES.has(myRegistration.status) &&
     !isCheckedIn &&
     !["locked", "started", "ongoing", "in_progress", "completed", "cancelled"].includes(tournament.status);
+  const canAccessChat = isRegistered || tournament.organizerId === user?.id;
 
   const checkInWindow = checkInStatus?.checkInWindow as
     | { start?: string; end?: string; isOpen?: boolean }
@@ -682,6 +687,20 @@ const TournamentDetail = () => {
                 Back to Tournaments
               </button>
               <div className="flex items-center gap-2">
+                {canAccessChat && (
+                  <button
+                    onClick={() => {
+                      setShowChat(true);
+                      requestAnimationFrame(() =>
+                        chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                      );
+                    }}
+                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-orange-400 transition-colors"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    Chat
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     void handleShare();
@@ -1427,6 +1446,13 @@ const TournamentDetail = () => {
               </div>
             )}
           </section>
+        )}
+
+        {/* ── Tournament Chat ───────────────────────────────────────────────── */}
+        {canAccessChat && showChat && (
+          <div ref={chatSectionRef}>
+            <TournamentChatPanel tournamentId={tournament.id} />
+          </div>
         )}
 
         {/* ── My Matches ────────────────────────────────────────────────────── */}

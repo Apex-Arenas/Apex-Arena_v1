@@ -19,6 +19,10 @@ export const ADMIN_NOTIFICATION_ENDPOINTS = {
   MARK_READ:    `${API_BASE_URLS.COMMUNITY}/admin/notifications`, // + /:id/read
 } as const;
 
+export const TOURNAMENT_CHAT_ENDPOINTS = {
+  BASE: `${API_BASE_URLS.COMMUNITY}/tournaments`, // + /:tournamentId/chat/messages, + /:messageId for delete
+} as const;
+
 export const AUTH_ENDPOINTS = {
   // Registration & Email Verification
   REGISTER: `${API_BASE_URLS.AUTH}/register`,
