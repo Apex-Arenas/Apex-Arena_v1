@@ -76,17 +76,22 @@ export function useTournamentChat(tournamentId: string): UseTournamentChatResult
       setMessages((prev) => (prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming]));
     };
 
-    const handleJoinError = (payload: { message?: string } | undefined) => {
+    const handleJoinError = (payload: { error?: string; message?: string } | undefined) => {
       setAccessDenied(true);
-      setError(payload?.message ?? 'You do not have access to this tournament chat.');
+      setError(
+        payload?.message ??
+          (payload?.error === 'NOT_TOURNAMENT_CHAT_MEMBER'
+            ? 'You need to be registered in this tournament to use its chat.'
+            : 'You do not have access to this tournament chat.'),
+      );
     };
 
-    socket.emit('join:tournament_chat', { tournamentId });
+    socket.emit('join:tournament_chat', tournamentId);
     socket.on('tournament_chat:message', handleMessage);
     socket.on('tournament_chat:join_error', handleJoinError);
 
     return () => {
-      socket.emit('leave:tournament_chat', { tournamentId });
+      socket.emit('leave:tournament_chat', tournamentId);
       socket.off('tournament_chat:message', handleMessage);
       socket.off('tournament_chat:join_error', handleJoinError);
     };

@@ -35,7 +35,7 @@ export interface ChatMessagesResult {
 
 export function mapChatMessage(raw: Record<string, unknown>): TournamentChatMessage {
   return {
-    id: String(raw._id ?? raw.id ?? ''),
+    id: String(raw._id ?? raw.id ?? raw.message_id ?? ''),
     tournamentId: String(raw.tournament_id ?? raw.tournamentId ?? ''),
     senderId: String(raw.sender_id ?? raw.senderId ?? ''),
     senderDisplayName: String(raw.sender_display_name ?? raw.senderDisplayName ?? ''),
