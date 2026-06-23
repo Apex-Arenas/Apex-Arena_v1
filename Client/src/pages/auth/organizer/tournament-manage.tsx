@@ -51,6 +51,7 @@ import {
   getParticipantLabel,
   type BracketRound,
 } from "../../../components/tournament-detail";
+import { TournamentChatPanel } from "../../../components/tournament-chat";
 import { MatchActionModal } from "../../../components/league/MatchActionModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1491,6 +1492,13 @@ const TournamentManage = () => {
     );
   }
 
+  const isAcceptedCoOrganizer = coOrganizers.some(
+    (co) =>
+      co.status === "accepted" &&
+      (typeof co.user_id === "string" ? co.user_id : co.user_id?._id) === user?.id,
+  );
+  const canAccessChat = tournament.organizerId === user?.id || isAcceptedCoOrganizer;
+
   const isLeague = tournament.tournamentType === "league";
   const registrationShortfall =
     tournament.status === "open" &&
@@ -2037,6 +2045,9 @@ const TournamentManage = () => {
             )}
           </div>
         )}
+
+        {/* Tournament Chat */}
+        {canAccessChat && <TournamentChatPanel tournamentId={tournament.id} viewerCanMentionAll />}
 
         {/* Tournament Results */}
         {tournament.status === "completed" && (

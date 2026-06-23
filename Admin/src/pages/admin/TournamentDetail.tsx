@@ -35,6 +35,7 @@ import { apiGet, apiPatch } from "../../utils/api.utils";
 import { API_BASE_URLS } from "../../config/api.config";
 import { getAdminAccessToken } from "../../utils/auth.utils";
 import { toast } from "react-toastify";
+import { TournamentChatPanel } from "../../components/tournament-chat";
 
 const STATUS_META: Record<string, { label: string; dot: string; badge: string; glow: string }> = {
   draft:            { label: "Draft",            dot: "bg-slate-400",   badge: "bg-slate-500/20 text-slate-300 border-slate-500/40",   glow: "" },
@@ -2417,6 +2418,13 @@ const TournamentDetail = () => {
               </Section>
             )}
           </div>
+
+          {/* ── Tournament Chat (full width) ── */}
+          {id && (
+            <div className="lg:col-span-3">
+              <TournamentChatPanel tournamentId={id} />
+            </div>
+          )}
         </div>
       </div>
 
