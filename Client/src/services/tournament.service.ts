@@ -123,6 +123,7 @@ export interface MatchLeg {
   game_number: number; // 1 = Leg 1, 2 = Leg 2, 3 = Penalties
   winner_id?: string;
   scores?: { participant_id?: string; score?: number }[];
+  screenshots?: string[]; // proof URLs submitted for this leg
   completed_at?: string;
 }
 
@@ -1076,6 +1077,9 @@ export const tournamentService = {
             participant_id: s.participant_id as string | undefined,
             score: Number(s.score ?? 0),
           }))
+        : undefined,
+      screenshots: Array.isArray(g.screenshots)
+        ? (g.screenshots as unknown[]).map(String).filter(Boolean)
         : undefined,
       completed_at: g.completed_at as string | undefined,
     }));

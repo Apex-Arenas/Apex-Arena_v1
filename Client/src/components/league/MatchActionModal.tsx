@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   X, Loader2, AlertTriangle, Swords, Clock,
   Shield, Trophy, CheckCheck, Flag, Timer, Crown, Edit3, ChevronDown, ImageIcon,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { tournamentService } from '../../services/tournament.service';
 import type { FullMatch } from '../../services/tournament.service';
@@ -39,6 +40,84 @@ function useCountdown(deadline: string | undefined) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deadline]);
   return seconds;
+}
+
+// ─── Proof Gallery (one image at a time, switch between legs) ───────────────────
+
+function ProofGallery({ shots }: { shots: { label: string; url: string }[] }) {
+  const [active, setActive] = useState(0);
+  if (shots.length === 0) return null;
+  const idx = Math.min(active, shots.length - 1);
+  const current = shots[idx];
+  const multi = shots.length > 1;
+  const go = (delta: number) => setActive((a) => (a + delta + shots.length) % shots.length);
+
+  return (
+    <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-800/60 bg-slate-800/30">
+        <ImageIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+        <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Score Proof</span>
+        <span className="ml-auto text-[10px] text-slate-600">submitted by players</span>
+      </div>
+
+      {/* Switch buttons — one per screenshot */}
+      {multi && (
+        <div className="flex items-center gap-1.5 px-3 pt-3 flex-wrap">
+          {shots.map((s, i) => (
+            <button
+              key={`${s.url}-${i}`}
+              type="button"
+              onClick={() => setActive(i)}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                i === idx
+                  ? "bg-cyan-500/15 border border-cyan-500/40 text-cyan-300"
+                  : "bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-slate-200 hover:border-slate-600"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Current image */}
+      <div className="relative p-3">
+        <a href={current.url} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden border border-slate-800/60">
+          <img
+            src={current.url}
+            alt={`${current.label} proof`}
+            className="w-full object-contain max-h-72 bg-slate-950 hover:opacity-90 transition-opacity cursor-zoom-in"
+            onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
+          />
+        </a>
+
+        {multi && (
+          <>
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              className="absolute left-5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950/80 border border-slate-700 flex items-center justify-center text-slate-200 hover:bg-slate-900 transition-colors"
+              aria-label="Previous screenshot"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => go(1)}
+              className="absolute right-5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950/80 border border-slate-700 flex items-center justify-center text-slate-200 hover:bg-slate-900 transition-colors"
+              aria-label="Next screenshot"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
+
+        <p className="text-[10px] text-slate-500 text-center pt-2">
+          {current.label}{multi ? ` · ${idx + 1} of ${shots.length}` : ""} · tap image to view full size
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function CountdownBadge({ seconds, label }: { seconds: number | null; label: string }) {
@@ -1072,23 +1151,25 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
           ) : (
             <div className="space-y-4">
               {renderContent()}
-              {isOrganizer && match && match.screenshotUrl && (
-                <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 overflow-hidden">
-                  <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-800/60 bg-slate-800/30">
-                    <ImageIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Score Proof</span>
-                    <span className="ml-auto text-[10px] text-slate-600">submitted by player</span>
-                  </div>
-                  <a href={match.screenshotUrl} target="_blank" rel="noopener noreferrer" className="block">
-                    <img
-                      src={match.screenshotUrl}
-                      alt="Match score proof"
-                      className="w-full object-cover max-h-64 hover:opacity-90 transition-opacity cursor-zoom-in"
-                    />
-                    <p className="text-[10px] text-slate-500 text-center py-1.5">Tap to view full size</p>
-                  </a>
-                </div>
-              )}
+              {isOrganizer && match && (() => {
+                // Gather every screenshot across all legs (Leg 1, Leg 2, Penalties)
+                // plus the current in-flight leg, then show one at a time with
+                // buttons to switch between them.
+                const legLabel = (n: number) =>
+                  n === 1 ? "Leg 1" : n === 2 ? "Leg 2" : n === 3 ? "Penalties" : `Game ${n}`;
+                const shots: { label: string; url: string }[] = [];
+                (match.legs ?? []).forEach((leg) =>
+                  (leg.screenshots ?? []).forEach((url) => {
+                    if (url) shots.push({ label: match.isTwoLeg ? legLabel(leg.game_number) : "Score Proof", url });
+                  }),
+                );
+                // Current submitted-but-not-yet-confirmed leg lives on screenshotUrl
+                if (match.screenshotUrl && !shots.some((s) => s.url === match.screenshotUrl)) {
+                  const n = match.currentLeg ?? (match.legs?.length ?? 0) + 1;
+                  shots.push({ label: match.isTwoLeg ? legLabel(n) : "Score Proof", url: match.screenshotUrl });
+                }
+                return <ProofGallery shots={shots} />;
+              })()}
               {isOrganizer && match && renderOrgOverrideSection()}
             </div>
           )}
