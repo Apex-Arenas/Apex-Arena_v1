@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from '../utils/api.utils';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../utils/api.utils';
 import { TOURNAMENT_CHAT_ENDPOINTS } from '../config/api.config';
 import { getAdminAccessToken } from '../utils/auth.utils';
 
@@ -23,6 +23,14 @@ export interface TournamentChatMessage {
   content: string;
   messageType: ChatMessageType;
   createdAt: string;
+  isDeleted: boolean;
+  isEdited: boolean;
+}
+
+export interface ChatRosterMember {
+  userId: string;
+  displayName: string;
+  role: ChatSenderRole;
 }
 
 export interface ChatMessagesResult {
@@ -43,6 +51,16 @@ export function mapChatMessage(raw: Record<string, unknown>): TournamentChatMess
     content: String(raw.content ?? ''),
     messageType: (raw.message_type ?? raw.messageType ?? 'text') as ChatMessageType,
     createdAt: String(raw.created_at ?? raw.createdAt ?? ''),
+    isDeleted: Boolean(raw.is_deleted ?? raw.isDeleted ?? false),
+    isEdited: Boolean(raw.is_edited ?? raw.isEdited ?? false),
+  };
+}
+
+function mapRosterMember(raw: Record<string, unknown>): ChatRosterMember {
+  return {
+    userId: String(raw.user_id ?? raw.userId ?? ''),
+    displayName: String(raw.display_name ?? raw.displayName ?? ''),
+    role: (raw.role ?? 'player') as ChatSenderRole,
   };
 }
 
@@ -96,6 +114,22 @@ export const tournamentChatService = {
     return mapChatMessage(raw);
   },
 
+  async editMessage(tournamentId: string, messageId: string, content: string): Promise<TournamentChatMessage> {
+    const response = await apiPatch(
+      `${TOURNAMENT_CHAT_ENDPOINTS.BASE}/${tournamentId}/chat/messages/${messageId}`,
+      { content },
+      adminHeaders(),
+    );
+
+    if (!response.success) {
+      throw new Error(response.error?.message ?? 'Failed to edit message');
+    }
+
+    const data = response.data as Record<string, unknown>;
+    const raw = (data.message ?? data) as Record<string, unknown>;
+    return mapChatMessage(raw);
+  },
+
   async deleteMessage(tournamentId: string, messageId: string): Promise<void> {
     const response = await apiDelete(
       `${TOURNAMENT_CHAT_ENDPOINTS.BASE}/${tournamentId}/chat/messages/${messageId}`,
@@ -105,5 +139,25 @@ export const tournamentChatService = {
     if (!response.success) {
       throw new Error(response.error?.message ?? 'Failed to delete message');
     }
+  },
+
+  async getRoster(tournamentId: string): Promise<ChatRosterMember[]> {
+    const response = await apiGet(`${TOURNAMENT_CHAT_ENDPOINTS.BASE}/${tournamentId}/chat/members`, adminHeaders());
+    if (!response.success) return [];
+
+    const data = response.data as unknown;
+    const list = Array.isArray(data) ? data : [];
+    return list.map((m) => mapRosterMember(m as Record<string, unknown>));
+  },
+
+  async markRead(tournamentId: string): Promise<void> {
+    await apiPost(`${TOURNAMENT_CHAT_ENDPOINTS.BASE}/${tournamentId}/chat/read`, {}, adminHeaders());
+  },
+
+  async getUnreadStatus(tournamentId: string): Promise<boolean> {
+    const response = await apiGet(`${TOURNAMENT_CHAT_ENDPOINTS.BASE}/${tournamentId}/chat/unread`, adminHeaders());
+    if (!response.success) return false;
+    const data = response.data as Record<string, unknown>;
+    return Boolean(data.unread);
   },
 };

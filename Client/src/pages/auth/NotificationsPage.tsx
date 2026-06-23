@@ -6,12 +6,8 @@ import {
   ChevronDown, RefreshCw, MessageSquare,
 } from "lucide-react";
 import { useNotifications } from "../../lib/notification-context";
+import { NotificationDetailModal } from "../../components/NotificationDetailModal";
 import type { NotificationItem } from "../../services/notification.service";
-
-function resolveNotifUrl(url: string): string {
-  if (url.startsWith("/auth") || url.startsWith("http")) return url;
-  return `/auth${url}`;
-}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -28,62 +24,55 @@ function relativeTime(iso?: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-const TYPE_META: Record<string, { icon: React.ElementType; color: string; bar: string; bg: string }> = {
-  tournament_registration:  { icon: Trophy,      color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25"   },
-  tournament_cancelled:     { icon: Trophy,      color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25"    },
-  tournament_started:       { icon: Trophy,      color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  },
-  tournament_completed:     { icon: Trophy,      color: "text-amber-400",  bar: "bg-amber-500",  bg: "bg-amber-500/25"  },
-  tournament_open:          { icon: Trophy,      color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25"   },
-  match_scheduled:          { icon: Swords,      color: "text-indigo-400", bar: "bg-indigo-500", bg: "bg-indigo-500/25" },
-  match_starting:           { icon: Swords,      color: "text-orange-400", bar: "bg-orange-500", bg: "bg-orange-500/25" },
-  match_result_submitted:   { icon: Swords,      color: "text-slate-400",  bar: "bg-slate-500",  bg: "bg-slate-700/50"  },
-  match_disputed:           { icon: ShieldAlert, color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25"    },
-  match_dispute_resolved:   { icon: ShieldAlert, color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  },
-  match_result_confirmed:   { icon: Check,       color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  },
-  match_forfeit:            { icon: Swords,      color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25"    },
-  prize_won:                { icon: Star,        color: "text-amber-400",  bar: "bg-amber-500",  bg: "bg-amber-500/25"  },
-  prize_credited:           { icon: Star,        color: "text-amber-400",  bar: "bg-amber-500",  bg: "bg-amber-500/25"  },
-  payout_completed:         { icon: Wallet,      color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  },
-  payout_failed:            { icon: Wallet,      color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25"    },
-  payout_requested:         { icon: Wallet,      color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25"   },
-  deposit_confirmed:        { icon: Wallet,      color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  },
-  refund_processed:         { icon: Wallet,      color: "text-blue-400",   bar: "bg-blue-500",   bg: "bg-blue-500/25"   },
-  new_device_login:         { icon: ShieldAlert, color: "text-orange-400", bar: "bg-orange-500", bg: "bg-orange-500/25" },
-  password_changed:         { icon: ShieldAlert, color: "text-orange-400", bar: "bg-orange-500", bg: "bg-orange-500/25" },
-  two_fa_enabled:           { icon: ShieldAlert, color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  },
-  two_fa_disabled:          { icon: ShieldAlert, color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25"    },
-  account_unbanned:         { icon: UserCheck,   color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  },
-  organizer_approved:       { icon: UserCheck,   color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  },
-  organizer_rejected:       { icon: UserCheck,   color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25"    },
-  team_invite:              { icon: Users,       color: "text-indigo-400", bar: "bg-indigo-500", bg: "bg-indigo-500/25" },
-  new_follower:             { icon: Users,       color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25"   },
-  game_request_approved:    { icon: Zap,         color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  },
-  game_request_rejected:    { icon: Zap,         color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25"    },
+// Icon varies by type for at-a-glance scanning — no color coding, flat dark theme only.
+const TYPE_ICON: Record<string, React.ElementType> = {
+  tournament_registration: Trophy,
+  tournament_cancelled: Trophy,
+  tournament_started: Trophy,
+  tournament_completed: Trophy,
+  tournament_open: Trophy,
+  match_scheduled: Swords,
+  match_starting: Swords,
+  match_result_submitted: Swords,
+  match_disputed: ShieldAlert,
+  match_dispute_resolved: ShieldAlert,
+  match_result_confirmed: Check,
+  match_forfeit: Swords,
+  prize_won: Star,
+  prize_credited: Star,
+  payout_completed: Wallet,
+  payout_failed: Wallet,
+  payout_requested: Wallet,
+  deposit_confirmed: Wallet,
+  refund_processed: Wallet,
+  new_device_login: ShieldAlert,
+  password_changed: ShieldAlert,
+  two_fa_enabled: ShieldAlert,
+  two_fa_disabled: ShieldAlert,
+  account_unbanned: UserCheck,
+  organizer_approved: UserCheck,
+  organizer_rejected: UserCheck,
+  team_invite: Users,
+  new_follower: Users,
+  game_request_approved: Zap,
+  game_request_rejected: Zap,
 };
 
-function inferBarFromType(type: string): { icon: React.ElementType; color: string; bar: string; bg: string } {
+function inferIconFromType(type: string): React.ElementType {
   const t = type.toLowerCase();
-  if (t.includes("cancel") || t.includes("fail") || t.includes("reject") || t.includes("forfeit") || t.includes("disput") || t.includes("ban"))
-    return { icon: ShieldAlert, color: "text-red-400",    bar: "bg-red-500",    bg: "bg-red-500/25"    };
-  if (t.includes("complet") || t.includes("confirm") || t.includes("approv") || t.includes("success") || t.includes("unlock") || t.includes("unbann"))
-    return { icon: CheckCheck,  color: "text-green-400",  bar: "bg-green-500",  bg: "bg-green-500/25"  };
-  if (t.includes("prize") || t.includes("win") || t.includes("reward") || t.includes("earn"))
-    return { icon: Star,        color: "text-amber-400",  bar: "bg-amber-500",  bg: "bg-amber-500/25"  };
-  if (t.includes("payout") || t.includes("deposit") || t.includes("wallet") || t.includes("payment") || t.includes("refund") || t.includes("escrow"))
-    return { icon: Wallet,      color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25"   };
-  if (t.includes("match") || t.includes("start") || t.includes("schedul"))
-    return { icon: Swords,      color: "text-orange-400", bar: "bg-orange-500", bg: "bg-orange-500/25" };
-  if (t.includes("login") || t.includes("password") || t.includes("2fa") || t.includes("device") || t.includes("security"))
-    return { icon: ShieldAlert, color: "text-orange-400", bar: "bg-orange-500", bg: "bg-orange-500/25" };
-  if (t.includes("team") || t.includes("follow") || t.includes("organizer") || t.includes("member"))
-    return { icon: Users,       color: "text-indigo-400", bar: "bg-indigo-500", bg: "bg-indigo-500/25" };
-  if (t.includes("tournament") || t.includes("register") || t.includes("publish") || t.includes("open"))
-    return { icon: Trophy,      color: "text-cyan-400",   bar: "bg-cyan-500",   bg: "bg-cyan-500/25"   };
-  return { icon: Info,          color: "text-slate-400",  bar: "bg-slate-500",  bg: "bg-slate-700/50"  };
+  if (t.includes("disput") || t.includes("ban")) return ShieldAlert;
+  if (t.includes("complet") || t.includes("confirm") || t.includes("approv") || t.includes("success")) return CheckCheck;
+  if (t.includes("prize") || t.includes("win") || t.includes("reward") || t.includes("earn")) return Star;
+  if (t.includes("payout") || t.includes("deposit") || t.includes("wallet") || t.includes("payment") || t.includes("refund") || t.includes("escrow")) return Wallet;
+  if (t.includes("match") || t.includes("start") || t.includes("schedul")) return Swords;
+  if (t.includes("login") || t.includes("password") || t.includes("2fa") || t.includes("device") || t.includes("security")) return ShieldAlert;
+  if (t.includes("team") || t.includes("follow") || t.includes("organizer") || t.includes("member")) return Users;
+  if (t.includes("tournament") || t.includes("register") || t.includes("publish") || t.includes("open")) return Trophy;
+  return Info;
 }
 
-function getTypeMeta(type: string) {
-  return TYPE_META[type] ?? inferBarFromType(type);
+function getTypeMeta(type: string): { icon: React.ElementType } {
+  return { icon: TYPE_ICON[type] ?? inferIconFromType(type) };
 }
 
 // ── Notification Row ──────────────────────────────────────────────────────────
@@ -92,28 +81,24 @@ function NotifRow({
   notif,
   onMarkRead,
   onDelete,
-  onNavigate,
+  onOpen,
 }: {
   notif: NotificationItem;
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
-  onNavigate?: () => void;
+  onOpen: () => void;
 }) {
-  const { icon: Icon, color, bar, bg } = getTypeMeta(notif.type);
+  const { icon: Icon } = getTypeMeta(notif.type);
 
   return (
     <div
-      onClick={onNavigate}
-      className={`relative flex items-start gap-4 px-6 py-4 border-b border-slate-800 transition-colors group
-        ${notif.isRead ? "hover:bg-slate-800/20" : "bg-cyan-500/4 hover:bg-cyan-500/7"}
-        ${onNavigate ? "cursor-pointer" : ""}`}
+      onClick={onOpen}
+      className={`flex items-start gap-4 px-6 py-4 border-b border-slate-800 transition-colors group cursor-pointer
+        ${notif.isRead ? "hover:bg-slate-800/20" : "bg-slate-800/30 hover:bg-slate-800/40"}`}
     >
-      {/* Left accent bar — always shown, bright for unread, subtle for read */}
-      <span className={`absolute left-0 inset-y-0 w-0.75 ${bar} rounded-r-full transition-opacity ${notif.isRead ? "opacity-20" : "opacity-100"}`} />
-
-      {/* Icon */}
-      <div className={`shrink-0 w-10 h-10 rounded-xl ${bg} flex items-center justify-center mt-0.5 ring-1 ring-inset ring-white/5`}>
-        <Icon className={`w-5 h-5 ${color}`} />
+      {/* Icon — flat, no per-type color */}
+      <div className="shrink-0 w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center mt-0.5 ring-1 ring-inset ring-white/5">
+        <Icon className="w-5 h-5 text-slate-300" />
       </div>
 
       {/* Content */}
@@ -122,7 +107,7 @@ function NotifRow({
           <p className={`text-sm font-semibold leading-snug ${notif.isRead ? "text-slate-300" : "text-white"}`}>
             {notif.title}
             {!notif.isRead && (
-              <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 align-middle -mt-0.5" />
+              <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-slate-400 align-middle -mt-0.5" />
             )}
           </p>
           <span className="shrink-0 text-[11px] text-slate-500 whitespace-nowrap mt-0.5">
@@ -135,7 +120,7 @@ function NotifRow({
           {!notif.isRead && (
             <button
               onClick={(e) => { e.stopPropagation(); onMarkRead(notif.id); }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs font-medium text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs font-medium text-slate-400 hover:text-white hover:border-slate-600 transition-colors"
             >
               <Check className="w-3 h-3" />
               Mark read
@@ -175,6 +160,12 @@ export default function NotificationsPage() {
 
   const [tab, setTab] = useState<Tab>("all");
   const [statsOpen, setStatsOpen] = useState(false);
+  const [openNotif, setOpenNotif] = useState<NotificationItem | null>(null);
+
+  const handleOpen = (n: NotificationItem) => {
+    setOpenNotif(n);
+    if (!n.isRead) markRead(n.id);
+  };
 
   const displayed = tab === "unread"
     ? notifications.filter((n) => !n.isRead)
@@ -349,7 +340,7 @@ export default function NotificationsPage() {
                   notif={n}
                   onMarkRead={markRead}
                   onDelete={deleteNotification}
-                  onNavigate={n.actionUrl ? () => { markRead(n.id); navigate(resolveNotifUrl(n.actionUrl!)); } : undefined}
+                  onOpen={() => handleOpen(n)}
                 />
               ))}
 
@@ -377,6 +368,14 @@ export default function NotificationsPage() {
           )}
         </div>
       </div>
+
+      {openNotif && (
+        <NotificationDetailModal
+          notification={openNotif}
+          onClose={() => setOpenNotif(null)}
+          onNavigate={(url) => { setOpenNotif(null); navigate(url); }}
+        />
+      )}
     </div>
   );
 }

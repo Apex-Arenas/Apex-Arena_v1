@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Trophy,
   Users,
@@ -43,6 +43,7 @@ import {
   type BracketRound,
 } from "../../../components/tournament-detail";
 import { TournamentChatPanel } from "../../../components/tournament-chat";
+import { tournamentChatService } from "../../../services/tournament-chat.service";
 import { LeagueView } from "../../../components/league/LeagueView";
 import { MatchActionModal } from "../../../components/league/MatchActionModal";
 
@@ -225,6 +226,7 @@ function PageSkeleton() {
 const TournamentDetail = () => {
   const { tournamentId } = useParams<{ tournamentId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -249,7 +251,9 @@ const TournamentDetail = () => {
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
   const [paymentCountdown, setPaymentCountdown] = useState<number | null>(null);
   const [showChat, setShowChat] = useState(false);
+  const [isChatUnread, setIsChatUnread] = useState(false);
   const chatSectionRef = useRef<HTMLDivElement>(null);
+  const chatAutoOpenedRef = useRef(false);
 
   const hasFetched = useRef(false);
 
@@ -384,6 +388,26 @@ const TournamentDetail = () => {
     }, 10000);
     return () => window.clearInterval(id);
   }, [tournament?.status, checkInStatus, loadAll]);
+
+  // Unread chat dot + "?chat=1" deep link (used by mention notifications)
+  useEffect(() => {
+    if (!tournament) return;
+    const canAccess =
+      (myRegistration !== null && ACTIVE_STATUSES.has(myRegistration.status)) ||
+      tournament.organizerId === user?.id;
+    if (!canAccess) return;
+
+    tournamentChatService.getUnreadStatus(tournament.id).then(setIsChatUnread).catch(() => {});
+
+    if (!chatAutoOpenedRef.current && searchParams.get("chat") === "1") {
+      chatAutoOpenedRef.current = true;
+      setIsChatUnread(false);
+      setShowChat(true);
+      requestAnimationFrame(() =>
+        chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    }
+  }, [tournament, myRegistration, user?.id, searchParams]);
 
   const handleRegisterSuccess = async () => {
     setShowRegisterModal(false);
@@ -690,15 +714,19 @@ const TournamentDetail = () => {
                 {canAccessChat && (
                   <button
                     onClick={() => {
+                      setIsChatUnread(false);
                       setShowChat(true);
                       requestAnimationFrame(() =>
                         chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
                       );
                     }}
-                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-orange-400 transition-colors"
+                    className="relative flex items-center gap-1.5 text-xs text-slate-500 hover:text-orange-400 transition-colors"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     Chat
+                    {isChatUnread && (
+                      <span className="absolute -top-0.5 -right-1 w-1.5 h-1.5 rounded-full bg-orange-500" />
+                    )}
                   </button>
                 )}
                 <button
@@ -1451,7 +1479,10 @@ const TournamentDetail = () => {
         {/* ── Tournament Chat ───────────────────────────────────────────────── */}
         {canAccessChat && showChat && (
           <div ref={chatSectionRef}>
-            <TournamentChatPanel tournamentId={tournament.id} />
+            <TournamentChatPanel
+              tournamentId={tournament.id}
+              viewerCanMentionAll={tournament.organizerId === user?.id}
+            />
           </div>
         )}
 

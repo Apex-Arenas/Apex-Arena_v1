@@ -2047,7 +2047,7 @@ const TournamentManage = () => {
         )}
 
         {/* Tournament Chat */}
-        {canAccessChat && <TournamentChatPanel tournamentId={tournament.id} />}
+        {canAccessChat && <TournamentChatPanel tournamentId={tournament.id} viewerCanMentionAll />}
 
         {/* Tournament Results */}
         {tournament.status === "completed" && (

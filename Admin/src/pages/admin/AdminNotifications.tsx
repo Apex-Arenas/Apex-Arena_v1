@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Bell, BellOff, CheckCheck, Check, AlertTriangle, AlertCircle,
-  Info, Trophy, Wallet, ShieldAlert, UserCheck, Zap, RefreshCw,
-  ChevronDown, ChevronUp,
+  Bell, BellOff, CheckCheck, Check,
+  AlertCircle, Trophy, Wallet, ShieldAlert, UserCheck, Zap, RefreshCw,
+  ChevronDown,
 } from "lucide-react";
 import { useAdminNotifications } from "../../lib/admin-notification-context";
+import { AdminNotificationDetailModal } from "../../components/admin/AdminNotificationDetailModal";
 import type { AdminNotificationItem, AdminNotifSeverity } from "../../services/admin-notification.service";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -21,38 +23,11 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-const SEVERITY_META: Record<AdminNotifSeverity, {
-  icon: React.ElementType;
-  label: string;
-  badgeClass: string;
-  leftBorder: string;
-  iconBg: string;
-  iconColor: string;
-}> = {
-  critical: {
-    icon: AlertCircle,
-    label: "Critical",
-    badgeClass: "bg-red-500/15 text-red-400 border border-red-500/30",
-    leftBorder: "border-l-2 border-l-red-500",
-    iconBg: "bg-red-500/10",
-    iconColor: "text-red-400",
-  },
-  action_required: {
-    icon: AlertTriangle,
-    label: "Action Required",
-    badgeClass: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
-    leftBorder: "border-l-2 border-l-amber-500",
-    iconBg: "bg-amber-500/10",
-    iconColor: "text-amber-400",
-  },
-  info: {
-    icon: Info,
-    label: "Info",
-    badgeClass: "bg-slate-700/50 text-slate-400 border border-slate-600/40",
-    leftBorder: "",
-    iconBg: "bg-slate-700/40",
-    iconColor: "text-slate-400",
-  },
+// Flat, neutral severity label — no color coding (severity text still shown, just not color-keyed).
+const SEVERITY_LABEL: Record<AdminNotifSeverity, string> = {
+  critical: "Critical",
+  action_required: "Action Required",
+  info: "Info",
 };
 
 const EVENT_ICON: Record<string, React.ElementType> = {
@@ -67,8 +42,8 @@ const EVENT_ICON: Record<string, React.ElementType> = {
   escrow_flagged:                AlertCircle,
 };
 
-function getEventIcon(eventType: string): React.ElementType {
-  return EVENT_ICON[eventType] ?? Bell;
+function getEventMeta(eventType: string): { icon: React.ElementType } {
+  return { icon: EVENT_ICON[eventType] ?? Bell };
 }
 
 type Tab = "all" | "action_required" | "critical";
@@ -78,107 +53,63 @@ type Tab = "all" | "action_required" | "critical";
 function NotifRow({
   notif,
   onMarkRead,
+  onOpen,
 }: {
   notif: AdminNotificationItem;
   onMarkRead: (id: string) => void;
+  onOpen: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const sev = SEVERITY_META[notif.severity];
-  const EventIcon = getEventIcon(notif.eventType);
-  const hasExtra = !!(notif.metadata && Object.keys(notif.metadata).length > 0);
+  const { icon: EventIcon } = getEventMeta(notif.eventType);
 
   return (
-    <div className={`border-b border-slate-800/50 ${sev.leftBorder} ${notif.isRead ? "" : "bg-slate-900/40"}`}>
-      <div className="flex items-start gap-3 px-4 py-4">
-        {/* Unread dot */}
-        <span className={`flex-shrink-0 mt-2 w-1.5 h-1.5 rounded-full ${!notif.isRead ? "bg-amber-400" : ""}`} />
+    <div
+      onClick={onOpen}
+      className={`flex items-start gap-3 px-4 py-4 border-b border-slate-800/50 cursor-pointer transition-colors hover:bg-slate-800/20 ${notif.isRead ? "" : "bg-slate-900/40"}`}
+    >
+      {/* Unread dot — neutral, not severity-colored */}
+      <span className={`shrink-0 mt-2 w-1.5 h-1.5 rounded-full ${!notif.isRead ? "bg-slate-400" : ""}`} />
 
-        {/* Icon */}
-        <div className={`flex-shrink-0 w-9 h-9 rounded-xl ${sev.iconBg} flex items-center justify-center mt-0.5`}>
-          <EventIcon className={`w-4 h-4 ${sev.iconColor}`} />
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2 flex-wrap min-w-0">
-              <p className={`text-sm font-semibold leading-snug ${notif.isRead ? "text-slate-300" : "text-white"}`}>
-                {notif.title}
-              </p>
-              <span className={`flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${sev.badgeClass}`}>
-                {sev.label}
-              </span>
-            </div>
-            <span className="flex-shrink-0 text-[11px] text-slate-500 whitespace-nowrap">
-              {relativeTime(notif.createdAt)}
-            </span>
-          </div>
-
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed">{notif.message}</p>
-
-          {/* Event type */}
-          <p className="text-[10px] text-slate-600 mt-1 font-mono">
-            {notif.eventType.replace(/_/g, " ")}
-          </p>
-
-          {/* Who has read this notification */}
-          {notif.readBy.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {notif.readBy.map((r) => (
-                <span
-                  key={r.adminId}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800/80 border border-slate-700/50 text-[10px] text-slate-400"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
-                  @{r.username}
-                  {r.readAt && (
-                    <span className="text-slate-600">· {relativeTime(r.readAt)}</span>
-                  )}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 mt-2.5">
-            {!notif.isRead && (
-              <button
-                onClick={() => onMarkRead(notif.id)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 text-xs font-medium text-slate-400 hover:text-amber-400 hover:border-amber-500/40 hover:bg-amber-500/10 transition-colors"
-              >
-                <Check className="w-3 h-3" />
-                Mark read
-              </button>
-            )}
-            {notif.isRead && (
-              <span className="flex items-center gap-1 text-xs text-slate-600">
-                <Check className="w-3 h-3" /> Read
-              </span>
-            )}
-            {hasExtra && (
-              <button
-                onClick={() => setExpanded((v) => !v)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
-              >
-                {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                {expanded ? "Less" : "Details"}
-              </button>
-            )}
-          </div>
-        </div>
+      {/* Icon — flat, no severity color */}
+      <div className="shrink-0 w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center mt-0.5">
+        <EventIcon className="w-4 h-4 text-slate-300" />
       </div>
 
-      {/* Expanded metadata */}
-      {expanded && hasExtra && (
-        <div className="mx-4 mb-4 rounded-xl bg-slate-950/60 border border-slate-800/60 p-3 space-y-1.5">
-          {Object.entries(notif.metadata!).map(([k, v]) => (
-            <div key={k} className="flex items-start gap-2 text-xs">
-              <span className="flex-shrink-0 text-slate-500 font-mono w-32 truncate">{k}</span>
-              <span className="text-slate-300 break-all">{String(v)}</span>
-            </div>
-          ))}
+      {/* Body */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <p className={`text-sm font-semibold leading-snug ${notif.isRead ? "text-slate-300" : "text-white"}`}>
+              {notif.title}
+            </p>
+            <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-700/50 text-slate-300 border border-slate-600/40">
+              {SEVERITY_LABEL[notif.severity]}
+            </span>
+          </div>
+          <span className="shrink-0 text-[11px] text-slate-500 whitespace-nowrap">
+            {relativeTime(notif.createdAt)}
+          </span>
         </div>
-      )}
+
+        <p className="text-xs text-slate-400 mt-1 leading-relaxed">{notif.message}</p>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 mt-2.5">
+          {!notif.isRead && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onMarkRead(notif.id); }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 text-xs font-medium text-slate-400 hover:text-white hover:border-slate-600 transition-colors"
+            >
+              <Check className="w-3 h-3" />
+              Mark read
+            </button>
+          )}
+          {notif.isRead && (
+            <span className="flex items-center gap-1 text-xs text-slate-600">
+              <Check className="w-3 h-3" /> Read
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -197,7 +128,14 @@ export default function AdminNotifications() {
     markAllRead,
   } = useAdminNotifications();
 
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("all");
+  const [openNotif, setOpenNotif] = useState<AdminNotificationItem | null>(null);
+
+  const handleOpen = (n: AdminNotificationItem) => {
+    setOpenNotif(n);
+    if (!n.isRead) markRead(n.id);
+  };
 
   const displayed = notifications.filter((n) => {
     if (tab === "all") return true;
@@ -289,7 +227,7 @@ export default function AdminNotifications() {
         ) : (
           <>
             {displayed.map((n) => (
-              <NotifRow key={n.id} notif={n} onMarkRead={markRead} />
+              <NotifRow key={n.id} notif={n} onMarkRead={markRead} onOpen={() => handleOpen(n)} />
             ))}
             {isLoading && (
               <div className="py-6 text-center">
@@ -313,6 +251,14 @@ export default function AdminNotifications() {
           </>
         )}
       </div>
+
+      {openNotif && (
+        <AdminNotificationDetailModal
+          notification={openNotif}
+          onClose={() => setOpenNotif(null)}
+          onNavigate={(url) => { setOpenNotif(null); navigate(url); }}
+        />
+      )}
     </div>
   );
 }
