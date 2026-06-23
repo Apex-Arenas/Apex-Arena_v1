@@ -28,6 +28,7 @@ import {
   Share2,
   Pencil,
   UserPlus,
+  RotateCcw,
 } from "lucide-react";
 import {
   organizerService,
@@ -412,12 +413,14 @@ function RegistrantRow({
   onCheckIn,
   onUndoCheckIn,
   onRemove,
+  onReinstate,
   isActionLoading,
 }: {
   registrant: TournamentRegistrant;
   onCheckIn: (userId: string) => void;
   onUndoCheckIn: (userId: string) => void;
   onRemove: (userId: string, displayName: string) => void;
+  onReinstate: (userId: string, displayName: string) => void;
   isActionLoading: boolean;
 }) {
   const statusColor = STATUS_COLORS[registrant.status] ?? "bg-slate-700/50 text-slate-400";
@@ -507,7 +510,17 @@ function RegistrantRow({
               Check In
             </button>
           )}
-          {registrant.status !== "disqualified" && registrant.status !== "withdrawn" && (
+          {registrant.status === "disqualified" ? (
+            <button
+              onClick={() => onReinstate(registrant.userId, registrant.displayName)}
+              disabled={isActionLoading}
+              title="Reinstate player"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 disabled:opacity-40 transition-colors"
+            >
+              {isActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+              Reinstate
+            </button>
+          ) : registrant.status !== "withdrawn" && (
             <button
               onClick={() => onRemove(registrant.userId, registrant.displayName)}
               disabled={isActionLoading}
@@ -833,6 +846,20 @@ const TournamentManage = () => {
     } finally {
       setIsRemoving(false);
       setRemoveTarget(null);
+    }
+  };
+
+  const handleReinstatePlayer = async (userId: string, displayName: string) => {
+    if (!tournamentId) return;
+    setActionLoading(userId);
+    try {
+      await organizerService.reinstatePlayer(tournamentId, userId);
+      await loadData();
+      showSuccess(`${displayName} has been reinstated.`);
+    } catch (err: any) {
+      showError(err.message ?? "Failed to reinstate player.");
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -2347,6 +2374,7 @@ const TournamentManage = () => {
                           onCheckIn={handleCheckIn}
                           onUndoCheckIn={handleUndoCheckIn}
                           onRemove={(userId, displayName) => setRemoveTarget({ userId, displayName })}
+                          onReinstate={(userId, displayName) => void handleReinstatePlayer(userId, displayName)}
                           isActionLoading={actionLoading === r.userId}
                         />
                       ))}

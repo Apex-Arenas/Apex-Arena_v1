@@ -902,6 +902,17 @@ export const organizerService = {
     }
   },
 
+  async reinstatePlayer(tournamentId: string, userId: string): Promise<void> {
+    const response = await apiPost(
+      `${TOURNAMENT_ENDPOINTS.TOURNAMENT_REGISTRATIONS}/${tournamentId}/players/${userId}/reinstate`,
+      {},
+    );
+    if (!response.success) {
+      const msg = (response as { error?: { message?: string } }).error?.message ?? 'Failed to reinstate player';
+      throw new Error(msg);
+    }
+  },
+
   async deleteTournament(tournamentId: string): Promise<void> {
     const response = await apiDelete(
       `${TOURNAMENT_ENDPOINTS.TOURNAMENT_DETAIL}/${tournamentId}`,
