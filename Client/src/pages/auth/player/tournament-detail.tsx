@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Trophy,
-  Users,
-  CalendarDays,
   ChevronLeft,
   AlertCircle,
   CheckCircle2,
@@ -13,14 +11,12 @@ import {
   Shield,
   Gamepad2,
   Globe,
-  Award,
   RefreshCw,
   Loader2,
   Swords,
   LogOut,
   Share2,
   CreditCard,
-  ChevronDown,
   MessageCircle,
 } from "lucide-react";
 import {
@@ -40,186 +36,25 @@ import {
   matchIncludesCurrentPlayer,
   RegisterModal,
   WithdrawModal,
+  ExpandableText,
+  PageSkeleton,
+  TournamentStatsStrip,
+  ScheduleCard,
+  PrizeDistributionCard,
+  TournamentInfoCard,
+  DetailsCard,
+  formatDate,
+  formatDateTime,
+  formatPrize,
+  STATUS_META,
+  REG_STATUS_META,
+  ACTIVE_STATUSES,
   type BracketRound,
 } from "../../../components/tournament-detail";
 import { TournamentChatPanel } from "../../../components/tournament-chat";
 import { tournamentChatService } from "../../../services/tournament-chat.service";
 import { LeagueView } from "../../../components/league/LeagueView";
 import { MatchActionModal } from "../../../components/league/MatchActionModal";
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatDate(iso?: string) {
-  if (!iso) return "TBD";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(iso?: string) {
-  if (!iso) return "TBD";
-  return new Date(iso).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatFee(isFree: boolean, fee: number, currency: string) {
-  if (isFree || fee === 0) return "Free";
-  return `${currency} ${(fee / 100).toFixed(2)}`;
-}
-
-function formatPrize(pesewas: number, currency: string) {
-  return `${currency} ${(pesewas / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-}
-
-const STATUS_META: Record<
-  string,
-  { label: string; dot: string; text: string }
-> = {
-  open: { label: "Open", dot: "bg-emerald-400", text: "text-emerald-300" },
-  published: { label: "Published", dot: "bg-cyan-400", text: "text-cyan-300" },
-  started: {
-    label: "Live",
-    dot: "bg-orange-400 animate-pulse",
-    text: "text-orange-300",
-  },
-  ongoing: {
-    label: "Live",
-    dot: "bg-orange-400 animate-pulse",
-    text: "text-orange-300",
-  },
-  locked: { label: "Locked", dot: "bg-amber-400", text: "text-amber-300" },
-  awaiting_deposit: {
-    label: "Awaiting Deposit",
-    dot: "bg-amber-400",
-    text: "text-amber-300",
-  },
-  completed: {
-    label: "Completed",
-    dot: "bg-slate-400",
-    text: "text-slate-400",
-  },
-  cancelled: { label: "Cancelled", dot: "bg-red-400", text: "text-red-400" },
-  draft: { label: "Draft", dot: "bg-slate-500", text: "text-slate-300" },
-};
-
-const REG_STATUS_META: Record<string, { label: string; cls: string }> = {
-  registered: {
-    label: "Registered",
-    cls: "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
-  },
-  checked_in: {
-    label: "Checked In",
-    cls: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
-  },
-  pending_payment: {
-    label: "Pmt. Pending",
-    cls: "bg-amber-500/15 text-amber-300 border-amber-500/25",
-  },
-  waitlist: {
-    label: "Waitlisted",
-    cls: "bg-violet-500/15 text-violet-300 border-violet-500/25",
-  },
-  withdrawn: {
-    label: "Withdrawn",
-    cls: "bg-slate-700/50 text-slate-400 border-slate-600/25",
-  },
-  cancelled: {
-    label: "Cancelled",
-    cls: "bg-slate-700/50 text-slate-400 border-slate-600/25",
-  },
-  disqualified: {
-    label: "Disqualified",
-    cls: "bg-red-500/15 text-red-300 border-red-500/25",
-  },
-};
-
-const ACTIVE_STATUSES = new Set([
-  "registered",
-  "checked_in",
-  "pending_payment",
-  "waitlist",
-]);
-
-// ─── ExpandableText ───────────────────────────────────────────────────────────
-
-const COLLAPSE_LINES = 3;
-
-function ExpandableText({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const [overflows, setOverflows] = useState(false);
-  const ref = useRef<HTMLParagraphElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    setOverflows(el.scrollHeight > el.clientHeight + 2);
-  }, [text]);
-
-  return (
-    <div className="flex flex-col">
-      <p
-        ref={ref}
-        style={expanded ? undefined : { WebkitLineClamp: COLLAPSE_LINES, display: "-webkit-box", WebkitBoxOrient: "vertical", overflow: "hidden" }}
-        className="text-sm text-slate-300 leading-relaxed whitespace-pre-line"
-      >
-        {text}
-      </p>
-      {(overflows || expanded) && (
-        <button
-          onClick={() => setExpanded(v => !v)}
-          className="mt-2 flex items-center gap-1 text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors ml-auto"
-        >
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
-          {expanded ? "Show less" : "Show more"}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function PageSkeleton() {
-  return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 animate-pulse space-y-6">
-      <div className="h-5 w-32 bg-slate-800 rounded" />
-      <div className="rounded-2xl overflow-hidden border border-slate-800 h-72 bg-slate-800" />
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-4 space-y-2"
-          >
-            <div className="h-3 w-16 bg-slate-800 rounded" />
-            <div className="h-6 w-24 bg-slate-800 rounded" />
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-3"
-            >
-              <div className="h-4 w-40 bg-slate-800 rounded" />
-              <div className="h-3 w-full bg-slate-800 rounded" />
-              <div className="h-3 w-4/5 bg-slate-800 rounded" />
-            </div>
-          ))}
-        </div>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 h-48" />
-      </div>
-    </div>
-  );
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -818,61 +653,7 @@ const TournamentDetail = () => {
         )}
 
         {/* ── Stats strip ───────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800/60 rounded-2xl overflow-hidden">
-          {[
-            {
-              Icon: Trophy,
-              label: "Prize Pool",
-              value: prizeGhs ?? "—",
-              accent: prizeGhs ? "text-amber-300" : "text-slate-600",
-              iconCls: "text-amber-400",
-            },
-            {
-              Icon: Users,
-              label: "Players",
-              value: `${tournament.currentCount} / ${tournament.maxParticipants}`,
-              accent: "text-white",
-              iconCls: "text-orange-400",
-            },
-            {
-              Icon: CalendarDays,
-              label: "Starts",
-              value: formatDate(tournament.schedule.tournamentStart),
-              accent: "text-white",
-              iconCls: "text-orange-400",
-            },
-            {
-              Icon: Award,
-              label: "Entry",
-              value: formatFee(
-                tournament.isFree,
-                tournament.entryFee,
-                tournament.currency,
-              ),
-              accent: tournament.isFree ? "text-emerald-400" : "text-white",
-              iconCls: "text-orange-400",
-            },
-          ].map(({ Icon, label, value, accent, iconCls }) => (
-            <div
-              key={label}
-              className="bg-slate-900/90 px-4 py-4 flex flex-col items-center text-center gap-2"
-            >
-              <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center justify-center shrink-0">
-                <Icon className={`w-4 h-4 ${iconCls}`} />
-              </div>
-              <div>
-                <p
-                  className={`font-display text-lg font-bold leading-tight ${accent}`}
-                >
-                  {value}
-                </p>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">
-                  {label}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <TournamentStatsStrip tournament={tournament} prizeGhs={prizeGhs} />
 
         {/* Check-in banner */}
         {isRegistered && checkInOpen && !isCheckedIn && (
@@ -924,115 +705,10 @@ const TournamentDetail = () => {
             )}
 
             {/* Schedule */}
-            <section className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden">
-              <div className="px-5 py-3 border-b border-slate-800 flex items-center gap-2">
-                <CalendarDays className="w-3.5 h-3.5 text-orange-400" />
-                <h2 className="font-display text-sm font-bold text-white">
-                  Schedule
-                </h2>
-              </div>
-              <div className="grid grid-cols-2 gap-px bg-slate-800/60 p-px">
-                {[
-                  {
-                    label: "Reg. Opens",
-                    value: tournament.schedule.registrationStart,
-                    dot: "bg-emerald-400",
-                  },
-                  {
-                    label: "Reg. Closes",
-                    value: tournament.schedule.registrationEnd,
-                    dot: "bg-red-400",
-                  },
-                  {
-                    label: "Starts",
-                    value: tournament.schedule.tournamentStart,
-                    dot: "bg-orange-400",
-                  },
-                  {
-                    label: "Ends",
-                    value: tournament.schedule.tournamentEnd,
-                    dot: "bg-slate-400",
-                  },
-                  {
-                    label: "Check-in Open",
-                    value: tournament.schedule.checkInStart ?? checkInStart,
-                    dot: "bg-cyan-400",
-                  },
-                  {
-                    label: "Check-in End",
-                    value: tournament.schedule.checkInEnd ?? checkInEnd,
-                    dot: "bg-amber-400",
-                  },
-                ]
-                  .filter((r) => Boolean(r.value))
-                  .map((r) => (
-                    <div
-                      key={r.label}
-                      className="flex flex-col gap-1.5 px-4 py-3 bg-slate-900/60"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${r.dot}`}
-                        />
-                        <span className="text-[10px] text-slate-500 uppercase tracking-wide font-semibold">
-                          {r.label}
-                        </span>
-                      </div>
-                      <span className="text-xs font-semibold text-white pl-4">
-                        {formatDateTime(r.value)}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </section>
+            <ScheduleCard tournament={tournament} checkInStart={checkInStart} checkInEnd={checkInEnd} />
 
             {/* Prize Distribution */}
-            {!tournament.isFree &&
-              tournament.prizeDistribution &&
-              tournament.prizeDistribution.length > 0 && (
-                <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-                  <h2 className="font-display text-base font-bold text-white mb-4 flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-amber-400" />
-                    Prize Distribution
-                  </h2>
-                  <div className="grid grid-cols-3 gap-3">
-                    {tournament.prizeDistribution.slice(0, 3).map((d) => (
-                      <div
-                        key={d.position}
-                        className="rounded-xl border border-slate-700 bg-slate-800/60 p-4 text-center"
-                      >
-                        <p className="text-sm mb-1">
-                          {d.position === 1
-                            ? "🥇"
-                            : d.position === 2
-                              ? "🥈"
-                              : "🥉"}
-                        </p>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">
-                          {d.position === 1
-                            ? "1st"
-                            : d.position === 2
-                              ? "2nd"
-                              : "3rd"}
-                        </p>
-                        <p className="text-lg font-display font-bold text-amber-300">
-                          {d.percentage}%
-                        </p>
-                        {tournament.prizePool && (
-                          <p className="text-xs text-slate-400 mt-1">
-                            {formatPrize(
-                              Math.floor(
-                                (tournament.prizePool * d.percentage) / 100,
-                              ),
-                              tournament.currency,
-                            )}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
+            <PrizeDistributionCard tournament={tournament} />
 
             {/* Rules */}
             {tournament.rules && (
@@ -1276,73 +952,10 @@ const TournamentDetail = () => {
             </div>
 
             {/* Quick stats sidebar */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-slate-800">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  Tournament Info
-                </p>
-              </div>
-              <div className="divide-y divide-slate-800/60">
-                {[
-                  { label: "Format", value: tournament.format ?? "Solo" },
-                  {
-                    label: "Type",
-                    value: tournament.tournamentType ?? "Standard",
-                  },
-                  ...(tournament.region
-                    ? [
-                        {
-                          label: "Region",
-                          value:
-                            tournament.region === "GLOBAL"
-                              ? "Global"
-                              : tournament.region,
-                        },
-                      ]
-                    : []),
-                  ...(tournament.minParticipants > 0
-                    ? [{ label: "Min Players", value: String(tournament.minParticipants) }]
-                    : []),
-                  ...(tournament.visibility
-                    ? [{ label: "Visibility", value: tournament.visibility.charAt(0).toUpperCase() + tournament.visibility.slice(1) }]
-                    : []),
-                ].map((r) => (
-                  <div
-                    key={r.label}
-                    className="flex items-center justify-between px-5 py-3"
-                  >
-                    <span className="text-xs text-slate-500">{r.label}</span>
-                    <span className="text-xs font-bold text-white capitalize">
-                      {r.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <TournamentInfoCard tournament={tournament} />
 
             {/* Details */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-slate-800">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  Details
-                </p>
-              </div>
-              <div className="divide-y divide-slate-800/60">
-                {[
-                  { label: "Game", value: tournament.game?.name },
-                  { label: "Platform", value: tournament.platform },
-                  { label: "Mode", value: tournament.gameMode },
-                  { label: "Max Players", value: tournament.maxParticipants > 0 ? String(tournament.maxParticipants) : null },
-                ]
-                  .filter((r) => Boolean(r.value))
-                  .map((r) => (
-                    <div key={r.label} className="flex items-center justify-between px-5 py-3">
-                      <span className="text-xs text-slate-500">{r.label}</span>
-                      <span className="text-xs font-bold text-white capitalize">{r.value}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
+            <DetailsCard tournament={tournament} />
           </div>
         </div>
 
