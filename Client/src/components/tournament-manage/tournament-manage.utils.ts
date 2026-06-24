@@ -60,6 +60,32 @@ export function normalizeEscrowStatusLabel(status?: string): string {
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
+export interface CoOrganizerEntry {
+  user_id:
+    | {
+        _id?: string;
+        username?: string;
+        email?: string;
+        profile?: {
+          first_name?: string;
+          last_name?: string;
+          avatar_url?: string;
+        };
+      }
+    | string;
+  status: "pending" | "accepted" | "declined";
+  invited_at: string;
+  accepted_at?: string;
+}
+
+export interface OrganizerSearchResult {
+  user_id: string;
+  username: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+}
+
 export type EscrowStageState = "pending" | "active" | "completed";
 
 export interface EscrowStageItem {

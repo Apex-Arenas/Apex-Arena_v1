@@ -1,5 +1,12 @@
 export { default as PlayerAvatar } from "./PlayerAvatar";
 export { default as RegistrantRow } from "./RegistrantRow";
+export { default as TournamentManageHero } from "./TournamentManageHero";
+export { default as TournamentResultsCard } from "./TournamentResultsCard";
+export { default as ParticipantsCard } from "./ParticipantsCard";
+export { default as TournamentInfoSidebarCard } from "./TournamentInfoSidebarCard";
+export { default as CoOrganizersCard } from "./CoOrganizersCard";
+export { default as OrganizerResultsSidebarCard } from "./OrganizerResultsSidebarCard";
+export { default as EscrowCard } from "./EscrowCard";
 export { default as ExtendRegistrationModal } from "./modals/ExtendRegistrationModal";
 export { default as WinnersModal } from "./modals/WinnersModal";
 export { default as CancelTournamentModal } from "./modals/CancelTournamentModal";
@@ -25,4 +32,6 @@ export type {
   EscrowStageState,
   EscrowStageItem,
   OrganizerBracketMatch,
+  CoOrganizerEntry,
+  OrganizerSearchResult,
 } from "./tournament-manage.utils";
