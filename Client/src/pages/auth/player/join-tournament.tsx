@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
-  CalendarDays,
   CheckCircle2,
   ChevronDown,
   Gamepad2,
@@ -24,6 +23,9 @@ import {
   RegisterModal,
   TournamentCard,
   WithdrawModal,
+  SkeletonCard,
+  ActiveTournamentCard,
+  JoinTournamentHero,
   canWithdrawRegistration,
 } from "../../../components/join-tournament";
 
@@ -46,157 +48,6 @@ const ACTIVE_TOURNAMENT_STATUSES = new Set(["started", "ongoing", "completed"]);
 const UPCOMING_TOURNAMENT_STATUSES = new Set([
   "open", "published", "locked", "awaiting_deposit", "draft",
 ]);
-
-// ── Skeleton card ─────────────────────────────────────────────────────────────
-function SkeletonCard() {
-  return (
-    <div className="rounded-xl bg-slate-900 border border-slate-800 overflow-hidden animate-pulse">
-      <div className="aspect-4/3 bg-slate-800" />
-      <div className="px-4 pt-3 pb-4 space-y-3">
-        <div className="h-3 bg-slate-800 rounded w-3/4" />
-        <div className="h-2.5 bg-slate-800 rounded w-1/2" />
-        <div className="grid grid-cols-2 gap-2">
-          <div className="h-2 bg-slate-800 rounded" />
-          <div className="h-2 bg-slate-800 rounded" />
-          <div className="h-2 bg-slate-800 rounded" />
-          <div className="h-2 bg-slate-800 rounded" />
-        </div>
-        <div className="h-9 bg-slate-800 rounded-xl mt-1" />
-      </div>
-    </div>
-  );
-}
-
-// ── Active tournament card ────────────────────────────────────────────────────
-const ACTIVE_META: Record<string, { label: string; dot: string; text: string; bg: string }> = {
-  started:   { label: "Live",      dot: "bg-orange-400 animate-pulse", text: "text-orange-300", bg: "from-orange-950 via-slate-900 to-violet-950" },
-  ongoing:   { label: "Live",      dot: "bg-orange-400 animate-pulse", text: "text-orange-300", bg: "from-orange-950 via-slate-900 to-violet-950" },
-  completed: { label: "Completed", dot: "bg-slate-400",                text: "text-slate-400",  bg: "from-slate-800 via-slate-900 to-slate-900"   },
-};
-
-function ActiveTournamentCard({
-  registration,
-  onView,
-}: {
-  registration: MyTournamentRegistration;
-  onView: (id: string) => void;
-}) {
-  const meta = ACTIVE_META[registration.tournamentStatus] ?? {
-    label: registration.tournamentStatus.replace(/_/g, " "),
-    dot: "bg-slate-500",
-    text: "text-slate-300",
-    bg: "from-slate-800 via-slate-900 to-slate-900",
-  };
-  const isLive = registration.tournamentStatus === "started" || registration.tournamentStatus === "ongoing";
-
-  const imageUrl = registration.tournamentThumbnailUrl ?? registration.tournamentBannerUrl ?? null;
-
-  return (
-    <div
-      className="group flex flex-col overflow-hidden rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-600 hover:shadow-xl hover:shadow-black/40 transition-all cursor-pointer"
-      onClick={() => onView(registration.tournamentId)}
-    >
-      {/* Cover image */}
-      <div className="relative aspect-4/3 overflow-hidden shrink-0">
-        <div className="absolute inset-0 bg-slate-900" />
-
-        {imageUrl ? (
-          <>
-            <img
-              src={imageUrl}
-              alt={registration.tournamentTitle}
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-linear-to-br from-orange-600/40 via-transparent to-violet-700/40" />
-          </>
-        ) : (
-          <>
-            <div className={`absolute inset-0 bg-linear-to-br ${meta.bg}`} />
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-size-[32px_32px]" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Swords className="w-12 h-12 text-white/5" />
-            </div>
-            <div className="absolute inset-0 bg-linear-to-br from-orange-600/40 via-transparent to-violet-700/40" />
-          </>
-        )}
-
-        <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-slate-900/40 to-transparent" />
-
-        {/* Status chip — top right */}
-        <div className="absolute top-2.5 right-2.5">
-          <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-sm border border-white/10 ${meta.text}`}>
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${meta.dot}`} />
-            {meta.label}
-          </span>
-        </div>
-
-        {/* Game logo — bottom left */}
-        {registration.tournamentGameLogoUrl && (
-          <div className="absolute bottom-2.5 left-2.5">
-            <img
-              src={registration.tournamentGameLogoUrl}
-              alt={registration.tournamentGameName ?? ""}
-              className="w-7 h-7 rounded-md object-cover border border-white/15 shadow-md"
-            />
-          </div>
-        )}
-
-        {/* Registration status — bottom left, offset when game logo present */}
-        <div className={`absolute bottom-2.5 ${registration.tournamentGameLogoUrl ? "left-11" : "left-3"}`}>
-          <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold border backdrop-blur-sm bg-slate-800/80 text-slate-300 border-slate-600/40 capitalize">
-            {registration.status.replace(/_/g, " ")}
-          </span>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="px-4 pt-3 pb-4 flex flex-col gap-3 flex-1">
-        <div>
-          <h4 className="font-display text-sm font-bold text-white leading-tight line-clamp-2 group-hover:text-orange-300 transition-colors">
-            {registration.tournamentTitle}
-          </h4>
-          <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-            {registration.tournamentGameName ?? "Unknown Game"}
-          </p>
-        </div>
-
-        {/* Detail grid */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
-          {registration.tournamentStart && (
-            <div>
-              <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5 flex items-center gap-1">
-                <CalendarDays className="w-2.5 h-2.5" /> Started
-              </p>
-              <p className="text-[11px] font-medium text-slate-300">
-                {new Date(registration.tournamentStart).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-              </p>
-            </div>
-          )}
-          <div>
-            <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5 flex items-center gap-1">
-              <Swords className="w-2.5 h-2.5" /> Status
-            </p>
-            <p className="text-[11px] font-medium text-slate-300 capitalize">
-              {registration.tournamentStatus.replace(/_/g, " ")}
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={(e) => { e.stopPropagation(); onView(registration.tournamentId); }}
-          className={`mt-auto w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-            isLive
-              ? "bg-linear-to-r from-orange-500 to-amber-400 text-slate-950 hover:shadow-lg hover:shadow-orange-500/25"
-              : "border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 hover:text-white"
-          }`}
-        >
-          <Swords className="w-3.5 h-3.5" />
-          {isLive ? "View Live" : "View Results"}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 const JoinTournament = () => {
@@ -261,7 +112,6 @@ const JoinTournament = () => {
         gameId: gameFilter || undefined,
       });
 
-      // Apply free/paid filter on frontend
       let filtered = result.tournaments;
       if (freeFilter === "free") {
         filtered = filtered.filter((t) => t.isFree && (t.entryFee === 0) && (!t.prizePool || t.prizePool === 0));
@@ -277,10 +127,7 @@ const JoinTournament = () => {
     }
   }, [search, statusFilter, freeFilter, gameFilter]);
 
-  useEffect(() => {
-    void fetchTournaments();
-  }, [fetchTournaments]);
-
+  useEffect(() => { void fetchTournaments(); }, [fetchTournaments]);
   useEffect(() => { void fetchMyRegistrations(); }, [fetchMyRegistrations]);
 
   useEffect(() => {
@@ -377,77 +224,22 @@ const JoinTournament = () => {
 
   const TABS: { id: ActiveTab; label: string; shortLabel: string; count?: number }[] = [
     { id: "registrations",  label: "My Registrations", shortLabel: "My Reg.", count: isLoadingRegistrations ? undefined : upcomingRegistrations.length },
-    { id: "my-tournaments", label: "Active",           shortLabel: "Active", count: isLoadingRegistrations ? undefined : activeTournaments.length },
-    { id: "browse",         label: "Browse",           shortLabel: "Browse", count: isLoading ? undefined : tournaments.length },
+    { id: "my-tournaments", label: "Active",           shortLabel: "Active",  count: isLoadingRegistrations ? undefined : activeTournaments.length },
+    { id: "browse",         label: "Browse",           shortLabel: "Browse",  count: isLoading ? undefined : tournaments.length },
   ];
 
   return (
     <div className="min-h-screen">
 
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="relative bg-slate-900 border-b border-slate-800/60 overflow-hidden">
-        <div className="absolute -top-40 right-0 w-175 h-100 rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-125 h-50 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-size-[60px_60px] pointer-events-none" />
-
-        <div className="relative max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 pt-10 pb-7">
-          <div>
-            <h1 className="font-display text-4xl sm:text-5xl font-bold text-white leading-none">Find Your Arena</h1>
-            <p className="text-base text-slate-400 mt-3">Browse open tournaments, track your registrations, and compete.</p>
-          </div>
-
-          {/* Stats strip — dropdown on mobile, grid on sm+ */}
-          {(() => {
-            const statItems = [
-              { icon: Trophy,       iconColor: "text-orange-400",  bg: "from-orange-500/15 to-amber-500/15",  label: "Available",        value: isLoading ? "—" : String(tournaments.length) },
-              { icon: Swords,       iconColor: "text-cyan-400",    bg: "from-cyan-500/15 to-indigo-500/15",   label: "My Registrations", value: isLoadingRegistrations ? "—" : String(upcomingRegistrations.length) },
-              { icon: CheckCircle2, iconColor: "text-emerald-400", bg: "from-emerald-500/15 to-teal-500/15",  label: "Active",           value: isLoadingRegistrations ? "—" : String(activeTournaments.length) },
-            ];
-            return (
-              <>
-                {/* Mobile dropdown */}
-                <div className="sm:hidden mt-4">
-                  <button
-                    onClick={() => setStatsOpen((o) => !o)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs font-semibold text-slate-400 uppercase tracking-widest"
-                  >
-                    <span>Stats</span>
-                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${statsOpen ? "rotate-180" : ""}`} />
-                  </button>
-                  {statsOpen && (
-                    <div className="mt-1 grid grid-cols-3 gap-2">
-                      {statItems.map((s) => (
-                        <div key={s.label} className="flex flex-col items-center gap-1 bg-slate-800/50 border border-slate-700/60 rounded-xl px-2 py-3">
-                          <div className={`w-7 h-7 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center`}>
-                            <s.icon className={`w-3.5 h-3.5 ${s.iconColor}`} />
-                          </div>
-                          <p className="font-display text-base font-bold tabular-nums text-white leading-none">{s.value}</p>
-                          <p className="text-[9px] text-slate-500 uppercase tracking-widest text-center leading-tight">{s.label}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* sm+: grid */}
-                <div className="hidden sm:grid sm:grid-cols-3 gap-3 mt-6">
-                  {statItems.map((s) => (
-                    <div key={s.label} className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/60 rounded-xl px-4 py-3">
-                      <div className={`w-8 h-8 rounded-lg bg-linear-to-br ${s.bg} flex items-center justify-center shrink-0`}>
-                        <s.icon className={`w-4 h-4 ${s.iconColor}`} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-display text-xl font-bold tabular-nums text-white leading-none">{s.value}</p>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">{s.label}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            );
-          })()}
-        </div>
-      </div>
+      <JoinTournamentHero
+        tournamentCount={tournaments.length}
+        upcomingCount={upcomingRegistrations.length}
+        activeCount={activeTournaments.length}
+        isLoading={isLoading}
+        isLoadingRegistrations={isLoadingRegistrations}
+        statsOpen={statsOpen}
+        onToggleStats={() => setStatsOpen((o) => !o)}
+      />
 
       <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-5 sm:py-7 space-y-5">
 
@@ -467,9 +259,8 @@ const JoinTournament = () => {
           </div>
         )}
 
-        {/* Tab switcher + Search bar (same line on desktop) */}
+        {/* Tab switcher + Search bar */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
-          {/* Tabs */}
           <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-2xl p-1.5 w-full sm:w-auto justify-center sm:justify-start shrink-0">
             {TABS.map((tab) => (
               <button
@@ -494,7 +285,6 @@ const JoinTournament = () => {
             ))}
           </div>
 
-          {/* Desktop search (always visible, takes remaining space) */}
           <form onSubmit={handleSearch} className="relative hidden sm:block flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
             <input
@@ -510,7 +300,7 @@ const JoinTournament = () => {
         {/* ── BROWSE TAB ──────────────────────────────────────────────────── */}
         {activeTab === "browse" && (
           <div className="space-y-4">
-            {/* Mobile: Search + Filters button (only visible on mobile) */}
+            {/* Mobile: Search + Filters button */}
             <div className="flex gap-2 sm:hidden">
               <form onSubmit={handleSearch} className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -535,9 +325,8 @@ const JoinTournament = () => {
               </button>
             </div>
 
-            {/* Desktop filter bar (all in one row) */}
+            {/* Desktop filter bar */}
             <div className="hidden sm:flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-800/40 border border-slate-700/60">
-              {/* Game filter pill */}
               {availableGames.length > 0 && (
                 <div className="relative flex items-center gap-1.5 bg-slate-800/60 border border-slate-700 rounded-full px-3 py-1.5 shrink-0">
                   <Gamepad2 className="w-3.5 h-3.5 text-slate-500" />
@@ -555,7 +344,6 @@ const JoinTournament = () => {
                 </div>
               )}
 
-              {/* Status pills — scrollable center */}
               <div className="flex items-center gap-1.5 overflow-x-auto flex-1 no-scrollbar">
                 {STATUS_PILLS.map((pill) => (
                   <button
@@ -572,7 +360,6 @@ const JoinTournament = () => {
                 ))}
               </div>
 
-              {/* Free/Paid toggle — segmented control */}
               <div className="flex items-center gap-1 bg-slate-800/60 border border-slate-700 rounded-full p-0.5 shrink-0">
                 {(["", "free", "paid"] as const).map((val) => (
                   <button
@@ -590,10 +377,9 @@ const JoinTournament = () => {
               </div>
             </div>
 
-            {/* Mobile filter panel (collapsible) */}
+            {/* Mobile filter panel */}
             {filtersOpen && (
               <div className="sm:hidden space-y-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/60">
-                {/* Game filter */}
                 {availableGames.length > 0 && (
                   <div className="relative flex items-center gap-1.5 bg-slate-800/60 border border-slate-700 rounded-full px-3 py-2">
                     <Gamepad2 className="w-3.5 h-3.5 text-slate-500" />
@@ -611,7 +397,6 @@ const JoinTournament = () => {
                   </div>
                 )}
 
-                {/* Status pills */}
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-3 px-3">
                   {STATUS_PILLS.map((pill) => (
                     <button
@@ -628,7 +413,6 @@ const JoinTournament = () => {
                   ))}
                 </div>
 
-                {/* Free/Paid toggle */}
                 <div className="flex items-center gap-1 bg-slate-800/60 border border-slate-700 rounded-full p-0.5">
                   {(["", "free", "paid"] as const).map((val) => (
                     <button
@@ -678,7 +462,6 @@ const JoinTournament = () => {
                 ))}
               </div>
             )}
-
           </div>
         )}
 
