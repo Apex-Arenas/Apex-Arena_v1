@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   X, Loader2, AlertTriangle, Swords, Clock,
-  Shield, Trophy, CheckCheck, Flag, Timer, Crown, Edit3, ChevronDown, ImageIcon,
-  ChevronLeft, ChevronRight,
+  Shield, Trophy, CheckCheck, Flag, Edit3, ChevronDown,
 } from 'lucide-react';
 import { tournamentService } from '../../services/tournament.service';
 import type { FullMatch } from '../../services/tournament.service';
 import ImageUploadDropzone from '../ImageUploadDropzone';
 import { organizerService } from '../../services/organizer.service';
+import { useCountdown } from './match-action-modal.utils';
+import { ProofGallery } from './ProofGallery';
+import { CountdownBadge } from './CountdownBadge';
+import { PlayerCard } from './PlayerCard';
+import { ScoreDisplay } from './ScoreDisplay';
 
 interface Props {
   matchId: string;
@@ -17,248 +21,6 @@ interface Props {
   isLeague?: boolean;
   onClose: () => void;
   onActionComplete: () => void;
-}
-
-// ─── Countdown hook ───────────────────────────────────────────────────────────
-
-function useCountdown(deadline: string | undefined) {
-  const remaining = () => {
-    if (!deadline) return null;
-    const ms = new Date(deadline).getTime() - Date.now();
-    return ms > 0 ? Math.ceil(ms / 1000) : 0;
-  };
-  const [seconds, setSeconds] = useState<number | null>(null);
-  useEffect(() => {
-    setSeconds(remaining());
-    if (!deadline) return;
-    const id = setInterval(() => {
-      const rem = remaining();
-      setSeconds(rem);
-      if (rem === 0) clearInterval(id);
-    }, 1000);
-    return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deadline]);
-  return seconds;
-}
-
-// ─── Proof Gallery (one image at a time, switch between legs) ───────────────────
-
-function ProofGallery({ shots }: { shots: { label: string; url: string }[] }) {
-  const [active, setActive] = useState(0);
-  if (shots.length === 0) return null;
-  const idx = Math.min(active, shots.length - 1);
-  const current = shots[idx];
-  const multi = shots.length > 1;
-  const go = (delta: number) => setActive((a) => (a + delta + shots.length) % shots.length);
-
-  return (
-    <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-800/60 bg-slate-800/30">
-        <ImageIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-        <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Score Proof</span>
-        <span className="ml-auto text-[10px] text-slate-600">submitted by players</span>
-      </div>
-
-      {/* Switch buttons — one per screenshot */}
-      {multi && (
-        <div className="flex items-center gap-1.5 px-3 pt-3 flex-wrap">
-          {shots.map((s, i) => (
-            <button
-              key={`${s.url}-${i}`}
-              type="button"
-              onClick={() => setActive(i)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors ${
-                i === idx
-                  ? "bg-cyan-500/15 border border-cyan-500/40 text-cyan-300"
-                  : "bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-slate-200 hover:border-slate-600"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Current image */}
-      <div className="relative p-3">
-        <a href={current.url} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden border border-slate-800/60">
-          <img
-            src={current.url}
-            alt={`${current.label} proof`}
-            className="w-full object-contain max-h-72 bg-slate-950 hover:opacity-90 transition-opacity cursor-zoom-in"
-            onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
-          />
-        </a>
-
-        {multi && (
-          <>
-            <button
-              type="button"
-              onClick={() => go(-1)}
-              className="absolute left-5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950/80 border border-slate-700 flex items-center justify-center text-slate-200 hover:bg-slate-900 transition-colors"
-              aria-label="Previous screenshot"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => go(1)}
-              className="absolute right-5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-950/80 border border-slate-700 flex items-center justify-center text-slate-200 hover:bg-slate-900 transition-colors"
-              aria-label="Next screenshot"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </>
-        )}
-
-        <p className="text-[10px] text-slate-500 text-center pt-2">
-          {current.label}{multi ? ` · ${idx + 1} of ${shots.length}` : ""} · tap image to view full size
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function CountdownBadge({ seconds, label }: { seconds: number | null; label: string }) {
-  if (seconds === null) return null;
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  const isUrgent = seconds <= 60;
-  return (
-    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${
-      isUrgent
-        ? 'bg-red-500/10 border-red-500/30 text-red-300'
-        : 'bg-slate-800/60 border-slate-700 text-slate-300'
-    }`}>
-      <Timer className={`w-3.5 h-3.5 ${isUrgent ? 'text-red-400' : 'text-orange-400'}`} />
-      {label} {mins}:{String(secs).padStart(2, '0')}
-    </div>
-  );
-}
-
-// ─── Player Card ──────────────────────────────────────────────────────────────
-
-function PlayerCard({
-  name, isWinner, isLoser, dimmed, highlight, selected, onClick,
-}: {
-  name: string; isWinner?: boolean; isLoser?: boolean; dimmed?: boolean;
-  highlight?: boolean; selected?: boolean; onClick?: () => void;
-}) {
-  const initial = name.charAt(0).toUpperCase() || '?';
-
-  const containerCls = (() => {
-    if (selected)  return 'border-orange-500/70 bg-orange-500/8 shadow-[0_0_20px_rgba(249,115,22,0.12)]';
-    if (isWinner)  return 'border-amber-500/50 bg-amber-500/6 shadow-[0_0_20px_rgba(251,191,36,0.10)]';
-    if (isLoser)   return 'border-slate-700/30 opacity-40';
-    if (dimmed)    return 'border-slate-700/30 opacity-40';
-    return onClick ? 'border-slate-700 bg-slate-800/40 hover:border-slate-500 hover:bg-slate-800/60' : 'border-slate-700 bg-slate-800/40';
-  })();
-
-  const avatarCls = (() => {
-    if (selected)  return 'bg-linear-to-br from-orange-500 to-amber-400 text-slate-950 border-orange-400/50';
-    if (isWinner)  return 'bg-linear-to-br from-amber-500 to-orange-500 text-slate-950 border-amber-400/50';
-    return 'bg-linear-to-br from-slate-700 to-slate-800 text-white border-slate-600';
-  })();
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!onClick}
-      className={`relative flex-1 flex flex-col items-center gap-2.5 py-5 px-3 rounded-xl border-2 transition-all duration-200 ${containerCls} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
-    >
-      {/* Subtle grid */}
-      <div className="absolute inset-0 rounded-xl bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-size-[20px_20px] pointer-events-none" />
-
-      {/* Avatar */}
-      <div className={`relative w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold border-2 ${avatarCls}`}>
-        {initial}
-        {isWinner && (
-          <div className="absolute -top-2 -right-1 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-            <Crown className="w-3 h-3 text-slate-950" />
-          </div>
-        )}
-      </div>
-
-      <span className={`text-xs font-bold text-center truncate w-full ${
-        selected ? 'text-orange-300' : isWinner ? 'text-amber-200' : 'text-slate-200'
-      }`}>
-        {name}
-      </span>
-
-      {highlight && <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wide">You</span>}
-      {isWinner && <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wide">Winner</span>}
-      {selected && <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wide">Selected</span>}
-    </button>
-  );
-}
-
-// ─── Score Display ────────────────────────────────────────────────────────────
-
-function parsePenaltyReason(reason?: string) {
-  if (!reason) return null;
-  const m = reason.match(/Regular time:\s*(\d+)[-\u2013](\d+).*?Penalties:\s*(\d+)[-\u2013](\d+)/i);
-  if (!m) return null;
-  return { rt1: Number(m[1]), rt2: Number(m[2]), pen1: Number(m[3]), pen2: Number(m[4]) };
-}
-
-function ScoreDisplay({ s1, s2, n1, n2, p1Won, p2Won, reason }: {
-  s1: number; s2: number; n1: string; n2: string;
-  p1Won?: boolean; p2Won?: boolean; reason?: string;
-}) {
-  const penalty = parsePenaltyReason(reason);
-
-  // For penalty matches show regular time scores; otherwise show stored scores as-is
-  const rt1 = penalty ? penalty.rt1 : s1;
-  const rt2 = penalty ? penalty.rt2 : s2;
-  // Highlight the higher-scoring side — winner badge on PlayerCard already conveys who won.
-  // When scores are equal the winner (decided on penalties) gets the highlight instead.
-  const h1 = rt1 !== rt2 ? rt1 > rt2 : (p1Won ?? false);
-  const h2 = rt1 !== rt2 ? rt2 > rt1 : (p2Won ?? false);
-
-  return (
-    <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 overflow-hidden">
-      {/* Regular time scores */}
-      <div className="grid grid-cols-[1fr_auto_1fr]">
-        <div className={`flex flex-col items-center py-4 px-3 gap-1 ${h1 ? 'bg-amber-500/6' : ''}`}>
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate w-full text-center">{n1}</p>
-          <span className={`font-display text-5xl font-bold tabular-nums leading-none ${h1 ? 'text-amber-300' : 'text-slate-500'}`}>{rt1}</span>
-        </div>
-        <div className="flex flex-col items-center justify-center px-3 border-x border-slate-700/60">
-          <span className="text-slate-600 font-bold text-sm">—</span>
-        </div>
-        <div className={`flex flex-col items-center py-4 px-3 gap-1 ${h2 ? 'bg-amber-500/6' : ''}`}>
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate w-full text-center">{n2}</p>
-          <span className={`font-display text-5xl font-bold tabular-nums leading-none ${h2 ? 'text-amber-300' : 'text-slate-500'}`}>{rt2}</span>
-        </div>
-      </div>
-
-      {/* Penalty scores — full breakdown when data exists */}
-      {penalty ? (
-        <div className="grid grid-cols-[1fr_auto_1fr] border-t border-amber-500/20 bg-amber-500/5">
-          <div className="flex flex-col items-center py-2.5 px-3 gap-0.5">
-            <p className="text-[9px] text-amber-500/70 uppercase tracking-widest">Penalties</p>
-            <span className={`font-display text-2xl font-bold tabular-nums ${penalty.pen1 > penalty.pen2 ? 'text-amber-300' : 'text-slate-500'}`}>{penalty.pen1}</span>
-          </div>
-          <div className="flex items-center justify-center px-3 border-x border-amber-500/20">
-            <span className="text-amber-700 font-bold text-xs">—</span>
-          </div>
-          <div className="flex flex-col items-center py-2.5 px-3 gap-0.5">
-            <p className="text-[9px] text-amber-500/70 uppercase tracking-widest">Penalties</p>
-            <span className={`font-display text-2xl font-bold tabular-nums ${penalty.pen2 > penalty.pen1 ? 'text-amber-300' : 'text-slate-500'}`}>{penalty.pen2}</span>
-          </div>
-        </div>
-      ) : rt1 === rt2 && (p1Won || p2Won) ? (
-        /* Equal scores but a winner exists — decided on penalties, exact scores not recorded */
-        <div className="flex items-center justify-center gap-2 border-t border-amber-500/20 bg-amber-500/5 py-2">
-          <span className="text-[10px] text-amber-400 font-bold uppercase tracking-widest">
-            {p1Won ? n1 : n2} won on penalties
-          </span>
-        </div>
-      ) : null}
-    </div>
-  );
 }
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
@@ -564,7 +326,7 @@ export function MatchActionModal({ matchId, currentUserId, currentMatchweek, isO
               ? (p1 > p2 ? match!.player1Id : match!.player2Id)
               : (isDraw ? null : selectedWinnerId!);
             const penaltyNote = hasPenalties
-              ? `Regular time: ${score1}\u2013${score2} \u00B7 Penalties: ${p1}\u2013${p2}`
+              ? `Regular time: ${score1}–${score2} · Penalties: ${p1}–${p2}`
               : undefined;
             doAction(() => tournamentService.submitMatchResult(
               matchId,
